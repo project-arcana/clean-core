@@ -1,2 +1,44 @@
 # clean-core
-A clean and lean reimagining of the C++ standard library
+clean-core (`cc`) is a clean and lean reimagining of the C++ standard library.
+
+## Goals
+
+* significantly faster to compile than `std`
+* forward declaration for all public types
+* no slower than `std`
+* more modular header design (each type can be separately included)
+* convenient interfacing with code using `std` types
+* removal of unintuitive behavior (e.g. `vector<bool>` or `optional::operator bool`)
+* mostly keeping naming scheme and intent of `std`
+* better debugging support and performance
+* no dependency on `exception`s
+
+## Requirements / Dependencies
+
+* a C++17 compiler
+* a few `std` features (that are hard to otherwise implement)
+
+## Notable Changes
+
+Changes that were rarely used features that increased implementation cost immensely:
+
+* no `allocator`s
+* no custom deleters for `unique_ptr`
+
+Error-prone and unintuitive or suprising features:
+
+* no specialized `vector<bool>`
+* no `operator bool` for `optional<T>`
+* no `operator<` for `optional<T>`
+
+Others:
+
+* no strong `exception` support
+* no iterator-pair library, only ranges
+
+## New Features
+
+* `span` (strided array view)
+* `flat_` containers
+* `inline_` types (no heap allocs)
+* customizable low-impact `assert`
