@@ -7,6 +7,7 @@ project(CleanCore)
 option(CC_STRICT "if true, enables all warnings and -Werror" ON)
 option(CC_ENABLE_ASSERTIONS "if true, enables assertions (even in release)" ON)
 option(CC_ENABLE_BOUND_CHECKING "if true, enables container and iterator bound checking (even in release)" ON)
+option(CC_ENABLE_NULL_CHECKING "if true, enables smart pointer null checking (even in release)" ON)
 
 # =========================================
 # define library
@@ -36,6 +37,10 @@ endif()
 
 if (CC_ENABLE_BOUND_CHECKING)
     target_compile_definitions(clean-core PUBLIC CC_ENABLE_BOUND_CHECKING)
+endif()
+
+if (CC_ENABLE_NULL_CHECKING)
+    target_compile_definitions(clean-core PUBLIC CC_ENABLE_NULL_CHECKING)
 endif()
 
 if (CC_STRICT)

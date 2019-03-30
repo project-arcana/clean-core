@@ -44,13 +44,17 @@
 
 
 #ifdef CC_ENABLE_BOUND_CHECKING
-#define CC_BOUND_CHECK(var, lb, ub) ASSERT((lb) <= (var) && (var) < (ub) && "bound check")
+#define CC_ASSERT_IN_BOUNDS(var, lb, ub) ASSERT((lb) <= (var) && (var) < (ub) && "bound check")
 #else
-#define CC_BOUND_CHECK(var, lb, ub)                                 \
-    do                                                              \
-    {                                                               \
-        [[maybe_unused]] decltype((lb) <= (var) && (var) < (ub)) b; \
-    } while (0) // force ;
+#define CC_ASSERT_IN_BOUNDS(var, lb, ub) CC_UNUSED((lb) <= (var) && (var) < (ub))
+#endif
+
+#ifdef CC_ENABLE_NULL_CHECKING
+#define CC_ASSERT_IS_NULL(p) ASSERT((p) == nullptr && "must be null");
+#define CC_ASSERT_NOT_NULL(p) ASSERT((p) != nullptr && "must not be null");
+#else
+#define CC_ASSERT_IS_NULL(p) CC_UNUSED((p) == nullptr);
+#define CC_ASSERT_NOT_NULL(p) CC_UNUSED((p) != nullptr);
 #endif
 
 namespace cc::detail
