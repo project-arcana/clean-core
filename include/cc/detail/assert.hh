@@ -24,21 +24,21 @@
     } while (0) // force ;
 
 #elif defined(CC_DEBUG)
-#define ASSERT(condition)                                                                                   \
-    do                                                                                                      \
-    {                                                                                                       \
-        static constexpr ::cc::detail::assert_info info = {#condition, CC_PRETTY_FUNC, __FILE__, __LINE__}; \
-        if (!(condition))                                                                                   \
-            ::cc::detail::assert_failed(info);                                                              \
+#define ASSERT(condition)                                                                                      \
+    do                                                                                                         \
+    {                                                                                                          \
+        static constexpr ::cc::detail::assertion_info info = {#condition, CC_PRETTY_FUNC, __FILE__, __LINE__}; \
+        if (!(condition))                                                                                      \
+            ::cc::detail::assertion_failed(info);                                                              \
     } while (0) // force ;
 
 #else
-#define ASSERT(condition)                                                                                   \
-    do                                                                                                      \
-    {                                                                                                       \
-        static constexpr ::cc::detail::assert_info info = {#condition, CC_PRETTY_FUNC, __FILE__, __LINE__}; \
-        if (CC_UNLIKELY(!(condition)))                                                                      \
-            ::cc::detail::assert_failed(info);                                                              \
+#define ASSERT(condition)                                                                                      \
+    do                                                                                                         \
+    {                                                                                                          \
+        static constexpr ::cc::detail::assertion_info info = {#condition, CC_PRETTY_FUNC, __FILE__, __LINE__}; \
+        if (CC_UNLIKELY(!(condition)))                                                                         \
+            ::cc::detail::assertion_failed(info);                                                              \
     } while (0) // force ;
 #endif
 
