@@ -1,4 +1,7 @@
 #pragma once
 
+#include <cc/fwd/optional.hh>
 #include <cc/fwd/pair.hh>
+#include <cc/fwd/span.hh>
+#include <cc/fwd/unique_ptr.hh>
 #include <cc/fwd/vector.hh>

@@ -3,5 +3,5 @@
 namespace cc
 {
 template <class T>
-struct vector;
+struct span;
 }
