@@ -53,8 +53,14 @@
 #define CC_ASSERT_IS_NULL(p) ASSERT((p) == nullptr && "must be null");
 #define CC_ASSERT_NOT_NULL(p) ASSERT((p) != nullptr && "must not be null");
 #else
-#define CC_ASSERT_IS_NULL(p) CC_UNUSED((p) == nullptr);
-#define CC_ASSERT_NOT_NULL(p) CC_UNUSED((p) != nullptr);
+#define CC_ASSERT_IS_NULL(p) CC_UNUSED((p) == nullptr && "");
+#define CC_ASSERT_NOT_NULL(p) CC_UNUSED((p) != nullptr && "");
+#endif
+
+#ifdef CC_ENABLE_CONTRACT_CHECKING
+#define CC_ASSERT_CONTRACT(condition) ASSERT(condition && "contract violation")
+#else
+#define CC_ASSERT_CONTRACT(condition) CC_UNUSED(condition && "")
 #endif
 
 namespace cc::detail

@@ -40,6 +40,7 @@ Others:
 * traits types and values are not suffixed with `_t` or `_v`
 * no `volatile` support
 * no `unique_ptr<T[]>`
+* some interfaces are stricter to prevent easy mistakes
 
 ## New Features
 
@@ -47,5 +48,15 @@ Others:
 * `flat_` containers
 * `inline_` types (no heap allocs)
 * customizable low-impact `assert`
-* optional bound-checked containers
-* optional null checks for smart pointer
+* internal assertions (optional)
+    * bound-checked containers
+    * null checks for smart pointer
+    * contract checks
+
+## TODO
+
+* big list of comparison between `std` and `cc`
+    * name of feature/class (e.g. `pair`)
+    * header name of `std`/`cc`
+    * parse time `std`/`cc`
+    * preprocessed, significant LOC of `std`/`cc`

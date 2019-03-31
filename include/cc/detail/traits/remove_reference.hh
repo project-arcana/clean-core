@@ -2,6 +2,8 @@
 
 namespace cc
 {
+namespace detail
+{
 template <class T>
 struct remove_reference_t
 {
@@ -17,7 +19,8 @@ struct remove_reference_t<T&&>
 {
     using type = T;
 };
+} // namespace detail
 
 template <class T>
-using remove_reference = typename remove_reference_t<T>::type;
+using remove_reference = typename detail::remove_reference_t<T>::type;
 } // namespace cc
