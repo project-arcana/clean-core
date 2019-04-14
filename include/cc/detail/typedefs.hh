@@ -17,4 +17,6 @@ using float64 = double;
 
 using hash_t = uint64;
 using size_t = int64;
+
+using nullptr_t = decltype(nullptr);
 } // namespace cc

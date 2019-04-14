@@ -24,21 +24,21 @@
     } while (0) // force ;
 
 #elif defined(CC_DEBUG)
-#define ASSERT(condition)                                                                                      \
-    do                                                                                                         \
-    {                                                                                                          \
-        static constexpr ::cc::detail::assertion_info info = {#condition, CC_PRETTY_FUNC, __FILE__, __LINE__}; \
-        if (!(condition))                                                                                      \
-            ::cc::detail::assertion_failed(info);                                                              \
+#define ASSERT(condition)                                                                                                                           \
+    do                                                                                                                                              \
+    {                                                                                                                                               \
+        static constexpr ::cc::detail::assertion_info CC_MACRO_JOIN(_cc_assert_info_, __LINE__) = {#condition, CC_PRETTY_FUNC, __FILE__, __LINE__}; \
+        if (!(condition))                                                                                                                           \
+            ::cc::detail::assertion_failed(CC_MACRO_JOIN(_cc_assert_info_, __LINE__));                                                              \
     } while (0) // force ;
 
 #else
-#define ASSERT(condition)                                                                                      \
-    do                                                                                                         \
-    {                                                                                                          \
-        static constexpr ::cc::detail::assertion_info info = {#condition, CC_PRETTY_FUNC, __FILE__, __LINE__}; \
-        if (CC_UNLIKELY(!(condition)))                                                                         \
-            ::cc::detail::assertion_failed(info);                                                              \
+#define ASSERT(condition)                                                                                                                           \
+    do                                                                                                                                              \
+    {                                                                                                                                               \
+        static constexpr ::cc::detail::assertion_info CC_MACRO_JOIN(_cc_assert_info_, __LINE__) = {#condition, CC_PRETTY_FUNC, __FILE__, __LINE__}; \
+        if (CC_UNLIKELY(!(condition)))                                                                                                              \
+            ::cc::detail::assertion_failed(CC_MACRO_JOIN(_cc_assert_info_, __LINE__));                                                              \
     } while (0) // force ;
 #endif
 
