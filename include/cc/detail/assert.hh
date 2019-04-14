@@ -20,7 +20,7 @@
 #define ASSERT(condition) CC_UNUSED(condition)
 #else
 #define ASSERT(condition) \
-    (CC_LIKELY((condition)) ? void(0) : ::cc::detail::assertion_failed({#condition, CC_PRETTY_FUNC, __FILE__, __LINE__})) // force ;
+    (CC_UNLIKELY(!(condition)) ? ::cc::detail::assertion_failed({#condition, CC_PRETTY_FUNC, __FILE__, __LINE__}) : void(0)) // force ;
 #endif
 
 
