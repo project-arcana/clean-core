@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cc/assert>
-#include <cc/detail/error.hh>
 #include <cc/fwd/hash.hh>
 #include <cc/fwd/less.hh>
 #include <cc/fwd/unique_ptr.hh>
@@ -28,16 +27,16 @@ struct unique_ptr
 
     unique_ptr(unique_ptr&& rhs) noexcept
     {
-        ptr = rhs.ptr;
-        rhs.ptr = nullptr;
+        _ptr = rhs._ptr;
+        rhs._ptr = nullptr;
     }
     unique_ptr& operator=(unique_ptr&& rhs) noexcept
     {
         if (this != &rhs)
         {
-            delete ptr;
-            ptr = rhs.ptr;
-            rhs.ptr = nullptr;
+            delete _ptr;
+            _ptr = rhs._ptr;
+            rhs._ptr = nullptr;
         }
         return *this;
     }
@@ -45,49 +44,49 @@ struct unique_ptr
     ~unique_ptr()
     {
         static_assert(sizeof(T) > 0, "cannot delete incomplete class");
-        delete ptr;
+        delete _ptr;
     }
 
     void reset(T* p = nullptr)
     {
-        CC_ASSERT_CONTRACT(p == nullptr || p != ptr); // no self-reset
-        delete ptr;
-        ptr = p;
+        CC_ASSERT_CONTRACT(p == nullptr || p != _ptr); // no self-reset
+        delete _ptr;
+        _ptr = p;
     }
 
-    [[nodiscard]] T* get() const { return ptr; }
+    [[nodiscard]] T* get() const { return _ptr; }
 
-    [[nodiscard]] T* release()
+    T* release()
     {
-        auto p = ptr;
-        ptr = nullptr;
+        auto p = _ptr;
+        _ptr = nullptr;
         return p;
     }
 
     [[nodiscard]] T* operator->() const
     {
-        CC_ASSERT_NOT_NULL(ptr);
-        return ptr;
+        CC_ASSERT_NOT_NULL(_ptr);
+        return _ptr;
     }
     [[nodiscard]] T& operator*() const
     {
-        CC_ASSERT_NOT_NULL(ptr);
-        return *ptr;
+        CC_ASSERT_NOT_NULL(_ptr);
+        return *_ptr;
     }
 
-    [[nodiscard]] bool operator==(unique_ptr const& rhs) const { return ptr == rhs.ptr; }
-    [[nodiscard]] bool operator!=(unique_ptr const& rhs) const { return ptr != rhs.ptr; }
-    [[nodiscard]] bool operator==(T const* rhs) const { return ptr == rhs; }
-    [[nodiscard]] bool operator!=(T const* rhs) const { return ptr != rhs; }
+    [[nodiscard]] bool operator==(unique_ptr const& rhs) const { return _ptr == rhs._ptr; }
+    [[nodiscard]] bool operator!=(unique_ptr const& rhs) const { return _ptr != rhs._ptr; }
+    [[nodiscard]] bool operator==(T const* rhs) const { return _ptr == rhs; }
+    [[nodiscard]] bool operator!=(T const* rhs) const { return _ptr != rhs; }
 
 private:
-    T* ptr = nullptr;
+    T* _ptr = nullptr;
 };
 
 template <class T>
 struct unique_ptr<T[]>
 {
-    static_assert(detail::error<T>::value, "unique_ptr does not support arrays, use a vector instead");
+    static_assert(sizeof(T) >= 0, "unique_ptr does not support arrays, use a vector instead");
 };
 
 template <class T>

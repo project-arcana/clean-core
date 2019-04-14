@@ -58,8 +58,4 @@
 #define CC_DETAIL_MACRO_JOIN(arg1, arg2) arg1##arg2
 #define CC_MACRO_JOIN(arg1, arg2) CC_DETAIL_MACRO_JOIN(arg1, arg2)
 
-#define CC_UNUSED(expr)             \
-    do                              \
-    {                               \
-        void(sizeof(bool((expr)))); \
-    } while (false) // force ;
+#define CC_UNUSED(expr) void(sizeof(bool((expr)))) // force ;
