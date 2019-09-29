@@ -32,7 +32,8 @@ IndentCaseLabels: false
 
 
 # Spaces
-DerivePointerAlignment: true
+DerivePointerAlignment: false
+PointerAlignment: Left
 DerivePointerBinding: true
 MaxEmptyLinesToKeep: 2
 SpaceAfterControlStatementKeyword: true
@@ -50,5 +51,6 @@ AccessModifierOffset: -4
 
 
 # Comments
+FixNamespaceComments: false
 AlignTrailingComments: true
 CommentPragmas: '!Api.*'
