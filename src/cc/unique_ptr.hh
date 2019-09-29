@@ -1,11 +1,11 @@
 #pragma once
 
-#include <cc/assert>
-#include <cc/fwd/hash.hh>
-#include <cc/fwd/less.hh>
-#include <cc/fwd/unique_ptr.hh>
-#include <cc/move>
-#include <cc/typedefs>
+#include <cc/always_false.hh>
+#include <cc/assert.hh>
+#include <cc/fwd.hh>
+#include <cc/typedefs.hh>
+
+#include <utility>
 
 namespace cc
 {
@@ -86,7 +86,7 @@ private:
 template <class T>
 struct unique_ptr<T[]>
 {
-    static_assert(sizeof(T) >= 0, "unique_ptr does not support arrays, use a vector instead");
+    static_assert(always_false<T>, "unique_ptr does not support arrays, use cc::vector or cc::array instead");
 };
 
 template <class T>
@@ -104,19 +104,19 @@ template <typename T, typename... Args>
 [[nodiscard]] unique_ptr<T> make_unique(Args&&... args)
 {
     unique_ptr<T> p;
-    p.reset(new T(cc::forward<Args>(args)...));
+    p.reset(new T(std::forward<Args>(args)...));
     return p;
 }
 
 template <class T>
 struct hash<unique_ptr<T>>
 {
-    [[nodiscard]] hash_t operator()(unique_ptr<T> const& v) const { return hash_t(v.get()); }
+    [[nodiscard]] hash_t operator()(unique_ptr<T> const& v) const noexcept { return hash_t(v.get()); }
 };
 
 template <class T>
 struct less<unique_ptr<T>>
 {
-    [[nodiscard]] bool operator()(unique_ptr<T> const& a, unique_ptr<T> const& b) const { return a.get() < b.get(); }
+    [[nodiscard]] bool operator()(unique_ptr<T> const& a, unique_ptr<T> const& b) const noexcept { return a.get() < b.get(); }
 };
-} // namespace cc
+}

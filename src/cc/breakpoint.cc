@@ -1,4 +1,4 @@
-#include <cc/breakpoint>
+#include <cc/breakpoint.hh>
 
 #ifdef CC_COMPILER_MSVC
 #include <intrin.h>

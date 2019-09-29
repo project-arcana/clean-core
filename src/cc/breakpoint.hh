@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cc/macros>
+#include <cc/macros.hh>
 
 namespace cc
 {

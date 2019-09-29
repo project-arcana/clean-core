@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cc/macros>
+#include <cc/macros.hh>
 
 // least overhead assertion macros
 // see https://godbolt.org/z/BvF_yn
@@ -55,7 +55,7 @@ struct assertion_info
 };
 
 CC_COLD_FUNC CC_DONT_INLINE void assertion_failed(assertion_info const& info);
-} // namespace cc::detail
+}
 
 namespace cc
 {
@@ -64,4 +64,4 @@ namespace cc
 /// this is a thread_local handler
 /// the handler must be replaced before it is deleted (non-owning view)
 void set_assertion_handler(void (*handler)(detail::assertion_info const& info));
-} // namespace cc
+}

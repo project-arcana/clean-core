@@ -19,6 +19,14 @@ clean-core (`cc`) is a clean and lean reimagining of the C++ standard library.
 * a C++17 compiler
 * a few `std` features (that are hard to otherwise implement)
 
+## Allowed `std` includes
+
+* `<cstring>` (1ms, for memcpy)
+* `<cstddef>` (1ms, for some types)
+* `<type_traits>` (5-8ms, many not implementable ourselves)
+* `<utility>` (10-15ms, swap, move, forward, declval)
+* `<atomic>` (20ms, hard to implement ourselves)
+
 ## Notable Changes
 
 Changes that were rarely used features that increased implementation cost immensely:

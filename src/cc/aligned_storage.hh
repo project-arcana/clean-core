@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cc/typedefs>
+#include <cc/typedefs.hh>
 
 namespace cc
 {
@@ -9,4 +9,4 @@ struct aligned_storage
 {
     alignas(Align) byte data[Length];
 };
-} // namespace cc
+}

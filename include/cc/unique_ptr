@@ -1,3 +1,0 @@
-#pragma once
-
-#include <cc/detail/unique_ptr.hh>

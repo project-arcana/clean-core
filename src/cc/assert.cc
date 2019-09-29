@@ -1,4 +1,4 @@
-#include <cc/assert>
+#include <cc/assert.hh>
 
 #include <cstdio>
 #include <cstdlib>

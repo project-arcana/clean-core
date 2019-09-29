@@ -14,13 +14,11 @@ option(CC_ENABLE_CONTRACT_CHECKING "if true, enables contract checking (e.g. pre
 # define library
 
 file(GLOB_RECURSE SOURCES "src/*.cc" "src/*.hh")
-file(GLOB_RECURSE HEADERS "include/cc/*")
 
 source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/src" FILES ${SOURCES})
-source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/include" FILES ${HEADERS})
 
-add_library(clean-core STATIC ${SOURCES} ${HEADERS})
-target_include_directories(clean-core PUBLIC include/)
+add_library(clean-core STATIC ${SOURCES})
+target_include_directories(clean-core PUBLIC src/)
 
 # =========================================
 # set up compile flags
@@ -37,6 +35,10 @@ else()
     target_compile_options(clean-core PRIVATE -Wall -fPIC)
     target_link_libraries(clean-core PUBLIC -fuse-ld=gold)
 endif()
+
+target_compile_definitions(clean-core PUBLIC $<$<CONFIG:DEBUG>:CC_DEBUG>)
+target_compile_definitions(clean-core PUBLIC $<$<CONFIG:RELEASE>:CC_RELEASE>)
+target_compile_definitions(clean-core PUBLIC $<$<CONFIG:RELWITHDEBINFO>:CC_RELWITHDEBINFO>)
 
 if (CC_ENABLE_ASSERTIONS)
     target_compile_definitions(clean-core PUBLIC $<$<CONFIG:DEBUG>:CC_ENABLE_ASSERTIONS>)

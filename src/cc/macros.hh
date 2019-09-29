@@ -6,10 +6,6 @@
 // =========
 // configurations
 
-#ifndef NDEBUG
-#define CC_DEBUG
-#endif
-
 #if defined(_MSC_VER)
 #define CC_COMPILER_MSVC
 #elif defined(__clang__)
@@ -59,3 +55,5 @@
 #define CC_MACRO_JOIN(arg1, arg2) CC_DETAIL_MACRO_JOIN(arg1, arg2)
 
 #define CC_UNUSED(expr) void(sizeof(bool((expr)))) // force ;
+
+#define CC_FORCE_SEMICOLON static_assert(true) // force ;
