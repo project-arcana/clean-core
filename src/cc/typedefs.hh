@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstddef>
+
 namespace cc
 {
 using int8 = signed char;
@@ -15,10 +17,10 @@ using uint64 = unsigned long long;
 using float32 = float;
 using float64 = double;
 
-using byte = uint8;
+using byte = std::byte;
 
 using hash_t = uint64;
 using size_t = int64;
 
 using nullptr_t = decltype(nullptr);
-} // namespace cc
+}

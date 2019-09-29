@@ -1,7 +1,6 @@
 #pragma once
 
-#include <cc/detail/traits/has_operator.hh>
-#include <cc/fwd/less.hh>
+#include <cc/detail/has_operator.hh>
 
 namespace cc
 {
@@ -13,4 +12,4 @@ struct less
     [[nodiscard]] bool operator()(T const& a, T const& b) const noexcept { return a < b; }
 };
 
-} // namespace cc
+}

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cc/fwd/pair.hh>
+#include <cc/fwd.hh>
 
 namespace cc
 {
@@ -10,4 +10,4 @@ struct pair
     A first;
     B second;
 };
-} // namespace cc
+}
