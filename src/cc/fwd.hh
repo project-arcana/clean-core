@@ -1,10 +1,20 @@
 #pragma once
 
+#include <cc/typedefs.hh>
+
 namespace cc
 {
-template <class T>
+// constants
+enum
+{
+    dynamic_size = size_t(-1)
+};
+
+// utility
+template <class T, class = void> // SFINAE-friendly
 struct hash;
-template <class T>
+
+template <class T = void, class = void> // SFINAE-friendly
 struct less;
 
 struct nullopt_t;
@@ -14,12 +24,17 @@ struct optional;
 template <class A, class B>
 struct pair;
 
+// containers and ranges
 template <class T>
 struct span;
 
 template <class T>
-struct unique_ptr;
-
-template <class T>
 struct vector;
+
+template <class T, size_t N = dynamic_size>
+struct array;
+
+// smart pointer
+template <class T>
+struct unique_ptr;
 }

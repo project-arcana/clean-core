@@ -20,7 +20,7 @@ using float64 = double;
 using byte = std::byte;
 
 using hash_t = uint64;
-using size_t = int64;
+using size_t = std::size_t;
 
 using nullptr_t = decltype(nullptr);
 }
