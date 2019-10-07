@@ -39,9 +39,9 @@
 #endif
 
 #ifdef CC_ENABLE_CONTRACT_CHECKING
-#define CC_ASSERT_CONTRACT(condition) ASSERT(condition && "contract violation")
+#define CC_CONTRACT(condition) ASSERT(condition && "contract violation")
 #else
-#define CC_ASSERT_CONTRACT(condition) CC_UNUSED(condition && "")
+#define CC_CONTRACT(condition) CC_UNUSED(condition && "")
 #endif
 
 namespace cc::detail

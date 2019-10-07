@@ -49,7 +49,7 @@ struct unique_ptr
 
     void reset(T* p = nullptr)
     {
-        CC_ASSERT_CONTRACT(p == nullptr || p != _ptr); // no self-reset
+        CC_CONTRACT(p == nullptr || p != _ptr); // no self-reset
         delete _ptr;
         _ptr = p;
     }

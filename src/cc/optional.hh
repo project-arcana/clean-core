@@ -23,22 +23,22 @@ struct optional
 
     [[nodiscard]] constexpr T& value() &
     {
-        CC_ASSERT_CONTRACT(!_has_value);
+        CC_CONTRACT(!_has_value);
         return _data.v;
     }
     [[nodiscard]] constexpr T const& value() const&
     {
-        CC_ASSERT_CONTRACT(!_has_value);
+        CC_CONTRACT(!_has_value);
         return _data.v;
     }
     [[nodiscard]] constexpr T&& value() &&
     {
-        CC_ASSERT_CONTRACT(!_has_value);
+        CC_CONTRACT(!_has_value);
         return static_cast<T&&>(_data.v);
     }
     [[nodiscard]] constexpr T const&& value() const&&
     {
-        CC_ASSERT_CONTRACT(!_has_value);
+        CC_CONTRACT(!_has_value);
         return static_cast<T const&&>(_data.v);
     }
 
@@ -57,6 +57,31 @@ struct optional
     {
         if (_has_value)
             _data.v.~T();
+    }
+
+    template <class U>
+    constexpr bool operator==(U const& rhs) const
+    {
+        return _has_value ? _data.v == rhs : false;
+    }
+    template <class U>
+    constexpr bool operator!=(U const& rhs) const
+    {
+        return _has_value ? _data.v != rhs : true;
+    }
+    template <class U>
+    constexpr bool operator==(optional<U> const& rhs) const
+    {
+        if (_has_value && rhs._has_value)
+            return _data.v == rhs._data.v;
+        return _has_value == rhs._has_value;
+    }
+    template <class U>
+    constexpr bool operator!=(optional<U> const& rhs) const
+    {
+        if (_has_value && rhs._has_value)
+            return _data.v != rhs._data.v;
+        return _has_value != rhs._has_value;
     }
 
 private:
@@ -79,5 +104,21 @@ template <class T>
 struct optional<T&&>
 {
     static_assert(always_false<T>, "cannot form optional reference");
+};
+
+// ========== hash and less ==========
+template <class T>
+struct less<optional<T>>
+{
+    [[nodiscard]] bool operator()(optional<T> const& a, optional<T> const& b) const noexcept
+    {
+        if (!a.has_value() && !b.has_value())
+            return false;
+        if (!a.has_value())
+            return true;
+        if (!b.has_value())
+            return false;
+        return less<T>{}();
+    }
 };
 }

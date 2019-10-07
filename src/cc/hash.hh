@@ -6,7 +6,7 @@
 
 namespace cc
 {
-template <class T>
+template <class T, class>
 struct hash
 {
     static_assert(always_false<T>, "no hash<> specialization found");
