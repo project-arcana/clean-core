@@ -34,6 +34,28 @@ public:
         return _data[idx];
     }
 
+public:
+    template <size_t N>
+    constexpr bool operator==(char const (&rhs)[N]) const
+    {
+        if (N - 1 != _size)
+            return false;
+        for (size_t i = 0; i != _size; ++i)
+            if (_data[i] != rhs[i])
+                return false;
+        return true;
+    }
+    template <size_t N>
+    constexpr bool operator!=(char const (&rhs)[N]) const
+    {
+        if (N - 1 != _size)
+            return true;
+        for (size_t i = 0; i != _size; ++i)
+            if (_data[i] != rhs[i])
+                return true;
+        return false;
+    }
+
 private:
     char const* _data = nullptr;
     size_t _size = 0;
