@@ -101,6 +101,8 @@ struct array<T, dynamic_size>
     T* end() { return _data + _size; }
     T const* begin() const { return _data; }
     T const* end() const { return _data + _size; }
+    T* data() { return _data; }
+    T const* data() const { return _data; }
     size_t size() const { return _size; }
     bool empty() const { return _size == 0; }
 

@@ -34,6 +34,9 @@ struct vector;
 template <class T, size_t N = dynamic_size>
 struct array;
 
+// strings
+struct string_view;
+
 // smart pointer
 template <class T>
 struct unique_ptr;
