@@ -33,8 +33,8 @@
 #endif
 
 #ifdef CC_ENABLE_NULL_CHECKING
-#define CC_ASSERT_IS_NULL(p) ASSERT((p) == nullptr && "must be null");
-#define CC_ASSERT_NOT_NULL(p) ASSERT((p) != nullptr && "must not be null");
+#define CC_ASSERT_IS_NULL(p) ASSERT((p) == nullptr && "must be null")
+#define CC_ASSERT_NOT_NULL(p) ASSERT((p) != nullptr && "must not be null")
 #else
 #define CC_ASSERT_IS_NULL(p) CC_UNUSED((p) == nullptr && "");
 #define CC_ASSERT_NOT_NULL(p) CC_UNUSED((p) != nullptr && "");
