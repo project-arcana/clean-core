@@ -59,7 +59,7 @@ endif()
 
 if (CC_STRICT)
     if (MSVC)
-        # TODO
+        target_compile_definitions(clean-core PRIVATE /WX /W4)
     else()
         target_compile_options(clean-core PRIVATE -Wextra -Wpedantic -Werror)
     endif()
