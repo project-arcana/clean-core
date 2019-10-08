@@ -1,8 +1,8 @@
 #pragma once
 
-#include <cc/always_false.hh>
-#include <cc/assert.hh>
-#include <cc/fwd.hh>
+#include <clean-core/always_false.hh>
+#include <clean-core/assert.hh>
+#include <clean-core/fwd.hh>
 
 #include <utility>
 

@@ -2,7 +2,7 @@
 
 #include <utility>
 
-#include <cc/assert.hh>
+#include <clean-core/assert.hh>
 
 namespace cc
 {

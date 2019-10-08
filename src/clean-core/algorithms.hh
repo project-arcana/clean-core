@@ -1,7 +1,7 @@
 #pragma once
 
-#include <cc/assert.hh>
-#include <cc/cursor.hh>
+#include <clean-core/assert.hh>
+#include <clean-core/cursor.hh>
 
 namespace cc
 {

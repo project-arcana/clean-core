@@ -1,9 +1,9 @@
 #pragma once
 
-#include <cc/always_false.hh>
-#include <cc/assert.hh>
-#include <cc/fwd.hh>
-#include <cc/typedefs.hh>
+#include <clean-core/always_false.hh>
+#include <clean-core/assert.hh>
+#include <clean-core/fwd.hh>
+#include <clean-core/typedefs.hh>
 
 #include <utility>
 
