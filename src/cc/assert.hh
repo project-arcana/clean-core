@@ -16,13 +16,15 @@
 // CC_ENABLE_ASSERTIONS enables assertions
 // CC_ENABLE_BOUND_CHECKING enables bound checking
 
+#define RUNTIME_ASSERT(condition) \
+    (CC_UNLIKELY(!(condition)) ? ::cc::detail::assertion_failed({#condition, CC_PRETTY_FUNC, __FILE__, __LINE__}) : void(0)) // force ;
+
 #if !defined(CC_ENABLE_ASSERTIONS)
 #define ASSERT(condition) CC_UNUSED(condition)
 #else
 #define ASSERT(condition) \
     (CC_UNLIKELY(!(condition)) ? ::cc::detail::assertion_failed({#condition, CC_PRETTY_FUNC, __FILE__, __LINE__}) : void(0)) // force ;
 #endif
-
 
 #ifdef CC_ENABLE_BOUND_CHECKING
 #define CC_ASSERT_IN_BOUNDS(var, lb, ub) ASSERT((lb) <= (var) && (var) < (ub) && "bound check")
