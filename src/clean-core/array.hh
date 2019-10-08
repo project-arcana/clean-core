@@ -1,10 +1,10 @@
 #pragma once
 
-#include <cc/algorithms.hh>
-#include <cc/assert.hh>
-#include <cc/fwd.hh>
-#include <cc/span.hh>
-#include <cc/typedefs.hh>
+#include <clean-core/algorithms.hh>
+#include <clean-core/assert.hh>
+#include <clean-core/fwd.hh>
+#include <clean-core/span.hh>
+#include <clean-core/typedefs.hh>
 
 #include <initializer_list>
 
