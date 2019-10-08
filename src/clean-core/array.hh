@@ -1,10 +1,10 @@
 #pragma once
 
-#include <cc/algorithms.hh>
-#include <cc/assert.hh>
-#include <cc/fwd.hh>
-#include <cc/span.hh>
-#include <cc/typedefs.hh>
+#include <clean-core/algorithms.hh>
+#include <clean-core/assert.hh>
+#include <clean-core/fwd.hh>
+#include <clean-core/span.hh>
+#include <clean-core/typedefs.hh>
 
 #include <initializer_list>
 
@@ -101,6 +101,8 @@ struct array<T, dynamic_size>
     T* end() { return _data + _size; }
     T const* begin() const { return _data; }
     T const* end() const { return _data + _size; }
+    T* data() { return _data; }
+    T const* data() const { return _data; }
     size_t size() const { return _size; }
     bool empty() const { return _size == 0; }
 

@@ -1,8 +1,8 @@
 #pragma once
 
-#include <cc/detail/has_operator.hh>
+#include <clean-core/detail/has_operator.hh>
 
-#include <cc/fwd.hh>
+#include <clean-core/fwd.hh>
 
 namespace cc
 {

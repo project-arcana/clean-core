@@ -1,8 +1,8 @@
 #pragma once
 
-#include <cc/always_false.hh>
-#include <cc/fwd.hh>
-#include <cc/typedefs.hh>
+#include <clean-core/always_false.hh>
+#include <clean-core/fwd.hh>
+#include <clean-core/typedefs.hh>
 
 namespace cc
 {
