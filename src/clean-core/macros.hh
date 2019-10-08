@@ -12,8 +12,36 @@
 #define CC_COMPILER_CLANG
 #elif defined(__GNUC__)
 #define CC_COMPILER_GCC
+#elif defined(__MINGW32__) || defined(__MINGW64__)
+#define CC_COMPILER_MINGW
 #else
 #error "Unknown compiler"
+#endif
+
+#if defined(CC_COMPILER_CLANG) || defined(CC_COMPILER_GCC) || defined(CC_COMPILER_MINGW)
+#define CC_COMPILER_POSIX
+#endif
+
+
+// =========
+// operating system
+
+// CC_OS_WINDOWS, CC_OS_LINUX, CC_OS_OSX, or CC_OS_IOS
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32)
+#define CC_OS_WINDOWS
+#elif defined(__APPLE__)
+#include "TargetConditionals.h"
+#if defined(TARGET_OS_MAC)
+#define CC_OS_OSX
+#elif defined(TARGET_OS_IPHONE)
+#define CC_OS_IOS
+#else
+#error "Unknown Apple platform"
+#endif
+#elif defined(__linux__)
+#define CC_OS_LINUX
+#else
+#error "Unknown platform"
 #endif
 
 
@@ -30,9 +58,9 @@
 #define CC_LIKELY(x) x
 #define CC_UNLIKELY(x) x
 #define CC_COLD_FUNC
+#define CC_HOT_FUNC
 
-
-#elif defined(CC_COMPILER_CLANG) || defined(CC_COMPILER_GCC)
+#elif defined(CC_COMPILER_POSIX)
 
 #define CC_PRETTY_FUNC __PRETTY_FUNCTION__
 
@@ -42,6 +70,7 @@
 #define CC_LIKELY(x) __builtin_expect((x), 1)
 #define CC_UNLIKELY(x) __builtin_expect((x), 0)
 #define CC_COLD_FUNC __attribute__((cold))
+#define CC_HOT_FUNC __attribute__((hot))
 
 #else
 #error "Unknown compiler"
