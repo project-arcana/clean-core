@@ -16,32 +16,32 @@
 // CC_ENABLE_ASSERTIONS enables assertions
 // CC_ENABLE_BOUND_CHECKING enables bound checking
 
-#define RUNTIME_ASSERT(condition) \
+#define CC_RUNTIME_ASSERT(condition) \
     (CC_UNLIKELY(!(condition)) ? ::cc::detail::assertion_failed({#condition, CC_PRETTY_FUNC, __FILE__, __LINE__}) : void(0)) // force ;
 
 #if !defined(CC_ENABLE_ASSERTIONS)
 #define ASSERT(condition) CC_UNUSED(condition)
 #else
-#define ASSERT(condition) \
+#define CC_ASSERT(condition) \
     (CC_UNLIKELY(!(condition)) ? ::cc::detail::assertion_failed({#condition, CC_PRETTY_FUNC, __FILE__, __LINE__}) : void(0)) // force ;
 #endif
 
 #ifdef CC_ENABLE_BOUND_CHECKING
-#define CC_ASSERT_IN_BOUNDS(var, lb, ub) ASSERT((lb) <= (var) && (var) < (ub) && "bound check")
+#define CC_ASSERT_IN_BOUNDS(var, lb, ub) CC_ASSERT((lb) <= (var) && (var) < (ub) && "bound check")
 #else
 #define CC_ASSERT_IN_BOUNDS(var, lb, ub) CC_UNUSED((lb) <= (var) && (var) < (ub))
 #endif
 
 #ifdef CC_ENABLE_NULL_CHECKING
-#define CC_ASSERT_IS_NULL(p) ASSERT((p) == nullptr && "must be null")
-#define CC_ASSERT_NOT_NULL(p) ASSERT((p) != nullptr && "must not be null")
+#define CC_ASSERT_IS_NULL(p) CC_ASSERT((p) == nullptr && "must be null")
+#define CC_ASSERT_NOT_NULL(p) CC_ASSERT((p) != nullptr && "must not be null")
 #else
-#define CC_ASSERT_IS_NULL(p) CC_UNUSED((p) == nullptr && "");
-#define CC_ASSERT_NOT_NULL(p) CC_UNUSED((p) != nullptr && "");
+#define CC_ASSERT_IS_NULL(p) CC_UNUSED((p) == nullptr && "")
+#define CC_ASSERT_NOT_NULL(p) CC_UNUSED((p) != nullptr && "")
 #endif
 
 #ifdef CC_ENABLE_CONTRACT_CHECKING
-#define CC_CONTRACT(condition) ASSERT(condition && "contract violation")
+#define CC_CONTRACT(condition) CC_ASSERT(condition && "contract violation")
 #else
 #define CC_CONTRACT(condition) CC_UNUSED(condition && "")
 #endif
