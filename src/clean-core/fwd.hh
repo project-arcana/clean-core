@@ -5,7 +5,7 @@
 namespace cc
 {
 // constants
-enum
+enum : size_t
 {
     dynamic_size = size_t(-1)
 };
