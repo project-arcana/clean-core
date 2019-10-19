@@ -12,7 +12,10 @@ namespace cc
  * allocates and creates a new T with the given arguments
  * uses an optimized pool allocator
  * is thread-safe and faster than new/delete
- * NOTE: must use cc::free() to free memory
+ *
+ * LIMITATIONS:
+ *   * every alloc<T> must be met with a free<T>
+ *     (especially alloc<T> with free<BaseOfT> does NOT work!)
  */
 template <class T, class... Args>
 T* alloc(Args&&... args);
@@ -21,6 +24,8 @@ T* alloc(Args&&... args);
 template <class T>
 void free(T* p);
 
+/// cannot free void pointers
+void free(void*) = delete;
 
 // ============== Implementation ==============
 
