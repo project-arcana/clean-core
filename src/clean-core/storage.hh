@@ -1,7 +1,5 @@
 #pragma once
 
-#include <clean-core/typedefs.hh>
-
 namespace cc
 {
 /**
