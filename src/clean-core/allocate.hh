@@ -13,6 +13,8 @@ namespace cc
  * uses an optimized pool allocator
  * is thread-safe and faster than new/delete
  *
+ * Good codegen: https://godbolt.org/z/GMfwoF
+ *
  * LIMITATIONS:
  *   * every alloc<T> must be met with a free<T>
  *     (especially alloc<T> with free<BaseOfT> does NOT work!)
