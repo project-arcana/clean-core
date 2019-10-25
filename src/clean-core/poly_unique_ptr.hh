@@ -5,6 +5,7 @@
 #include <clean-core/fwd.hh>
 #include <clean-core/typedefs.hh>
 
+#include <type_traits>
 #include <utility>
 
 namespace cc
@@ -13,6 +14,7 @@ namespace cc
  * - single-owner heap-allocated object
  * - move-only type
  * - supports polymorphic behavior
+ * - create via make_poly_unique
  *
  * changes to std::unique_ptr<T>:
  * - no custom deleter
@@ -36,12 +38,25 @@ struct poly_unique_ptr
     }
     poly_unique_ptr& operator=(poly_unique_ptr&& rhs) noexcept
     {
-        if (this != &rhs)
-        {
-            delete _ptr;
-            _ptr = rhs._ptr;
-            rhs._ptr = nullptr;
-        }
+        // self-move is reset
+        delete _ptr;
+        _ptr = rhs._ptr;
+        rhs._ptr = nullptr;
+        return *this;
+    }
+
+    template <class U, class = std::enable_if_t<std::is_base_of_v<T, U>>>
+    poly_unique_ptr(poly_unique_ptr<U>&& rhs) noexcept
+    {
+        _ptr = rhs._ptr;
+        rhs._ptr = nullptr;
+    }
+    template <class U, class = std::enable_if_t<std::is_base_of_v<T, U>>>
+    poly_unique_ptr& operator=(poly_unique_ptr<U>&& rhs) noexcept
+    {
+        // self-move is reset
+        delete _ptr;
+        _ptr = rhs.release();
         return *this;
     }
 
@@ -60,7 +75,7 @@ struct poly_unique_ptr
 
     [[nodiscard]] T* get() const { return _ptr; }
 
-    T* release()
+    [[nodiscard]] T* release()
     {
         auto p = _ptr;
         _ptr = nullptr;
@@ -105,7 +120,7 @@ template <class T>
 }
 
 template <typename T, typename... Args>
-[[nodiscard]] poly_unique_ptr<T> make_unique(Args&&... args)
+[[nodiscard]] poly_unique_ptr<T> make_poly_unique(Args&&... args)
 {
     poly_unique_ptr<T> p;
     p.reset(new T(std::forward<Args>(args)...));

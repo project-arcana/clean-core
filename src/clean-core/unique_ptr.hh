@@ -40,12 +40,10 @@ struct unique_ptr
     }
     unique_ptr& operator=(unique_ptr&& rhs) noexcept
     {
-        if (this != &rhs)
-        {
-            cc::free(_ptr);
-            _ptr = rhs._ptr;
-            rhs._ptr = nullptr;
-        }
+        // self-move is reset
+        cc::free(_ptr);
+        _ptr = rhs._ptr;
+        rhs._ptr = nullptr;
         return *this;
     }
 
