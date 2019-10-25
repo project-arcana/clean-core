@@ -1,5 +1,6 @@
 #pragma once
 
+#include <clean-core/allocate.hh>
 #include <clean-core/always_false.hh>
 #include <clean-core/assert.hh>
 #include <clean-core/fwd.hh>
@@ -10,12 +11,19 @@
 namespace cc
 {
 /**
+ * - single-owner heap-allocated object
+ * - move-only type
+ * - always uses cc::alloc/cc::free
+ * - can only be constructed via make_unique<T>(...)
+ * - no polymorphic behavior
+ *
  * changes to std::unique_ptr<T>:
  * - no custom deleter
  * - no allocators
  * - no operator<
  * - no operator bool
  * - no T[]
+ * - no reset/release
  */
 template <class T>
 struct unique_ptr
@@ -34,7 +42,7 @@ struct unique_ptr
     {
         if (this != &rhs)
         {
-            delete _ptr;
+            cc::free(_ptr);
             _ptr = rhs._ptr;
             rhs._ptr = nullptr;
         }
@@ -44,24 +52,10 @@ struct unique_ptr
     ~unique_ptr()
     {
         static_assert(sizeof(T) > 0, "cannot delete incomplete class");
-        delete _ptr;
-    }
-
-    void reset(T* p = nullptr)
-    {
-        CC_CONTRACT(p == nullptr || p != _ptr); // no self-reset
-        delete _ptr;
-        _ptr = p;
+        cc::free(_ptr);
     }
 
     [[nodiscard]] T* get() const { return _ptr; }
-
-    T* release()
-    {
-        auto p = _ptr;
-        _ptr = nullptr;
-        return p;
-    }
 
     [[nodiscard]] T* operator->() const
     {
@@ -78,6 +72,9 @@ struct unique_ptr
     [[nodiscard]] bool operator!=(unique_ptr const& rhs) const { return _ptr != rhs._ptr; }
     [[nodiscard]] bool operator==(T const* rhs) const { return _ptr == rhs; }
     [[nodiscard]] bool operator!=(T const* rhs) const { return _ptr != rhs; }
+
+    template <typename U, typename... Args>
+    friend unique_ptr<U> make_unique(Args&&... args);
 
 private:
     T* _ptr = nullptr;
@@ -104,7 +101,7 @@ template <typename T, typename... Args>
 [[nodiscard]] unique_ptr<T> make_unique(Args&&... args)
 {
     unique_ptr<T> p;
-    p.reset(new T(std::forward<Args>(args)...));
+    p._ptr = cc::alloc<T>(std::forward<Args>(args)...);
     return p;
 }
 

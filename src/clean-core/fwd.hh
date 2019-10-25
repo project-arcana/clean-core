@@ -40,4 +40,6 @@ struct string_view;
 // smart pointer
 template <class T>
 struct unique_ptr;
+template <class T>
+struct poly_unique_ptr;
 }
