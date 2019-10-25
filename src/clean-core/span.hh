@@ -3,6 +3,8 @@
 #include <clean-core/assert.hh>
 #include <clean-core/typedefs.hh>
 
+#include <clean-core/detail/is_container.hh>
+
 namespace cc
 {
 // a non-owning view of a contiguous array of Ts
@@ -21,11 +23,10 @@ public:
     constexpr span(T (&data)[N]) : _data(data), _size(N)
     {
     }
-    // TODO: container
-    // template <class Container, class = enable_if<is_container<Container, T>>>
-    // constexpr span(Container& c) : _data(c.data()), _size(c.size())
-    // {
-    // }
+    template <class Container, std::enable_if_t<is_container<Container, T>, int> = 0>
+    constexpr span(Container& c) : _data(c.data()), _size(c.size())
+    {
+    }
 
     // container
 public:
@@ -76,7 +77,7 @@ private:
     size_t _size = 0;
 };
 
-// TODO: deduction guide for containers
-// template <class Container, class = enable_if<is_container<Container, void>>>
-// span(Container& c)->span<remove_reference<decltype(*c.data())>>;
+// deduction guide for containers
+template <class Container, std::enable_if_t<is_container<Container, void>, int> = 0>
+span(Container& c)->span<std::remove_reference<decltype(*c.data())>>;
 }
