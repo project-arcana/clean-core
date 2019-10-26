@@ -14,19 +14,19 @@ struct vector
 {
     // properties
 public:
-    size_t size() const { return _size; }
-    size_t capacity() const { return _capacity; }
-    bool empty() const { return _size == 0; }
-    T* data() { return _data; }
-    T const* data() const { return _data; }
-    T* begin() { return _data; }
-    T const* begin() const { return _data; }
-    T* end() { return _data + _size; }
-    T const* end() const { return _data + _size; }
-    T& front() { return _data[0]; }
-    T const& front() const { return _data[0]; }
-    T& back() { return _data[_size - 1]; }
-    T const& back() const { return _data[_size - 1]; }
+    constexpr size_t size() const { return _size; }
+    constexpr size_t capacity() const { return _capacity; }
+    constexpr bool empty() const { return _size == 0; }
+    constexpr T* data() { return _data; }
+    constexpr T const* data() const { return _data; }
+    constexpr T* begin() { return _data; }
+    constexpr T const* begin() const { return _data; }
+    constexpr T* end() { return _data + _size; }
+    constexpr T const* end() const { return _data + _size; }
+    constexpr T& front() { return _data[0]; }
+    constexpr T const& front() const { return _data[0]; }
+    constexpr T& back() { return _data[_size - 1]; }
+    constexpr T const& back() const { return _data[_size - 1]; }
 
     constexpr T& operator[](size_t i)
     {
@@ -43,6 +43,30 @@ public:
     // ctors
 public:
     vector() = default;
+
+    explicit vector(size_t size)
+    {
+        _size = size;
+        _data = new T[_size](); // default ctor!
+    }
+
+    [[nodiscard]] static vector defaulted(size_t size) { return vector(size); }
+
+    [[nodiscard]] static vector uninitialized(size_t size)
+    {
+        vector v;
+        v._size = size;
+        v._data = new T[size];
+        return v;
+    }
+
+    [[nodiscard]] static vector filled(size_t size, T const& value)
+    {
+        vector v;
+        v.resize(size, value);
+        return v;
+    }
+
     vector(vector const& rhs)
     {
         reserve(rhs._size);
@@ -137,26 +161,26 @@ public:
         _capacity = size;
     }
 
-    void resize(size_t size)
+    void resize(size_t new_size)
     {
-        if (size > _capacity)
-            reserve(size);
-        for (size_t i = _size; i < size; ++i)
+        if (new_size > _capacity)
+            reserve(new_size);
+        for (size_t i = _size; i < new_size; ++i)
             new (placement_new, &_data[i]) T();
-        for (size_t i = _size; i > size; --i)
+        for (size_t i = _size; i > new_size; --i)
             _data[i - 1].~T();
-        _size = size;
+        _size = new_size;
     }
 
-    void resize(size_t size, T const& default_value)
+    void resize(size_t new_size, T const& default_value)
     {
-        if (size > _capacity)
-            reserve(size);
-        for (size_t i = _size; i < size; ++i)
+        if (new_size > _capacity)
+            reserve(new_size);
+        for (size_t i = _size; i < new_size; ++i)
             new (placement_new, &_data[i]) T(default_value);
-        for (size_t i = _size; i > size; --i)
+        for (size_t i = _size; i > new_size; --i)
             _data[i - 1].~T();
-        _size = size;
+        _size = new_size;
     }
 
     void clear()
@@ -177,7 +201,7 @@ public:
         }
     }
 
-    bool operator==(vector const& rhs) const noexcept
+    constexpr bool operator==(vector const& rhs) const noexcept
     {
         if (_size != rhs._size)
             return false;
@@ -186,7 +210,8 @@ public:
                 return false;
         return true;
     }
-    bool operator!=(vector const& rhs) const noexcept
+
+    constexpr bool operator!=(vector const& rhs) const noexcept
     {
         if (_size != rhs._size)
             return true;

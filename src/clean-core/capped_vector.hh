@@ -5,6 +5,7 @@
 #include <clean-core/assert.hh>
 #include <clean-core/detail/compact_size_t.hh>
 #include <clean-core/new.hh>
+#include <clean-core/storage.hh>
 
 namespace cc
 {
@@ -15,6 +16,27 @@ struct capped_vector
     using compact_size_t = detail::compact_size_t_for<N, alignof(T)>;
 
     constexpr capped_vector() = default;
+
+    [[nodiscard]] static capped_vector defaulted(size_t size = N)
+    {
+        capped_vector cv;
+        cv.resize(size, T());
+        return cv;
+    }
+
+    [[nodiscard]] static capped_vector uninitialized(size_t size = N)
+    {
+        capped_vector cv;
+        cv._size = size;
+        return cv;
+    }
+
+    [[nodiscard]] static capped_vector filled(size_t size, T const& value)
+    {
+        capped_vector cv;
+        cv.resize(size, value);
+        return cv;
+    }
 
     ~capped_vector()
     {
@@ -83,6 +105,16 @@ struct capped_vector
         _size = compact_size_t(new_size);
     }
 
+    void resize(size_t new_size, T const& default_value)
+    {
+        CC_CONTRACT(new_size <= N);
+        for (size_t i = _size; i < new_size; ++i)
+            new (placement_new, &_u._data[i]) T(default_value);
+        for (size_t i = _size; i > new_size; --i)
+            _u._data[i - 1].~T();
+        _size = compact_size_t(new_size);
+    }
+
     constexpr T& front()
     {
         CC_CONTRACT(_size > 0);
@@ -120,7 +152,7 @@ struct capped_vector
     constexpr T const* data() const { return &_u._data[0]; }
 
     template <int M>
-    constexpr bool operator==(capped_vector<T, M> const& rhs) const
+    constexpr bool operator==(capped_vector<T, M> const& rhs) const noexcept
     {
         if (_size != rhs._size)
             return false;
@@ -133,7 +165,7 @@ struct capped_vector
     }
 
     template <int M>
-    constexpr bool operator!=(capped_vector<T, M> const& rhs) const
+    constexpr bool operator!=(capped_vector<T, M> const& rhs) const noexcept
     {
         if (_size != rhs._size)
             return true;
@@ -146,13 +178,7 @@ struct capped_vector
     }
 
 private:
-    /// uninitialized memory
-    union DataHolder {
-        DataHolder() {}
-        ~DataHolder() {}
-        T _data[N];
-    };
     compact_size_t _size = 0;
-    DataHolder _u;
+    storage_for<T[N]> _u;
 };
 }
