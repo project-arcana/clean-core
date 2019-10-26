@@ -17,14 +17,14 @@ struct capped_vector
 
     constexpr capped_vector() = default;
 
-    [[nodiscard]] static capped_vector defaulted(size_t size = N)
+    [[nodiscard]] static capped_vector defaulted(size_t size)
     {
         capped_vector cv;
         cv.resize(size, T());
         return cv;
     }
 
-    [[nodiscard]] static capped_vector uninitialized(size_t size = N)
+    [[nodiscard]] static capped_vector uninitialized(size_t size)
     {
         capped_vector cv;
         cv._size = size;
