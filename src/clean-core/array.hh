@@ -49,13 +49,13 @@ struct array<T, dynamic_size>
 {
     array() = default;
 
-    array(size_t size)
+    explicit array(size_t size)
     {
         _size = size;
         _data = new T[_size](); // default ctor!
     }
 
-    static array uninitialized(size_t size)
+    [[nodiscard]] static array uninitialized(size_t size)
     {
         array a;
         a._size = size;
@@ -63,7 +63,7 @@ struct array<T, dynamic_size>
         return a;
     }
 
-    static array filled(size_t size, T const& value)
+    [[nodiscard]] static array filled(size_t size, T const& value)
     {
         array a;
         a._size = size;
