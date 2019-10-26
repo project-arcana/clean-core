@@ -1,10 +1,11 @@
 #pragma once
 
 #include <cstddef> // std::byte
-#include <new>     // placement new
 #include <utility> // std::forward, std::move
 
+#include <clean-core/assert.hh>
 #include <clean-core/fwd.hh>
+#include <clean-core/new.hh>
 
 namespace cc
 {
@@ -27,8 +28,17 @@ public:
     T& back() { return _data[_size - 1]; }
     T const& back() const { return _data[_size - 1]; }
 
-    T& operator[](size_t pos) { return _data[pos]; }
-    T const& operator[](size_t pos) const { return _data[pos]; }
+    constexpr T& operator[](size_t i)
+    {
+        CC_CONTRACT(i < _size);
+        return _data[i];
+    }
+
+    constexpr T const& operator[](size_t i) const
+    {
+        CC_CONTRACT(i < _size);
+        return _data[i];
+    }
 
     // ctors
 public:
@@ -88,7 +98,7 @@ public:
     {
         if (_size == _capacity)
             _grow();
-        new (&_data[_size]) T(t);
+        new (placement_new, &_data[_size]) T(t);
         ++_size;
     }
 
@@ -96,7 +106,7 @@ public:
     {
         if (_size == _capacity)
             _grow();
-        new (&_data[_size]) T(std::move(t));
+        new (placement_new, &_data[_size]) T(std::move(t));
         ++_size;
     }
 
@@ -105,7 +115,7 @@ public:
     {
         if (_size == _capacity)
             _grow();
-        new (&_data[_size]) T(std::forward<Args...>(args...));
+        new (placement_new, &_data[_size]) T(std::forward<Args...>(args...));
         return _data[_size++];
     }
 
@@ -132,7 +142,7 @@ public:
         if (size > _capacity)
             reserve(size);
         for (size_t i = _size; i < size; ++i)
-            new (&_data[i]) T();
+            new (placement_new, &_data[i]) T();
         for (size_t i = _size; i > size; --i)
             _data[i - 1].~T();
         _size = size;
@@ -143,7 +153,7 @@ public:
         if (size > _capacity)
             reserve(size);
         for (size_t i = _size; i < size; ++i)
-            new (&_data[i]) T(default_value);
+            new (placement_new, &_data[i]) T(default_value);
         for (size_t i = _size; i > size; --i)
             _data[i - 1].~T();
         _size = size;
@@ -193,12 +203,12 @@ private:
     static void _move_range(T* src, size_t size, T* dest)
     {
         for (size_t i = 0; i < size; ++i)
-            new (&dest[i]) T(std::move(src[i]));
+            new (placement_new, &dest[i]) T(std::move(src[i]));
     }
     static void _copy_range(T* src, size_t size, T* dest)
     {
         for (size_t i = 0; i < size; ++i)
-            new (&dest[i]) T(src[i]);
+            new (placement_new, &dest[i]) T(src[i]);
     }
     static void _destroy_reverse(T* data, size_t size)
     {
