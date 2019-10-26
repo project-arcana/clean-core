@@ -3,7 +3,7 @@
 #include <clean-core/assert.hh>
 #include <clean-core/typedefs.hh>
 
-#include <clean-core/detail/is_container.hh>
+#include <clean-core/detail/is_contiguous_container.hh>
 
 namespace cc
 {
@@ -23,7 +23,7 @@ public:
     constexpr span(T (&data)[N]) : _data(data), _size(N)
     {
     }
-    template <class Container, std::enable_if_t<is_container<Container, T>, int> = 0>
+    template <class Container, std::enable_if_t<is_contiguous_container<Container, T>, int> = 0>
     constexpr span(Container& c) : _data(c.data()), _size(c.size())
     {
     }
@@ -78,6 +78,6 @@ private:
 };
 
 // deduction guide for containers
-template <class Container, std::enable_if_t<is_container<Container, void>, int> = 0>
+template <class Container, std::enable_if_t<is_contiguous_container<Container, void>, int> = 0>
 span(Container& c)->span<std::remove_reference<decltype(*c.data())>>;
 }
