@@ -18,6 +18,17 @@ constexpr void copy(RangeFrom const& from, RangeTo& to)
     }
 }
 
+template <class Range, class T>
+constexpr void fill(Range& range, T const& value)
+{
+    auto c = cc::to_cursor(range);
+    while (c)
+    {
+        *c = value;
+        ++c;
+    }
+}
+
 template <class RangeA, class RangeB>
 [[nodiscard]] constexpr bool are_ranges_equal(RangeA const& a, RangeB const& b)
 {
