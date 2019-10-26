@@ -4,6 +4,7 @@
 #include <new>     // placement new
 #include <utility> // std::forward, std::move
 
+#include <clean-core/assert.hh>
 #include <clean-core/fwd.hh>
 
 namespace cc
@@ -27,8 +28,16 @@ public:
     T& back() { return _data[_size - 1]; }
     T const& back() const { return _data[_size - 1]; }
 
-    T& operator[](size_t pos) { return _data[pos]; }
-    T const& operator[](size_t pos) const { return _data[pos]; }
+    T& operator[](size_t pos)
+    {
+        CC_CONTACT(pos < _size);
+        return _data[pos];
+    }
+    T const& operator[](size_t pos) const
+    {
+        CC_CONTACT(pos < _size);
+        return _data[pos];
+    }
 
     // ctors
 public:
