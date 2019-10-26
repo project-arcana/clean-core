@@ -49,6 +49,29 @@ struct array<T, dynamic_size>
 {
     array() = default;
 
+    explicit array(size_t size)
+    {
+        _size = size;
+        _data = new T[_size](); // default ctor!
+    }
+
+    [[nodiscard]] static array uninitialized(size_t size)
+    {
+        array a;
+        a._size = size;
+        a._data = new T[size];
+        return a;
+    }
+
+    [[nodiscard]] static array filled(size_t size, T const& value)
+    {
+        array a;
+        a._size = size;
+        a._data = new T[size];
+        cc::fill(a, value);
+        return a;
+    }
+
     array(std::initializer_list<T> data)
     {
         _size = data.size();
