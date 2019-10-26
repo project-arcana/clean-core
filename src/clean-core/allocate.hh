@@ -142,6 +142,7 @@ T* alloc(Args&&... args)
 template <class T>
 void free(T* p)
 {
+    CC_CONTRACT(p != nullptr);
     p->~T();
     detail::get_pool_allocator<sizeof(T), alignof(T)>().free(p);
 }

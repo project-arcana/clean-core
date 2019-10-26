@@ -30,9 +30,13 @@ struct span;
 
 template <class T>
 struct vector;
+template <class T, size_t N>
+struct capped_vector;
 
 template <class T, size_t N = dynamic_size>
 struct array;
+template <class T, size_t N>
+struct capped_array;
 
 // strings
 struct string_view;

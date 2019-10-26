@@ -4,6 +4,8 @@
 #include <new>     // placement new
 #include <utility> // std::forward, std::move
 
+#include <clean-core/fwd.hh>
+
 namespace cc
 {
 template <class T>

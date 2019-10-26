@@ -41,7 +41,8 @@ struct unique_ptr
     unique_ptr& operator=(unique_ptr&& rhs) noexcept
     {
         // self-move is reset
-        cc::free(_ptr);
+        if (_ptr)
+            cc::free(_ptr);
         _ptr = rhs._ptr;
         rhs._ptr = nullptr;
         return *this;
@@ -50,7 +51,8 @@ struct unique_ptr
     ~unique_ptr()
     {
         static_assert(sizeof(T) > 0, "cannot delete incomplete class");
-        cc::free(_ptr);
+        if (_ptr)
+            cc::free(_ptr);
     }
 
     [[nodiscard]] T* get() const { return _ptr; }
