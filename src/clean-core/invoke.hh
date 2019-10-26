@@ -3,7 +3,7 @@
 #include <type_traits>
 #include <utility>
 
-#include <clean-core/detail/is_reference_wrapper.hh>
+#include <clean-core/detail/reference_wrapper.hh>
 
 namespace cc
 {
