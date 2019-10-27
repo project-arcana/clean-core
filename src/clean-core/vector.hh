@@ -43,6 +43,27 @@ public:
     // ctors
 public:
     vector() = default;
+
+    explicit vector(size_t size) : _data(new T[size]()), _size(size), _capacity(size) {}
+
+    [[nodiscard]] static vector defaulted(size_t size) { return vector(size); }
+
+    [[nodiscard]] static vector uninitialized(size_t size)
+    {
+        vector v;
+        v._size = size;
+        v._capacity = size;
+        v._data = new T[size];
+        return v;
+    }
+
+    [[nodiscard]] static vector filled(size_t size, T const& value)
+    {
+        vector v;
+        v.resize(size, value);
+        return v;
+    }
+
     vector(vector const& rhs)
     {
         reserve(rhs._size);
@@ -137,26 +158,26 @@ public:
         _capacity = size;
     }
 
-    void resize(size_t size)
+    void resize(size_t new_size)
     {
-        if (size > _capacity)
-            reserve(size);
-        for (size_t i = _size; i < size; ++i)
+        if (new_size > _capacity)
+            reserve(new_size);
+        for (size_t i = _size; i < new_size; ++i)
             new (placement_new, &_data[i]) T();
-        for (size_t i = _size; i > size; --i)
+        for (size_t i = _size; i > new_size; --i)
             _data[i - 1].~T();
-        _size = size;
+        _size = new_size;
     }
 
-    void resize(size_t size, T const& default_value)
+    void resize(size_t new_size, T const& default_value)
     {
-        if (size > _capacity)
-            reserve(size);
-        for (size_t i = _size; i < size; ++i)
+        if (new_size > _capacity)
+            reserve(new_size);
+        for (size_t i = _size; i < new_size; ++i)
             new (placement_new, &_data[i]) T(default_value);
-        for (size_t i = _size; i > size; --i)
+        for (size_t i = _size; i > new_size; --i)
             _data[i - 1].~T();
-        _size = size;
+        _size = new_size;
     }
 
     void clear()
@@ -186,6 +207,7 @@ public:
                 return false;
         return true;
     }
+
     bool operator!=(vector const& rhs) const noexcept
     {
         if (_size != rhs._size)
