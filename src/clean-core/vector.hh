@@ -14,27 +14,27 @@ struct vector
 {
     // properties
 public:
-    constexpr size_t size() const { return _size; }
-    constexpr size_t capacity() const { return _capacity; }
-    constexpr bool empty() const { return _size == 0; }
-    constexpr T* data() { return _data; }
-    constexpr T const* data() const { return _data; }
-    constexpr T* begin() { return _data; }
-    constexpr T const* begin() const { return _data; }
-    constexpr T* end() { return _data + _size; }
-    constexpr T const* end() const { return _data + _size; }
-    constexpr T& front() { return _data[0]; }
-    constexpr T const& front() const { return _data[0]; }
-    constexpr T& back() { return _data[_size - 1]; }
-    constexpr T const& back() const { return _data[_size - 1]; }
+    size_t size() const { return _size; }
+    size_t capacity() const { return _capacity; }
+    bool empty() const { return _size == 0; }
+    T* data() { return _data; }
+    T const* data() const { return _data; }
+    T* begin() { return _data; }
+    T const* begin() const { return _data; }
+    T* end() { return _data + _size; }
+    T const* end() const { return _data + _size; }
+    T& front() { return _data[0]; }
+    T const& front() const { return _data[0]; }
+    T& back() { return _data[_size - 1]; }
+    T const& back() const { return _data[_size - 1]; }
 
-    constexpr T& operator[](size_t i)
+    T& operator[](size_t i)
     {
         CC_CONTRACT(i < _size);
         return _data[i];
     }
 
-    constexpr T const& operator[](size_t i) const
+    T const& operator[](size_t i) const
     {
         CC_CONTRACT(i < _size);
         return _data[i];
@@ -198,7 +198,7 @@ public:
         }
     }
 
-    constexpr bool operator==(vector const& rhs) const noexcept
+    bool operator==(vector const& rhs) const noexcept
     {
         if (_size != rhs._size)
             return false;
@@ -208,7 +208,7 @@ public:
         return true;
     }
 
-    constexpr bool operator!=(vector const& rhs) const noexcept
+    bool operator!=(vector const& rhs) const noexcept
     {
         if (_size != rhs._size)
             return true;
