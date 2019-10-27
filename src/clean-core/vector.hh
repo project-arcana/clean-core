@@ -29,15 +29,15 @@ public:
     T& back() { return _data[_size - 1]; }
     T const& back() const { return _data[_size - 1]; }
 
-    T& operator[](size_t pos)
+    T& operator[](size_t i)
     {
-        CC_CONTACT(pos < _size);
-        return _data[pos];
+        CC_CONTACT(i < _size);
+        return _data[i];
     }
-    T const& operator[](size_t pos) const
+    T const& operator[](size_t i) const
     {
-        CC_CONTACT(pos < _size);
-        return _data[pos];
+        CC_CONTACT(i < _size);
+        return _data[i];
     }
 
     // ctors
