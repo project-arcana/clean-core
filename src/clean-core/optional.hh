@@ -1,11 +1,10 @@
 #pragma once
 
+#include <clean-core/forward.hh>
 #include <clean-core/always_false.hh>
 #include <clean-core/assert.hh>
 #include <clean-core/fwd.hh>
 #include <clean-core/storage.hh>
-
-#include <utility>
 
 namespace cc
 {
@@ -51,12 +50,12 @@ struct optional
     template <class U>
     [[nodiscard]] constexpr T const& value_or(U&& default_value) const&
     {
-        return _has_value ? _data.value : static_cast<T>(std::forward<U>(default_value));
+        return _has_value ? _data.value : static_cast<T>(cc::forward<U>(default_value));
     }
     template <class U>
     [[nodiscard]] constexpr T&& value_or(U&& default_value) &&
     {
-        return _has_value ? static_cast<T&&>(_data.value) : static_cast<T>(std::forward<U>(default_value));
+        return _has_value ? static_cast<T&&>(_data.value) : static_cast<T>(cc::forward<U>(default_value));
     }
 
     ~optional()

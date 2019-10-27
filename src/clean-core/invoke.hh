@@ -1,8 +1,8 @@
 #pragma once
 
 #include <type_traits>
-#include <utility>
 
+#include <clean-core/forward.hh>
 #include <clean-core/detail/reference_wrapper.hh>
 
 namespace cc
@@ -17,35 +17,35 @@ auto perform_invoke(Type T::*f, T1&& t1, Args&&... args)
     if constexpr (std::is_member_function_pointer_v<decltype(f)>)
     {
         if constexpr (std::is_base_of_v<T, std::decay_t<T1>>)
-            return (std::forward<T1>(t1).*f)(std::forward<Args>(args)...);
+            return (cc::forward<T1>(t1).*f)(cc::forward<Args>(args)...);
         else if constexpr (cc::is_reference_wrapper<std::decay_t<T1>>)
-            return (t1.get().*f)(std::forward<Args>(args)...);
+            return (t1.get().*f)(cc::forward<Args>(args)...);
         else
-            return ((*std::forward<T1>(t1)).*f)(std::forward<Args>(args)...);
+            return ((*cc::forward<T1>(t1)).*f)(cc::forward<Args>(args)...);
     }
     else
     {
         static_assert(std::is_member_object_pointer_v<decltype(f)>);
         static_assert(sizeof...(args) == 0);
         if constexpr (std::is_base_of_v<T, std::decay_t<T1>>)
-            return std::forward<T1>(t1).*f;
+            return cc::forward<T1>(t1).*f;
         else if constexpr (cc::is_reference_wrapper<std::decay_t<T1>>)
             return t1.get().*f;
         else
-            return (*std::forward<T1>(t1)).*f;
+            return (*cc::forward<T1>(t1)).*f;
     }
 }
 
 template <class F, class... Args>
 auto perform_invoke(F&& f, Args&&... args)
 {
-    return std::forward<F>(f)(std::forward<Args>(args)...);
+    return cc::forward<F>(f)(cc::forward<Args>(args)...);
 }
 }
 
 template <class F, class... Args>
 std::invoke_result_t<F, Args...> invoke(F&& f, Args&&... args) noexcept(std::is_nothrow_invocable_v<F, Args...>)
 {
-    return detail::perform_invoke(std::forward<F>(f), std::forward<Args>(args)...);
+    return detail::perform_invoke(cc::forward<F>(f), cc::forward<Args>(args)...);
 }
 }

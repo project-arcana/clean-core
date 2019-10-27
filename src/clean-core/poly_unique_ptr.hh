@@ -1,12 +1,12 @@
 #pragma once
 
+#include <clean-core/forward.hh>
 #include <clean-core/always_false.hh>
 #include <clean-core/assert.hh>
 #include <clean-core/fwd.hh>
 #include <clean-core/typedefs.hh>
 
 #include <type_traits>
-#include <utility>
 
 namespace cc
 {
@@ -123,7 +123,7 @@ template <typename T, typename... Args>
 [[nodiscard]] poly_unique_ptr<T> make_poly_unique(Args&&... args)
 {
     poly_unique_ptr<T> p;
-    p.reset(new T(std::forward<Args>(args)...));
+    p.reset(new T(cc::forward<Args>(args)...));
     return p;
 }
 

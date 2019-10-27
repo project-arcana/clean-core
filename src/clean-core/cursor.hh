@@ -1,7 +1,6 @@
 #pragma once
 
-#include <utility>
-
+#include <clean-core/move.hh>
 #include <clean-core/assert.hh>
 
 namespace cc
@@ -43,7 +42,7 @@ struct cursor
 template <class iterator_t, class sentinel_t>
 struct iterator_cursor : cursor<iterator_cursor<iterator_t, sentinel_t>>
 {
-    iterator_cursor(iterator_t begin, sentinel_t end) : _curr(std::move(begin)), _end(std::move(end)) {}
+    iterator_cursor(iterator_t begin, sentinel_t end) : _curr(cc::move(begin)), _end(cc::move(end)) {}
 
     [[nodiscard]] constexpr decltype(auto) get() const
     {

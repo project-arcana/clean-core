@@ -1,10 +1,11 @@
 #pragma once
 
 #include <cstddef> // std::byte
-#include <utility> // std::forward, std::move
 
 #include <clean-core/assert.hh>
+#include <clean-core/forward.hh>
 #include <clean-core/fwd.hh>
+#include <clean-core/move.hh>
 #include <clean-core/new.hh>
 
 namespace cc
@@ -28,13 +29,12 @@ public:
     T& back() { return _data[_size - 1]; }
     T const& back() const { return _data[_size - 1]; }
 
-    constexpr T& operator[](size_t i)
+    T& operator[](size_t i)
     {
         CC_CONTRACT(i < _size);
         return _data[i];
     }
-
-    constexpr T const& operator[](size_t i) const
+    T const& operator[](size_t i) const
     {
         CC_CONTRACT(i < _size);
         return _data[i];
@@ -106,7 +106,7 @@ public:
     {
         if (_size == _capacity)
             _grow();
-        new (placement_new, &_data[_size]) T(std::move(t));
+        new (placement_new, &_data[_size]) T(cc::move(t));
         ++_size;
     }
 
@@ -115,7 +115,7 @@ public:
     {
         if (_size == _capacity)
             _grow();
-        new (placement_new, &_data[_size]) T(std::forward<Args...>(args...));
+        new (placement_new, &_data[_size]) T(cc::forward<Args...>(args...));
         return _data[_size++];
     }
 
@@ -203,7 +203,7 @@ private:
     static void _move_range(T* src, size_t size, T* dest)
     {
         for (size_t i = 0; i < size; ++i)
-            new (placement_new, &dest[i]) T(std::move(src[i]));
+            new (placement_new, &dest[i]) T(cc::move(src[i]));
     }
     static void _copy_range(T* src, size_t size, T* dest)
     {

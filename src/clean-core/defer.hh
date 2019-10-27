@@ -1,7 +1,6 @@
 #pragma once
 
-#include <utility>
-
+#include <clean-core/forward.hh>
 #include <clean-core/macros.hh>
 
 /**
@@ -29,6 +28,6 @@ struct def_tag
 template <class F>
 deferred<F> operator+(def_tag, F&& f)
 {
-    return {std::forward<F>(f)};
+    return {cc::forward<F>(f)};
 }
 }
