@@ -1,9 +1,8 @@
 #pragma once
 
-#include <utility>
-
 #include <clean-core/assert.hh>
 #include <clean-core/detail/compact_size_t.hh>
+#include <clean-core/forward.hh>
 #include <clean-core/new.hh>
 #include <clean-core/storage.hh>
 
@@ -82,7 +81,7 @@ struct capped_vector
     T& emplace_back(Args&&... args)
     {
         CC_CONTRACT(_size < N);
-        new (placement_new, &_u._data[_size]) T(std::forward<Args>(args)...);
+        new (placement_new, &_u._data[_size]) T(cc::forward<Args>(args)...);
         ++_size;
         return _u._data[_size - 1];
     }

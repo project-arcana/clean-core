@@ -24,7 +24,7 @@ clean-core (`cc`) is a clean and lean reimagining of the C++ standard library.
 * `<cstring>` (1ms, for memcpy)
 * `<cstddef>` (1ms, for some types)
 * `<type_traits>` (5-8ms, many not implementable ourselves)
-* `<utility>` (10-15ms, swap, move, forward, declval)
+* `<utility>` (10-15ms, swap, declval, NOTE: `cc` has own move and forward)
 * `<atomic>` (20ms, hard to implement ourselves)
 
 ## Notable Changes

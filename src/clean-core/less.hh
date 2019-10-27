@@ -1,6 +1,6 @@
 #pragma once
 
-#include <clean-core/detail/has_operator.hh>
+#include <clean-core/has_operator.hh>
 
 #include <clean-core/fwd.hh>
 

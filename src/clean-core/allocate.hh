@@ -1,8 +1,8 @@
 #pragma once
 
 #include <cstddef>
-#include <utility>
 
+#include <clean-core/forward.hh>
 #include <clean-core/assert.hh>
 #include <clean-core/typedefs.hh>
 
@@ -136,7 +136,7 @@ template <class T, class... Args>
 T* alloc(Args&&... args)
 {
     auto p = detail::get_pool_allocator<sizeof(T), alignof(T)>().alloc();
-    new (p) T(std::forward<Args>(args)...);
+    new (p) T(cc::forward<Args>(args)...);
     return reinterpret_cast<T*>(p);
 }
 template <class T>
