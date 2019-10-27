@@ -56,6 +56,8 @@ struct array<T, dynamic_size>
         _data = new T[_size](); // default ctor!
     }
 
+    [[nodiscard]] static array defaulted(size_t size) { return array(size); }
+
     [[nodiscard]] static array uninitialized(size_t size)
     {
         array a;

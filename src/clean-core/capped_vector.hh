@@ -1,8 +1,9 @@
 #pragma once
 
-#include <clean-core/forward.hh>
 #include <clean-core/assert.hh>
 #include <clean-core/detail/compact_size_t.hh>
+#include <clean-core/forward.hh>
+#include <clean-core/new.hh>
 
 namespace cc
 {
@@ -36,14 +37,14 @@ struct capped_vector
     void push_back(T const& t)
     {
         CC_CONTRACT(_size < N);
-        new (&_u._data[_size]) T(t);
+        new (placement_new, &_u._data[_size]) T(t);
         ++_size;
     }
 
     void push_back(T&& t)
     {
         CC_CONTRACT(_size < N);
-        new (&_u._data[_size]) T(move(t));
+        new (placement_new, &_u._data[_size]) T(move(t));
         ++_size;
     }
 
@@ -58,7 +59,7 @@ struct capped_vector
     T& emplace_back(Args&&... args)
     {
         CC_CONTRACT(_size < N);
-        new (&_u._data[_size]) T(cc::forward<Args>(args)...);
+        new (placement_new, &_u._data[_size]) T(cc::forward<Args>(args)...);
         ++_size;
         return _u._data[_size - 1];
     }
@@ -75,7 +76,7 @@ struct capped_vector
     {
         CC_CONTRACT(new_size <= N);
         for (size_t i = _size; i < new_size; ++i)
-            new (&_u._data[i]) T();
+            new (placement_new, &_u._data[i]) T();
         for (size_t i = _size; i > new_size; --i)
             _u._data[i - 1].~T();
         _size = compact_size_t(new_size);
