@@ -3,10 +3,9 @@
 #include <clean-core/allocate.hh>
 #include <clean-core/always_false.hh>
 #include <clean-core/assert.hh>
+#include <clean-core/forward.hh>
 #include <clean-core/fwd.hh>
 #include <clean-core/typedefs.hh>
-
-#include <utility>
 
 namespace cc
 {
@@ -101,7 +100,7 @@ template <typename T, typename... Args>
 [[nodiscard]] unique_ptr<T> make_unique(Args&&... args)
 {
     unique_ptr<T> p;
-    p._ptr = cc::alloc<T>(std::forward<Args>(args)...);
+    p._ptr = cc::alloc<T>(cc::forward<Args>(args)...);
     return p;
 }
 

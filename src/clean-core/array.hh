@@ -1,5 +1,6 @@
 #pragma once
 
+#include <clean-core/forward.hh>
 #include <clean-core/algorithms.hh>
 #include <clean-core/assert.hh>
 #include <clean-core/fwd.hh>
@@ -156,6 +157,6 @@ array(std::initializer_list<T>)->array<T>;
 template <class T, class... Args>
 [[nodiscard]] array<T, 1 + sizeof...(Args)> make_array(T&& v0, Args&&... rest)
 {
-    return {{std::forward<T>(v0), std::forward<Args>(rest)...}};
+    return {{cc::forward<T>(v0), cc::forward<Args>(rest)...}};
 }
 }

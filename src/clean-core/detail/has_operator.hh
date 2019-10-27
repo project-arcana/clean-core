@@ -1,7 +1,7 @@
 #pragma once
 
 #include <type_traits>
-#include <utility>
+#include <utility> // declval
 
 namespace cc
 {

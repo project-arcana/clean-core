@@ -2,10 +2,11 @@
 
 #include <cstddef> // std::byte
 #include <new>     // placement new
-#include <utility> // std::forward, std::move
 
 #include <clean-core/assert.hh>
+#include <clean-core/forward.hh>
 #include <clean-core/fwd.hh>
+#include <clean-core/move.hh>
 
 namespace cc
 {
@@ -105,7 +106,7 @@ public:
     {
         if (_size == _capacity)
             _grow();
-        new (&_data[_size]) T(std::move(t));
+        new (&_data[_size]) T(cc::move(t));
         ++_size;
     }
 
@@ -114,7 +115,7 @@ public:
     {
         if (_size == _capacity)
             _grow();
-        new (&_data[_size]) T(std::forward<Args...>(args...));
+        new (&_data[_size]) T(cc::forward<Args...>(args...));
         return _data[_size++];
     }
 
@@ -202,7 +203,7 @@ private:
     static void _move_range(T* src, size_t size, T* dest)
     {
         for (size_t i = 0; i < size; ++i)
-            new (&dest[i]) T(std::move(src[i]));
+            new (&dest[i]) T(cc::move(src[i]));
     }
     static void _copy_range(T* src, size_t size, T* dest)
     {
