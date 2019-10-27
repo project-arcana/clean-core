@@ -44,11 +44,7 @@ public:
 public:
     vector() = default;
 
-    explicit vector(size_t size)
-    {
-        _size = size;
-        _data = new T[_size](); // default ctor!
-    }
+    explicit vector(size_t size) : _data(new T[size]()), _size(size), _capacity(size) {}
 
     [[nodiscard]] static vector defaulted(size_t size) { return vector(size); }
 
@@ -56,6 +52,7 @@ public:
     {
         vector v;
         v._size = size;
+        v._capacity = size;
         v._data = new T[size];
         return v;
     }
