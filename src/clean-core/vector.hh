@@ -31,12 +31,12 @@ public:
 
     T& operator[](size_t i)
     {
-        CC_CONTACT(i < _size);
+        CC_CONTRACT(i < _size);
         return _data[i];
     }
     T const& operator[](size_t i) const
     {
-        CC_CONTACT(i < _size);
+        CC_CONTRACT(i < _size);
         return _data[i];
     }
 
