@@ -1,8 +1,8 @@
 #pragma once
 
+#include <clean-core/forward.hh>
 #include <clean-core/algorithms.hh>
 #include <clean-core/assert.hh>
-#include <clean-core/forward.hh>
 #include <clean-core/fwd.hh>
 #include <clean-core/span.hh>
 #include <clean-core/typedefs.hh>
@@ -50,16 +50,27 @@ struct array<T, dynamic_size>
 {
     array() = default;
 
-    explicit array(size_t size) : _data(new T[size]()), _size(size) {}
-    explicit array(size_t size, T* data) : _data(data), _size(size) {}
+    explicit array(size_t size)
+    {
+        _size = size;
+        _data = new T[_size](); // default ctor!
+    }
 
     [[nodiscard]] static array defaulted(size_t size) { return array(size); }
 
-    [[nodiscard]] static array uninitialized(size_t size) { return array(size, new T[size]); }
+    [[nodiscard]] static array uninitialized(size_t size)
+    {
+        array a;
+        a._size = size;
+        a._data = new T[size];
+        return a;
+    }
 
     [[nodiscard]] static array filled(size_t size, T const& value)
     {
-        array a(size, new T[size]);
+        array a;
+        a._size = size;
+        a._data = new T[size];
         cc::fill(a, value);
         return a;
     }
