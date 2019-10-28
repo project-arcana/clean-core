@@ -1,7 +1,7 @@
 #pragma once
 
-#include <clean-core/move.hh>
 #include <clean-core/assert.hh>
+#include <clean-core/move.hh>
 
 namespace cc
 {

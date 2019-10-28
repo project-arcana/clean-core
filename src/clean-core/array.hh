@@ -1,8 +1,8 @@
 #pragma once
 
-#include <clean-core/forward.hh>
 #include <clean-core/algorithms.hh>
 #include <clean-core/assert.hh>
+#include <clean-core/forward.hh>
 #include <clean-core/fwd.hh>
 #include <clean-core/span.hh>
 #include <clean-core/typedefs.hh>

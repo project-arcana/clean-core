@@ -2,8 +2,8 @@
 
 #include <type_traits>
 
-#include <clean-core/forward.hh>
 #include <clean-core/detail/reference_wrapper.hh>
+#include <clean-core/forward.hh>
 
 namespace cc
 {
