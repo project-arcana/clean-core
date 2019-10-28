@@ -13,8 +13,56 @@ namespace cc
 template <class T, size_t N>
 struct capped_vector
 {
-    using compact_size_t = detail::compact_size_t_for<N, alignof(T)>;
+    // properties
+public:
+    constexpr T* begin() { return &_u.value[0]; }
+    constexpr T const* begin() const { return &_u.value[0]; }
+    constexpr T* end() { return &_u.value[0] + _size; }
+    constexpr T const* end() const { return &_u.value[0] + _size; }
 
+    constexpr size_t size() const { return _size; }
+    constexpr size_t capacity() const { return N; }
+    constexpr bool empty() const { return _size == 0; }
+
+    constexpr T* data() { return &_u.value[0]; }
+    constexpr T const* data() const { return &_u.value[0]; }
+
+    constexpr T& front()
+    {
+        CC_CONTRACT(_size > 0);
+        return _u.value[0];
+    }
+    constexpr T const& front() const
+    {
+        CC_CONTRACT(_size > 0);
+        return _u.value[0];
+    }
+
+    constexpr T& back()
+    {
+        CC_CONTRACT(_size > 0);
+        return _u.value[_size - 1];
+    }
+    constexpr T const& back() const
+    {
+        CC_CONTRACT(_size > 0);
+        return _u.value[_size - 1];
+    }
+
+    constexpr T const& operator[](size_t pos) const
+    {
+        CC_CONTRACT(pos < _size);
+        return _u.value[pos];
+    }
+
+    constexpr T& operator[](size_t pos)
+    {
+        CC_CONTRACT(pos < _size);
+        return _u.value[pos];
+    }
+
+    // ctors
+public:
     constexpr capped_vector() = default;
 
     [[nodiscard]] static capped_vector defaulted(size_t size)
@@ -38,6 +86,44 @@ struct capped_vector
         return cv;
     }
 
+    capped_vector(capped_vector const& rhs)
+    {
+        _size = rhs._size;
+        for (size_t i = 0; i < _size; ++i)
+            new (placement_new, &_u.value[i]) T(rhs._u.value[i]);
+    }
+    capped_vector(capped_vector&& rhs)
+    {
+        _size = rhs._size;
+        for (size_t i = 0; i < _size; ++i)
+            new (placement_new, &_u.value[i]) T(cc::move(rhs._u.value[i]));
+        rhs._size = 0;
+    }
+
+    capped_vector& operator=(capped_vector const& rhs)
+    {
+        for (size_t i = _size; i > rhs._size; --i)
+            _u.value[i - 1].~T();
+
+        _size = rhs._size;
+        for (size_t i = 0; i < _size; ++i)
+            new (placement_new, &_u.value[i]) T(rhs._u.value[i]);
+
+        return *this;
+    }
+    capped_vector& operator=(capped_vector&& rhs)
+    {
+        for (size_t i = _size; i > rhs._size; --i)
+            _u.value[i - 1].~T();
+
+        _size = rhs._size;
+        for (size_t i = 0; i < _size; ++i)
+            new (placement_new, &_u.value[i]) T(cc::move(rhs._u.value[i]));
+        rhs._size = 0;
+
+        return *this;
+    }
+
     ~capped_vector()
     {
         // deconstruct in reverse order
@@ -45,18 +131,8 @@ struct capped_vector
             _u.value[i - 1].~T();
     }
 
-    T const& operator[](size_t pos) const
-    {
-        CC_CONTRACT(pos < _size);
-        return _u.value[pos];
-    }
-
-    T& operator[](size_t pos)
-    {
-        CC_CONTRACT(pos < _size);
-        return _u.value[pos];
-    }
-
+    // methods
+public:
     void push_back(T const& t)
     {
         CC_CONTRACT(_size < N);
@@ -115,42 +191,6 @@ struct capped_vector
         _size = compact_size_t(new_size);
     }
 
-    constexpr T& front()
-    {
-        CC_CONTRACT(_size > 0);
-        return _u.value[0];
-    }
-
-    constexpr T const& front() const
-    {
-        CC_CONTRACT(_size > 0);
-        return _u.value[0];
-    }
-
-    constexpr T& back()
-    {
-        CC_CONTRACT(_size > 0);
-        return _u.value[_size - 1];
-    }
-
-    constexpr T const& back() const
-    {
-        CC_CONTRACT(_size > 0);
-        return _u.value[_size - 1];
-    }
-
-    constexpr T* begin() { return &_u.value[0]; }
-    constexpr T const* begin() const { return &_u.value[0]; }
-    constexpr T* end() { return &_u.value[0] + _size; }
-    constexpr T const* end() const { return &_u.value[0] + _size; }
-
-    constexpr size_t size() const { return _size; }
-    constexpr size_t capacity() const { return N; }
-    constexpr bool empty() const { return _size == 0; }
-
-    constexpr T* data() { return &_u.value[0]; }
-    constexpr T const* data() const { return &_u.value[0]; }
-
     template <size_t M>
     constexpr bool operator==(capped_vector<T, M> const& rhs) const noexcept
     {
@@ -178,6 +218,8 @@ struct capped_vector
     }
 
 private:
+    using compact_size_t = detail::compact_size_t_for<N, alignof(T)>;
+
     compact_size_t _size = 0;
     storage_for<T[N]> _u;
 };
