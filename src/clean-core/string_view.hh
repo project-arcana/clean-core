@@ -18,6 +18,7 @@ struct string_view
     {
     }
     explicit string_view(char const* data);
+    explicit string_view(char const* data, size_t size) : _data(data), _size(size) {}
     // TODO: more ctors
 
     // container
@@ -35,6 +36,25 @@ public:
     }
 
 public:
+    constexpr bool operator==(string_view rhs) const
+    {
+        if (_size != rhs._size)
+            return false;
+        for (size_t i = 0; i != _size; ++i)
+            if (_data[i] != rhs._data[i])
+                return false;
+        return true;
+    }
+    constexpr bool operator!=(string_view rhs) const
+    {
+        if (_size != rhs._size)
+            return true;
+        for (size_t i = 0; i != _size; ++i)
+            if (_data[i] != rhs._data[i])
+                return true;
+        return false;
+    }
+
     template <size_t N>
     constexpr bool operator==(char const (&rhs)[N]) const
     {
