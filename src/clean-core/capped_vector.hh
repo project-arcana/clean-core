@@ -92,7 +92,7 @@ public:
         for (size_t i = 0; i < _size; ++i)
             new (placement_new, &_u.value[i]) T(rhs._u.value[i]);
     }
-    capped_vector(capped_vector&& rhs)
+    capped_vector(capped_vector&& rhs) noexcept
     {
         _size = rhs._size;
         for (size_t i = 0; i < _size; ++i)
@@ -111,7 +111,7 @@ public:
 
         return *this;
     }
-    capped_vector& operator=(capped_vector&& rhs)
+    capped_vector& operator=(capped_vector&& rhs) noexcept
     {
         for (size_t i = _size; i > rhs._size; --i)
             _u.value[i - 1].~T();
