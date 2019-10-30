@@ -86,7 +86,7 @@ public:
     {
         string s;
         if (size < sbo_capacity)
-            s._rep.s.size = short_flag + (size << 1);
+            s._rep.s.size = uint8(short_flag + (size << 1));
         else
         {
             s._rep.l.size = size;
@@ -144,7 +144,7 @@ public:
         }
         return *this;
     }
-    string& operator==(string&& rhs) noexcept
+    string& operator=(string&& rhs) noexcept
     {
         if (!_is_short())
         {
@@ -243,7 +243,7 @@ public:
 
         if (s < sbo_capacity)
         {
-            _rep.s.size = short_flag + (s << 1);
+            _rep.s.size = uint8(short_flag + (s << 1));
             std::memcpy(_rep.s.data, old_data, s + 1);
         }
         else
