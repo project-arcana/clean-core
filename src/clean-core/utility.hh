@@ -3,13 +3,13 @@
 namespace cc
 {
 template <class T>
-const T& max(const T& a, const T& b)
+constexpr T const& max(const T& a, const T& b)
 {
     return (a < b) ? b : a;
 }
 
 template <class T>
-const T& min(const T& a, const T& b)
+constexpr T const& min(const T& a, const T& b)
 {
     return (a < b) ? a : b;
 }
