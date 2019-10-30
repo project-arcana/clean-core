@@ -111,6 +111,7 @@ public:
         rhs._data = nullptr;
         rhs._size = 0;
         rhs._capacity = 0;
+        return *this;
     }
 
     // methods
@@ -136,7 +137,7 @@ public:
     {
         if (_size == _capacity)
             _grow();
-        new (placement_new, &_data[_size]) T(cc::forward<Args...>(args...));
+        new (placement_new, &_data[_size]) T(cc::forward<Args>(args)...);
         return _data[_size++];
     }
 

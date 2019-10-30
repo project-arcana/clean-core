@@ -3,6 +3,7 @@
 #include <clean-core/assert.hh>
 #include <clean-core/detail/compact_size_t.hh>
 #include <clean-core/forward.hh>
+#include <clean-core/move.hh>
 #include <clean-core/new.hh>
 #include <clean-core/storage.hh>
 
@@ -12,8 +13,56 @@ namespace cc
 template <class T, size_t N>
 struct capped_vector
 {
-    using compact_size_t = detail::compact_size_t_for<N, alignof(T)>;
+    // properties
+public:
+    constexpr T* begin() { return &_u.value[0]; }
+    constexpr T const* begin() const { return &_u.value[0]; }
+    constexpr T* end() { return &_u.value[0] + _size; }
+    constexpr T const* end() const { return &_u.value[0] + _size; }
 
+    constexpr size_t size() const { return _size; }
+    constexpr size_t capacity() const { return N; }
+    constexpr bool empty() const { return _size == 0; }
+
+    constexpr T* data() { return &_u.value[0]; }
+    constexpr T const* data() const { return &_u.value[0]; }
+
+    constexpr T& front()
+    {
+        CC_CONTRACT(_size > 0);
+        return _u.value[0];
+    }
+    constexpr T const& front() const
+    {
+        CC_CONTRACT(_size > 0);
+        return _u.value[0];
+    }
+
+    constexpr T& back()
+    {
+        CC_CONTRACT(_size > 0);
+        return _u.value[_size - 1];
+    }
+    constexpr T const& back() const
+    {
+        CC_CONTRACT(_size > 0);
+        return _u.value[_size - 1];
+    }
+
+    constexpr T const& operator[](size_t pos) const
+    {
+        CC_CONTRACT(pos < _size);
+        return _u.value[pos];
+    }
+
+    constexpr T& operator[](size_t pos)
+    {
+        CC_CONTRACT(pos < _size);
+        return _u.value[pos];
+    }
+
+    // ctors
+public:
     constexpr capped_vector() = default;
 
     [[nodiscard]] static capped_vector defaulted(size_t size)
@@ -37,36 +86,83 @@ struct capped_vector
         return cv;
     }
 
+    capped_vector(capped_vector const& rhs)
+    {
+        _size = rhs._size;
+        for (size_t i = 0; i < _size; ++i)
+            new (placement_new, &_u.value[i]) T(rhs._u.value[i]);
+    }
+    capped_vector(capped_vector&& rhs) noexcept
+    {
+        _size = rhs._size;
+        for (size_t i = 0; i < _size; ++i)
+            new (placement_new, &_u.value[i]) T(cc::move(rhs._u.value[i]));
+        rhs._size = 0;
+    }
+
+    capped_vector& operator=(capped_vector const& rhs)
+    {
+        auto common_size = _size < rhs._size ? _size : rhs._size;
+
+        // destroy superfluous entries
+        for (size_t i = _size; i > rhs._size; --i)
+            _u.value[i - 1].~T();
+
+        _size = rhs._size;
+
+        // copy assignment for common
+        for (size_t i = 0; i < common_size; ++i)
+            _u.value[i] = rhs._u.value[i];
+
+        // copy ctor for new
+        for (size_t i = common_size; i < _size; ++i)
+            new (placement_new, &_u.value[i]) T(rhs._u.value[i]);
+
+        return *this;
+    }
+    capped_vector& operator=(capped_vector&& rhs) noexcept
+    {
+        auto common_size = _size < rhs._size ? _size : rhs._size;
+
+        // destroy superfluous entries
+        for (size_t i = _size; i > rhs._size; --i)
+            _u.value[i - 1].~T();
+
+        _size = rhs._size;
+
+        // move assignment for common
+        for (size_t i = 0; i < common_size; ++i)
+            _u.value[i] = cc::move(rhs._u.value[i]);
+
+        // movector for new
+        for (size_t i = common_size; i < _size; ++i)
+            new (placement_new, &_u.value[i]) T(cc::move(rhs._u.value[i]));
+
+        rhs._size = 0;
+
+        return *this;
+    }
+
     ~capped_vector()
     {
         // deconstruct in reverse order
         for (size_t i = _size; i > 0; --i)
-            _u._data[i - 1].~T();
+            _u.value[i - 1].~T();
     }
 
-    T const& operator[](size_t pos) const
-    {
-        CC_CONTRACT(pos < _size);
-        return _u._data[pos];
-    }
-
-    T& operator[](size_t pos)
-    {
-        CC_CONTRACT(pos < _size);
-        return _u._data[pos];
-    }
-
+    // methods
+public:
     void push_back(T const& t)
     {
         CC_CONTRACT(_size < N);
-        new (placement_new, &_u._data[_size]) T(t);
+        new (placement_new, &_u.value[_size]) T(t);
         ++_size;
     }
 
     void push_back(T&& t)
     {
         CC_CONTRACT(_size < N);
-        new (placement_new, &_u._data[_size]) T(move(t));
+        new (placement_new, &_u.value[_size]) T(cc::move(t));
         ++_size;
     }
 
@@ -74,23 +170,23 @@ struct capped_vector
     {
         CC_CONTRACT(_size > 0);
         --_size;
-        _u._data[_size].~T();
+        _u.value[_size].~T();
     }
 
     template <typename... Args>
     T& emplace_back(Args&&... args)
     {
         CC_CONTRACT(_size < N);
-        new (placement_new, &_u._data[_size]) T(cc::forward<Args>(args)...);
+        new (placement_new, &_u.value[_size]) T(cc::forward<Args>(args)...);
         ++_size;
-        return _u._data[_size - 1];
+        return _u.value[_size - 1];
     }
 
     void clear()
     {
         // deconstruct in reverse order
         for (size_t i = _size; i > 0; --i)
-            _u._data[i - 1].~T();
+            _u.value[i - 1].~T();
         _size = 0;
     }
 
@@ -98,9 +194,9 @@ struct capped_vector
     {
         CC_CONTRACT(new_size <= N);
         for (size_t i = _size; i < new_size; ++i)
-            new (placement_new, &_u._data[i]) T();
+            new (placement_new, &_u.value[i]) T();
         for (size_t i = _size; i > new_size; --i)
-            _u._data[i - 1].~T();
+            _u.value[i - 1].~T();
         _size = compact_size_t(new_size);
     }
 
@@ -108,49 +204,13 @@ struct capped_vector
     {
         CC_CONTRACT(new_size <= N);
         for (size_t i = _size; i < new_size; ++i)
-            new (placement_new, &_u._data[i]) T(default_value);
+            new (placement_new, &_u.value[i]) T(default_value);
         for (size_t i = _size; i > new_size; --i)
-            _u._data[i - 1].~T();
+            _u.value[i - 1].~T();
         _size = compact_size_t(new_size);
     }
 
-    constexpr T& front()
-    {
-        CC_CONTRACT(_size > 0);
-        return _u._data[0];
-    }
-
-    constexpr T const& front() const
-    {
-        CC_CONTRACT(_size > 0);
-        return _u._data[0];
-    }
-
-    constexpr T& back()
-    {
-        CC_CONTRACT(_size > 0);
-        return _u._data[_size - 1];
-    }
-
-    constexpr T const& back() const
-    {
-        CC_CONTRACT(_size > 0);
-        return _u._data[_size - 1];
-    }
-
-    constexpr T* begin() { return &_u._data[0]; }
-    constexpr T const* begin() const { return &_u._data[0]; }
-    constexpr T* end() { return &_u._data[0] + _size; }
-    constexpr T const* end() const { return &_u._data[0] + _size; }
-
-    constexpr size_t size() const { return _size; }
-    constexpr size_t capacity() const { return N; }
-    constexpr bool empty() const { return _size == 0; }
-
-    constexpr T* data() { return &_u._data[0]; }
-    constexpr T const* data() const { return &_u._data[0]; }
-
-    template <int M>
+    template <size_t M>
     constexpr bool operator==(capped_vector<T, M> const& rhs) const noexcept
     {
         if (_size != rhs._size)
@@ -163,7 +223,7 @@ struct capped_vector
         return true;
     }
 
-    template <int M>
+    template <size_t M>
     constexpr bool operator!=(capped_vector<T, M> const& rhs) const noexcept
     {
         if (_size != rhs._size)
@@ -177,6 +237,8 @@ struct capped_vector
     }
 
 private:
+    using compact_size_t = detail::compact_size_t_for<N, alignof(T)>;
+
     compact_size_t _size = 0;
     storage_for<T[N]> _u;
 };
