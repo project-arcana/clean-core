@@ -1,6 +1,8 @@
 #pragma once
 
 #include <cstddef> // std::byte
+#include <cstring> // std::memcpy
+#include <type_traits>
 
 #include <clean-core/assert.hh>
 #include <clean-core/forward.hh>
@@ -223,20 +225,30 @@ public:
 private:
     static T* _alloc(size_t size) { return reinterpret_cast<T*>(new std::byte[size * sizeof(T)]); }
     static void _free(T* p) { delete[] reinterpret_cast<std::byte*>(p); }
-    static void _move_range(T* src, size_t size, T* dest)
+    static void _move_range(T* src, size_t num, T* dest)
     {
-        for (size_t i = 0; i < size; ++i)
+        for (size_t i = 0; i < num; ++i)
             new (placement_new, &dest[i]) T(cc::move(src[i]));
     }
-    static void _copy_range(T* src, size_t size, T* dest)
+    static void _copy_range(T* src, size_t num, T* dest)
     {
-        for (size_t i = 0; i < size; ++i)
-            new (placement_new, &dest[i]) T(src[i]);
+        if constexpr (std::is_trivially_copyable_v<T>)
+        {
+            std::memcpy(dest, src, sizeof(T) * num);
+        }
+        else
+        {
+            for (size_t i = 0; i < num; ++i)
+                new (placement_new, &dest[i]) T(src[i]);
+        }
     }
-    static void _destroy_reverse(T* data, size_t size)
+    static void _destroy_reverse(T* data, size_t num)
     {
-        for (size_t i = size; i > 0; --i)
-            data[i - 1].~T();
+        if constexpr (!std::is_trivially_destructible_v<T>)
+        {
+            for (size_t i = num; i > 0; --i)
+                data[i - 1].~T();
+        }
     }
     void _grow() { reserve(_capacity == 0 ? 1 : _capacity << 1); }
 
