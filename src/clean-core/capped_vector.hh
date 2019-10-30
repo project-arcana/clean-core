@@ -102,23 +102,42 @@ public:
 
     capped_vector& operator=(capped_vector const& rhs)
     {
+        auto common_size = _size < rhs._size ? _size : rhs._size;
+
+        // destroy superfluous entries
         for (size_t i = _size; i > rhs._size; --i)
             _u.value[i - 1].~T();
 
         _size = rhs._size;
-        for (size_t i = 0; i < _size; ++i)
+
+        // copy assignment for common
+        for (size_t i = 0; i < common_size; ++i)
+            _u.value[i] = rhs._u.value[i];
+
+        // copy ctor for new
+        for (size_t i = common_size; i < _size; ++i)
             new (placement_new, &_u.value[i]) T(rhs._u.value[i]);
 
         return *this;
     }
     capped_vector& operator=(capped_vector&& rhs) noexcept
     {
+        auto common_size = _size < rhs._size ? _size : rhs._size;
+
+        // destroy superfluous entries
         for (size_t i = _size; i > rhs._size; --i)
             _u.value[i - 1].~T();
 
         _size = rhs._size;
-        for (size_t i = 0; i < _size; ++i)
+
+        // move assignment for common
+        for (size_t i = 0; i < common_size; ++i)
+            _u.value[i] = cc::move(rhs._u.value[i]);
+
+        // movector for new
+        for (size_t i = common_size; i < _size; ++i)
             new (placement_new, &_u.value[i]) T(cc::move(rhs._u.value[i]));
+
         rhs._size = 0;
 
         return *this;
