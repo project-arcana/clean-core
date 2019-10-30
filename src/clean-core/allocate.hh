@@ -4,6 +4,7 @@
 
 #include <clean-core/assert.hh>
 #include <clean-core/forward.hh>
+#include <clean-core/new.hh>
 #include <clean-core/typedefs.hh>
 
 namespace cc
@@ -136,7 +137,7 @@ template <class T, class... Args>
 T* alloc(Args&&... args)
 {
     auto p = detail::get_pool_allocator<sizeof(T), alignof(T)>().alloc();
-    new (p) T(cc::forward<Args>(args)...);
+    new (cc::placement_new, p) T(cc::forward<Args>(args)...);
     return reinterpret_cast<T*>(p);
 }
 template <class T>
