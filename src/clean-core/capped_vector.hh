@@ -237,7 +237,7 @@ public:
     }
 
 private:
-    using compact_size_t = detail::compact_size_t_for<N, alignof(T)>;
+    using compact_size_t = detail::compact_size_t_typed<T, N>;
 
     compact_size_t _size = 0;
     storage_for<T[N]> _u;
