@@ -1,8 +1,12 @@
 #pragma once
 
+#include <cstring>
+#include <type_traits>
+
 #include <clean-core/algorithms.hh>
 #include <clean-core/assert.hh>
 #include <clean-core/detail/compact_size_t.hh>
+#include <clean-core/forward.hh>
 #include <clean-core/move.hh>
 #include <clean-core/new.hh>
 #include <clean-core/storage.hh>
@@ -39,6 +43,7 @@ public:
 
     // ctors
 public:
+    using compact_size_t = detail::compact_size_t_typed<T, N>;
     capped_array() = default;
 
     constexpr capped_array(size_t size) : _size(compact_size_t(size))
@@ -66,23 +71,28 @@ public:
         return a;
     }
 
-    capped_array(capped_array const& rhs) : _size(rhs.size)
+    template <class... Args>
+    void emplace(compact_size_t new_size, Args&&... init_args)
     {
+        CC_CONTRACT(new_size < N);
+
+        // destroy current contents
+        _destroy_reverse(_u.value, _size);
+
+        _size = new_size;
         for (compact_size_t i = 0; i < _size; ++i)
-            new (placement_new, &_u.value[i]) T(rhs._u.value[i]);
+            new (placement_new, &_u.value[i]) T(cc::forward<Args>(init_args)...);
     }
-    capped_array(capped_array&& rhs) noexcept : _size(rhs.size)
-    {
-        for (compact_size_t i = 0; i < _size; ++i)
-            new (placement_new, &_u.value[i]) T(cc::move(rhs._u.value[i]));
-    }
+
+    capped_array(capped_array const& rhs) : _size(rhs.size) { _copy_range(rhs._u.value, _size, _u.value); }
+    capped_array(capped_array&& rhs) noexcept : _size(rhs.size) { _move_range(rhs._u.value, _size, _u.value); }
+
     capped_array& operator=(capped_array const& rhs)
     {
         auto common_size = _size < rhs._size ? _size : rhs._size;
 
         // destroy superfluous entries
-        for (size_t i = _size; i > rhs._size; --i)
-            _u.value[i - 1].~T();
+        _destroy_reverse(_u.value, _size, rhs._size);
 
         _size = rhs._size;
 
@@ -101,8 +111,7 @@ public:
         auto common_size = _size < rhs._size ? _size : rhs._size;
 
         // destroy superfluous entries
-        for (size_t i = _size; i > rhs._size; --i)
-            _u.value[i - 1].~T();
+        _destroy_reverse(_u.value, _size, rhs._size);
 
         _size = rhs._size;
 
@@ -119,11 +128,7 @@ public:
         return *this;
     }
 
-    ~capped_array()
-    {
-        for (size_t i = 0; i < _size; ++i)
-            _u.value[i].~T();
-    }
+    ~capped_array() { _destroy_reverse(_u.value, _size); }
 
     // methods
 public:
@@ -155,7 +160,32 @@ public:
 
     // members
 private:
-    using compact_size_t = detail::compact_size_t_typed<T, N>;
+    static void _move_range(T* src, compact_size_t num, T* dest)
+    {
+        for (compact_size_t i = 0; i < num; ++i)
+            new (placement_new, &dest[i]) T(cc::move(src[i]));
+    }
+    static void _copy_range(T* src, compact_size_t num, T* dest)
+    {
+        if constexpr (std::is_trivially_copyable_v<T>)
+        {
+            std::memcpy(dest, src, sizeof(T) * num);
+        }
+        else
+        {
+            for (compact_size_t i = 0; i < num; ++i)
+                new (placement_new, &dest[i]) T(src[i]);
+        }
+    }
+    static void _destroy_reverse(T* data, compact_size_t size, compact_size_t to_index = 0)
+    {
+        if constexpr (!std::is_trivially_destructible_v<T>)
+        {
+            for (compact_size_t i = size; i > to_index; --i)
+                data[i - 1].~T();
+        }
+    }
+
 
     compact_size_t _size = 0;
     storage_for<T[N]> _u;

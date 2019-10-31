@@ -173,7 +173,7 @@ public:
         _u.value[_size].~T();
     }
 
-    template <typename... Args>
+    template <class... Args>
     T& emplace_back(Args&&... args)
     {
         CC_CONTRACT(_size < N);
