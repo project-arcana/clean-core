@@ -81,7 +81,7 @@ public:
 
         _size = new_size;
         for (compact_size_t i = 0; i < _size; ++i)
-            new (placement_new, &_u.value[i]) T(cc::forward<Args>(init_args)...);
+            new (placement_new, &_u.value[i]) T(init_args...);
     }
 
     capped_array(capped_array const& rhs) : _size(rhs.size) { _copy_range(rhs._u.value, _size, _u.value); }
