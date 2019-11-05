@@ -41,7 +41,7 @@ public:
     size_t size() const { return _is_short() ? _rep.s.size >> 1 : _rep.l.size; }
     size_t capacity() const { return _is_short() ? sbo_capacity - 1 : _rep.l.capacity; }
 
-    bool empty() { return size() == 0; }
+    bool empty() const { return size() == 0; }
 
     char& front()
     {
@@ -262,6 +262,8 @@ public:
 
     // TODO: op+, op+=, comparisons
 
+    operator string_view() const { return string_view(data(), size()); }
+
     // helper
 private:
     bool _is_short() const { return _rep.s.size & short_flag; }
@@ -270,8 +272,10 @@ private:
     {
         auto old_size = size();
         auto new_data = new char[new_capacity + 1];
+        auto old_data = data();
 
-        std::memcpy(new_data, data(), old_size + 1);
+        if (old_data)
+            std::memcpy(new_data, old_data, old_size + 1);
 
         _rep.l.data = new_data;
         _rep.l.size = old_size;
