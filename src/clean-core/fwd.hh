@@ -40,6 +40,7 @@ struct capped_array;
 
 // strings
 struct string_view;
+struct string;
 
 // smart pointer
 template <class T>

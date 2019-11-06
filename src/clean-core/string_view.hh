@@ -1,8 +1,11 @@
 #pragma once
 
 #include <clean-core/assert.hh>
+#include <clean-core/detail/is_contiguous_container.hh>
 #include <clean-core/fwd.hh>
 #include <clean-core/typedefs.hh>
+
+#include <type_traits>
 
 namespace cc
 {
@@ -19,7 +22,11 @@ struct string_view
     }
     explicit string_view(char const* data);
     explicit string_view(char const* data, size_t size) : _data(data), _size(size) {}
-    // TODO: more ctors
+
+    template <class ContainerT, class = std::enable_if_t<is_contiguous_container<ContainerT, char>>>
+    explicit string_view(ContainerT const& c) : _data(c.data()), _size(c.size())
+    {
+    }
 
     // container
 public:
