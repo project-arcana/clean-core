@@ -79,7 +79,36 @@ public:
         _data = _sbo;
     }
 
-    // TODO: more constructors (char const*, string_view)
+    sbo_string(string_view s)
+    {
+        _size = s.size();
+
+        if (_size < sbo_capacity)
+            _data = _sbo;
+        else
+        {
+            _capacity = _size;
+            _data = new char[_size + 1];
+        }
+
+        std::memcpy(_data, s.data(), _size);
+        _data[_size] = '\0';
+    }
+    sbo_string(char const* s)
+    {
+        _size = std::strlen(s);
+
+        if (_size < sbo_capacity)
+            _data = _sbo;
+        else
+        {
+            _capacity = _size;
+            _data = new char[_size + 1];
+        }
+
+        std::memcpy(_data, s, _size);
+        _data[_size] = '\0';
+    }
 
     [[nodiscard]] static sbo_string uninitialized(size_t size)
     {

@@ -14,6 +14,7 @@ namespace cc
  */
 struct string : sbo_string<15>
 {
+    using sbo_string::sbo_string;
 };
 
 static_assert(sizeof(string) == 4 * 8, "wrong architecture?");
