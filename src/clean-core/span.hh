@@ -71,6 +71,11 @@ public:
         CC_CONTRACT(offset + count <= _size);
         return {_data + offset, count};
     }
+    constexpr span subspan(size_t offset) const
+    {
+        CC_CONTRACT(offset <= _size);
+        return {_data + offset, _size - offset};
+    }
 
 private:
     T* _data = nullptr;
