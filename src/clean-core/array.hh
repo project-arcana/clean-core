@@ -7,8 +7,6 @@
 #include <clean-core/span.hh>
 #include <clean-core/typedefs.hh>
 
-#include <initializer_list>
-
 namespace cc
 {
 // compile-time fixed-size array
@@ -152,9 +150,8 @@ private:
 };
 
 // deduction guides
-// TODO: common range deduction guide
-template <class T>
-array(std::initializer_list<T>)->array<T>;
+template <class T, class... U>
+array(T, U...) -> array<T, 1 + sizeof...(U)>;
 
 template <class T, class... Args>
 [[nodiscard]] array<T, 1 + sizeof...(Args)> make_array(T&& v0, Args&&... rest)
