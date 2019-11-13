@@ -42,6 +42,10 @@ struct capped_array;
 struct string_view;
 struct string;
 
+// functional
+template <class Signature>
+struct unique_function;
+
 // smart pointer
 template <class T>
 struct unique_ptr;
