@@ -1,5 +1,7 @@
 #pragma once
 
+#include <initializer_list>
+
 #include <clean-core/algorithms.hh>
 #include <clean-core/assert.hh>
 #include <clean-core/forward.hh>
