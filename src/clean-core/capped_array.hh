@@ -190,4 +190,36 @@ private:
     compact_size_t _size = 0;
     storage_for<T[N]> _u;
 };
+
+template <class T>
+struct capped_array<T, 0>
+{
+    // properties
+public:
+    constexpr T* begin() { return nullptr; }
+    constexpr T const* begin() const { return nullptr; }
+    constexpr T* end() { return nullptr; }
+    constexpr T const* end() const { return nullptr; }
+
+    constexpr size_t size() const { return 0; }
+
+    constexpr T* data() { return nullptr; }
+    constexpr T const* data() const { return nullptr; }
+
+    // ctors
+public:
+    constexpr capped_array() = default;
+
+    template <size_t M>
+    constexpr bool operator==(capped_array<T, M> const& rhs) const noexcept
+    {
+        return (rhs._size == 0);
+    }
+
+    template <size_t M>
+    constexpr bool operator!=(capped_array<T, M> const& rhs) const noexcept
+    {
+        return (rhs._size != 0);
+    }
+};
 }

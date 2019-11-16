@@ -242,4 +242,40 @@ private:
     compact_size_t _size = 0;
     storage_for<T[N]> _u;
 };
+
+template <class T>
+struct capped_vector<T, 0>
+{
+    // properties
+public:
+    constexpr T* begin() { return nullptr; }
+    constexpr T const* begin() const { return nullptr; }
+    constexpr T* end() { return nullptr; }
+    constexpr T const* end() const { return nullptr; }
+
+    constexpr size_t size() const { return 0; }
+    constexpr size_t capacity() const { return 0; }
+    constexpr bool empty() const { return true; }
+
+    constexpr T* data() { return nullptr; }
+    constexpr T const* data() const { return nullptr; }
+
+
+    // ctors
+public:
+    constexpr capped_vector() = default;
+
+
+    template <size_t M>
+    constexpr bool operator==(capped_vector<T, M> const& rhs) const noexcept
+    {
+        return (rhs._size == 0);
+    }
+
+    template <size_t M>
+    constexpr bool operator!=(capped_vector<T, M> const& rhs) const noexcept
+    {
+        return (rhs._size != 0);
+    }
+};
 }
