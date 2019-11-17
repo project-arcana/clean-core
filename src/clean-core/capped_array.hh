@@ -74,7 +74,7 @@ public:
     template <class... Args>
     void emplace(compact_size_t new_size, Args&&... init_args)
     {
-        CC_CONTRACT(new_size < N);
+        CC_CONTRACT(new_size <= N);
 
         // destroy current contents
         _destroy_reverse(_u.value, _size);
