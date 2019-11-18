@@ -1,13 +1,13 @@
 #pragma once
 
+#include <initializer_list>
+
 #include <clean-core/algorithms.hh>
 #include <clean-core/assert.hh>
 #include <clean-core/forward.hh>
 #include <clean-core/fwd.hh>
 #include <clean-core/span.hh>
 #include <clean-core/typedefs.hh>
-
-#include <initializer_list>
 
 namespace cc
 {
@@ -152,9 +152,8 @@ private:
 };
 
 // deduction guides
-// TODO: common range deduction guide
-template <class T>
-array(std::initializer_list<T>)->array<T>;
+template <class T, class... U>
+array(T, U...) -> array<T, 1 + sizeof...(U)>;
 
 template <class T, class... Args>
 [[nodiscard]] array<T, 1 + sizeof...(Args)> make_array(T&& v0, Args&&... rest)

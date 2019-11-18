@@ -46,7 +46,7 @@ struct iterator_cursor : cursor<iterator_cursor<iterator_t, sentinel_t>>
 
     [[nodiscard]] constexpr decltype(auto) get() const
     {
-        //CC_CONTRACT(_curr != nullptr); // does not work with std::array iterators
+        CC_CONTRACT(bool(_curr));
         CC_CONTRACT(is_valid());
         return *_curr;
     }
