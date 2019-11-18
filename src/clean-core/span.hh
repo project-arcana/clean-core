@@ -18,7 +18,6 @@ struct span
 public:
     constexpr span() = default;
     constexpr span(T* data, size_t size) : _data(data), _size(size) {}
-    constexpr span(T* data_single) : _data(data_single), _size(1) {}
     constexpr span(T* d_begin, T* d_end) : _data(d_begin), _size(d_end - d_begin) {}
     template <size_t N>
     constexpr span(T (&data)[N]) : _data(data), _size(N)
