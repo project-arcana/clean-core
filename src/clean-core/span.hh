@@ -28,6 +28,8 @@ public:
     {
     }
 
+    explicit constexpr span(T& val) : _data(&val), _size(1) {}
+
     // container
 public:
     constexpr T* begin() const { return _data; }
