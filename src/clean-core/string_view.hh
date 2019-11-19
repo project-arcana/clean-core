@@ -24,7 +24,7 @@ struct string_view
     explicit string_view(char const* data, size_t size) : _data(data), _size(size) {}
 
     template <class ContainerT, class = std::enable_if_t<is_contiguous_container<ContainerT, char>>>
-    explicit string_view(ContainerT const& c) : _data(c.data()), _size(c.size())
+    string_view(ContainerT const& c) : _data(c.data()), _size(c.size())
     {
     }
 

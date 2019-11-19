@@ -328,4 +328,25 @@ private:
         words _sbo_words;
     };
 };
+
+template <size_t C>
+bool operator==(string_view lhs, sbo_string<C> const& rhs)
+{
+    return lhs == string_view(rhs);
+}
+template <size_t C>
+bool operator!=(string_view lhs, sbo_string<C> const& rhs)
+{
+    return lhs != string_view(rhs);
+}
+template <size_t A, size_t B>
+bool operator==(sbo_string<A> const& lhs, sbo_string<B> const& rhs)
+{
+    return string_view(lhs) == string_view(rhs);
+}
+template <size_t A, size_t B>
+bool operator!=(sbo_string<A> const& lhs, sbo_string<B> const& rhs)
+{
+    return string_view(lhs) != string_view(rhs);
+}
 }
