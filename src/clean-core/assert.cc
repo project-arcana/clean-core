@@ -11,6 +11,8 @@ thread_local assertion_handler_t s_current_handler = nullptr;
 
 void default_assertion_handler(cc::detail::assertion_info const& info)
 {
+    fflush(stdout);
+
     fprintf(stderr, "assertion `%s' failed.\n", info.expr);
     fprintf(stderr, "  in %s\n", info.func);
     fprintf(stderr, "  file %s:%d\n", info.file, info.line);
