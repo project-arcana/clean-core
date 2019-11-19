@@ -83,7 +83,7 @@ public:
     {
         _size = s.size();
 
-        if (_size < sbo_capacity)
+        if (_size <= sbo_capacity)
             _data = _sbo;
         else
         {
@@ -98,7 +98,7 @@ public:
     {
         _size = std::strlen(s);
 
-        if (_size < sbo_capacity)
+        if (_size <= sbo_capacity)
             _data = _sbo;
         else
         {
@@ -133,6 +133,12 @@ public:
             _data = _sbo;
             _size = rhs._size;
             _sbo_words = rhs._sbo_words;
+        }
+        else if (rhs.size() <= sbo_capacity)
+        {
+            _data = _sbo;
+            _size = rhs.size();
+            std::memcpy(_data, rhs._data, _size + 1);
         }
         else
         {
@@ -170,6 +176,12 @@ public:
                 _data = _sbo;
                 _size = rhs._size;
                 _sbo_words = rhs._sbo_words;
+            }
+            else if (rhs.size() <= sbo_capacity)
+            {
+                _data = _sbo;
+                _size = rhs.size();
+                std::memcpy(_data, rhs._data, _size + 1);
             }
             else
             {
@@ -271,7 +283,7 @@ public:
         if (s == c)
             return; // fit
 
-        if (s < sbo_capacity)
+        if (s <= sbo_capacity)
         {
             std::memcpy(_sbo, _data, s + 1);
             _data = _sbo;
@@ -280,6 +292,10 @@ public:
         {
             auto new_data = new char[s + 1];
             std::memcpy(new_data, _data, s + 1);
+
+            if (!_is_short())
+                delete[] _data;
+
             _data = new_data;
             _capacity = s;
         }
@@ -290,7 +306,45 @@ public:
     bool operator==(string_view rhs) const { return string_view(_data, _size) == rhs; }
     bool operator!=(string_view rhs) const { return string_view(_data, _size) != rhs; }
 
-    // TODO: op+, op+=, comparisons
+    // TODO: op<, >, ...
+
+    sbo_string& operator+=(char c)
+    {
+        push_back(c);
+        return *this;
+    }
+    sbo_string& operator+=(string_view s)
+    {
+        auto new_size = _size + s.size();
+        auto new_cap = capacity();
+
+        if (new_size <= new_cap)
+        {
+            std::memcpy(_data + _size, s.data(), s.size());
+            _size = new_size;
+            _data[new_size] = '\0';
+        }
+        else
+        {
+            CC_ASSERT(new_cap >= sbo_capacity);
+            while (new_cap < new_size)
+                new_cap = new_cap << 1;
+            auto new_data = new char[new_cap + 1];
+
+            std::memcpy(new_data, _data, _size);
+            std::memcpy(new_data + _size, s.data(), s.size());
+            new_data[new_size] = '\0';
+
+            if (!_is_short())
+                delete[] _data;
+
+            _size = new_size;
+            _data = new_data;
+            _capacity = new_cap;
+        }
+
+        return *this;
+    }
 
     operator string_view() const { return string_view(_data, _size); }
 
@@ -304,6 +358,9 @@ private:
         auto old_data = _data;
 
         std::memcpy(new_data, old_data, _size + 1);
+
+        if (!_is_short())
+            delete[] _data;
 
         _data = new_data;
         _capacity = new_capacity;
@@ -348,5 +405,18 @@ template <size_t A, size_t B>
 bool operator!=(sbo_string<A> const& lhs, sbo_string<B> const& rhs)
 {
     return string_view(lhs) != string_view(rhs);
+}
+
+template <size_t C>
+[[nodiscard]] sbo_string<C> operator+(sbo_string<C> lhs, string_view rhs)
+{
+    lhs += rhs;
+    return lhs;
+}
+template <size_t C>
+[[nodiscard]] sbo_string<C> operator+(sbo_string<C> lhs, char rhs)
+{
+    lhs += rhs;
+    return lhs;
 }
 }
