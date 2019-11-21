@@ -40,7 +40,9 @@ struct capped_array;
 
 // strings
 struct string_view;
-struct string;
+template <size_t sbo_capacity>
+struct sbo_string;
+using string = sbo_string<15>;
 
 // functional
 template <class Signature>
