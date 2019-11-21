@@ -3,6 +3,7 @@
 #include <cstring>
 
 #include <clean-core/assert.hh>
+#include <clean-core/fwd.hh>
 #include <clean-core/macros.hh>
 #include <clean-core/string_view.hh>
 #include <clean-core/typedefs.hh>

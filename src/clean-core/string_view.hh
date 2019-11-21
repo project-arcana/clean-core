@@ -21,10 +21,11 @@ struct string_view
     {
     }
     explicit string_view(char const* data);
-    explicit string_view(char const* data, size_t size) : _data(data), _size(size) {}
+    constexpr string_view(char const* data, size_t size) : _data(data), _size(size) {}
+    constexpr string_view(char const* begin, char const* end) : _data(begin), _size(end - begin) {}
 
     template <class ContainerT, class = std::enable_if_t<is_contiguous_container<ContainerT, char>>>
-    string_view(ContainerT const& c) : _data(c.data()), _size(c.size())
+    constexpr string_view(ContainerT const& c) : _data(c.data()), _size(c.size())
     {
     }
 
@@ -42,6 +43,15 @@ public:
         return _data[idx];
     }
 
+    // functions
+public:
+    constexpr string_view subview(size_t offset, size_t size) const
+    {
+        CC_CONTRACT(offset + size <= _size);
+        return {_data + offset, size};
+    }
+
+    // operators
 public:
     constexpr bool operator==(string_view rhs) const
     {
