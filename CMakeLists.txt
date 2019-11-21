@@ -13,7 +13,7 @@ option(CC_ENABLE_CONTRACT_CHECKING "if true, enables contract checking (e.g. pre
 # =========================================
 # define library
 
-file(GLOB_RECURSE SOURCES "src/*.cc" "src/*.hh")
+file(GLOB_RECURSE SOURCES "src/*.cc" "src/*.hh" "src/*.inl")
 
 source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/src" FILES ${SOURCES})
 
