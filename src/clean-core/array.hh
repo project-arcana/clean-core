@@ -115,6 +115,7 @@ struct array<T, dynamic_size>
     }
     array& operator=(array&& a) noexcept
     {
+        delete[] _data;
         _data = a._data;
         _size = a._size;
         a._data = nullptr;
