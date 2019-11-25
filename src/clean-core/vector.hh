@@ -2,6 +2,7 @@
 
 #include <cstddef> // std::byte
 #include <cstring> // std::memcpy
+#include <initializer_list>
 #include <type_traits>
 
 #include <clean-core/assert.hh>
@@ -64,6 +65,13 @@ public:
         vector v;
         v.resize(size, value);
         return v;
+    }
+
+    vector(std::initializer_list<T> l)
+    {
+        reserve(l.size());
+        _copy_range(l.begin(), l.size(), _data);
+        _size = l.size();
     }
 
     vector(vector const& rhs)
@@ -230,7 +238,7 @@ private:
         for (size_t i = 0; i < num; ++i)
             new (placement_new, &dest[i]) T(cc::move(src[i]));
     }
-    static void _copy_range(T* src, size_t num, T* dest)
+    static void _copy_range(T const* src, size_t num, T* dest)
     {
         if constexpr (std::is_trivially_copyable_v<T>)
         {

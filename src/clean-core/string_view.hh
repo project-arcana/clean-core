@@ -1,8 +1,8 @@
 #pragma once
 
 #include <clean-core/assert.hh>
-#include <clean-core/detail/is_contiguous_container.hh>
 #include <clean-core/fwd.hh>
+#include <clean-core/is_contiguous_container.hh>
 #include <clean-core/typedefs.hh>
 
 #include <type_traits>
@@ -16,11 +16,13 @@ namespace cc
 struct string_view
 {
     constexpr string_view() = default;
-    template <size_t N> // null-terminated string literal
-    constexpr string_view(char const (&data)[N]) : _data(data), _size(N - 1)
+    constexpr string_view(char const* data)
     {
+        _data = data;
+        _size = 0;
+        while (data[_size] != '\0')
+            ++_size;
     }
-    explicit string_view(char const* data);
     constexpr string_view(char const* data, size_t size) : _data(data), _size(size) {}
     constexpr string_view(char const* begin, char const* end) : _data(begin), _size(end - begin) {}
 
