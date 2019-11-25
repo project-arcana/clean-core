@@ -372,6 +372,7 @@ private:
     // members
 private:
     static_assert(sizeof(void*) == 8, "only 64bit supported");
+    static_assert((sbo_capacity + 1) % 8 == 0, "only capacities that are one below multiples of 8 make sense");
 
     struct words
     {
