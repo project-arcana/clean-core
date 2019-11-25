@@ -242,7 +242,8 @@ private:
     {
         if constexpr (std::is_trivially_copyable_v<T>)
         {
-            std::memcpy(dest, src, sizeof(T) * num);
+            if (num > 0)
+                std::memcpy(dest, src, sizeof(T) * num);
         }
         else
         {

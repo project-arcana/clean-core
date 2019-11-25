@@ -279,14 +279,18 @@ public:
         if (_is_short())
             return; // noop
 
-        auto s = _size;
-        auto c = capacity();
+        auto const s = _size;
+        auto const c = capacity();
         if (s == c)
             return; // fit
 
         if (s <= sbo_capacity)
         {
             std::memcpy(_sbo, _data, s + 1);
+
+            if (!_is_short())
+                delete[] _data;
+
             _data = _sbo;
         }
         else
