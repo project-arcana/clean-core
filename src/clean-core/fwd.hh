@@ -11,10 +11,10 @@ enum : size_t
 };
 
 // utility
-template <class T, class = void> // SFINAE-friendly
+template <class T, class = bool> // SFINAE-friendly for cc::enable_if
 struct hash;
 
-template <class T = void, class = void> // SFINAE-friendly
+template <class T = void, class = bool> // SFINAE-friendly for cc::enable_if
 struct less;
 
 struct nullopt_t;

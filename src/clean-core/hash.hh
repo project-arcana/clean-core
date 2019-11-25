@@ -1,6 +1,7 @@
 #pragma once
 
 #include <clean-core/always_false.hh>
+#include <clean-core/enable_if.hh>
 #include <clean-core/fwd.hh>
 #include <clean-core/typedefs.hh>
 
@@ -47,14 +48,11 @@ constexpr hash_t make_hash(Args const&... values)
 // ============== default specializations ==============
 
 template <class T>
-struct hash<T, std::enable_if_t<std::is_trivially_copyable_v<T> && std::has_unique_object_representations_v<T>>>
+struct hash<T, cc::enable_if<std::is_trivially_copyable_v<T> && std::has_unique_object_representations_v<T>>>
 {
     [[nodiscard]] hash_t operator()(T const& value) const noexcept
     {
-        enum
-        {
-            wcnt = (sizeof(value) + sizeof(hash_t) - 1) / sizeof(hash_t)
-        };
+        auto constexpr wcnt = (sizeof(value) + sizeof(hash_t) - 1) / sizeof(hash_t);
 
         hash_t words[wcnt] = {}; // zero-init
         std::memcpy(words, &value, sizeof(value));
