@@ -3,7 +3,7 @@
 #include <clean-core/assert.hh>
 #include <clean-core/typedefs.hh>
 
-#include <clean-core/detail/is_contiguous_container.hh>
+#include <clean-core/is_contiguous_container.hh>
 
 namespace cc
 {
