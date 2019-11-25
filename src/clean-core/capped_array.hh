@@ -56,16 +56,18 @@ public:
 
     [[nodiscard]] static capped_array uninitialized(size_t size)
     {
+        CC_CONTRACT(size <= N);
         capped_array a;
-        a._size = size;
+        a._size = static_cast<compact_size_t>(size);
         new (&a._u.value[0]) T[size];
         return a;
     }
 
     [[nodiscard]] static capped_array filled(size_t size, T const& value)
     {
+        CC_CONTRACT(size <= N);
         capped_array a;
-        a._size = size;
+        a._size = static_cast<compact_size_t>(size);
         for (compact_size_t i = 0; i < size; ++i)
             new (placement_new, &a._u.value[i]) T(value);
         return a;
@@ -84,15 +86,19 @@ public:
             new (placement_new, &_u.value[i]) T(init_args...);
     }
 
-    capped_array(capped_array const& rhs) : _size(rhs.size) { _copy_range(rhs._u.value, _size, _u.value); }
-    capped_array(capped_array&& rhs) noexcept : _size(rhs.size) { _move_range(rhs._u.value, _size, _u.value); }
+    capped_array(capped_array const& rhs) : _size(rhs.size) { _copy_range(&rhs._u.value[0], _size, &_u.value[0]); }
+    capped_array(capped_array&& rhs) noexcept : _size(rhs.size)
+    {
+        _move_range(&rhs._u.value[0], _size, &_u.value[0]);
+        rhs._size = 0;
+    }
 
     capped_array& operator=(capped_array const& rhs)
     {
         auto common_size = _size < rhs._size ? _size : rhs._size;
 
         // destroy superfluous entries
-        _destroy_reverse(_u.value, _size, rhs._size);
+        _destroy_reverse(&_u.value[0], _size, rhs._size);
 
         _size = rhs._size;
 
@@ -162,14 +168,23 @@ public:
 private:
     static void _move_range(T* src, compact_size_t num, T* dest)
     {
-        for (compact_size_t i = 0; i < num; ++i)
-            new (placement_new, &dest[i]) T(cc::move(src[i]));
+        if constexpr (std::is_trivially_move_constructible_v<T> && std::is_trivially_copyable_v<T>)
+        {
+            if (num > 0)
+                std::memcpy(dest, src, sizeof(T) * num);
+        }
+        else
+        {
+            for (compact_size_t i = 0; i < num; ++i)
+                new (placement_new, &dest[i]) T(cc::move(src[i]));
+        }
     }
-    static void _copy_range(T* src, compact_size_t num, T* dest)
+    static void _copy_range(T const* src, compact_size_t num, T* dest)
     {
         if constexpr (std::is_trivially_copyable_v<T>)
         {
-            std::memcpy(dest, src, sizeof(T) * num);
+            if (num > 0)
+                std::memcpy(dest, src, sizeof(T) * num);
         }
         else
         {
