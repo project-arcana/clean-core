@@ -1,5 +1,6 @@
 #pragma once
 
+#include <clean-core/enable_if.hh>
 #include <clean-core/is_range.hh>
 #include <clean-core/move.hh>
 
@@ -25,7 +26,7 @@ bool operator!=(T const& lhs, any_of_t<F> const& rhs)
     return !rhs.test(lhs);
 }
 
-template <class Range, class = std::enable_if_t<is_any_range<Range>>>
+template <class Range, cc::enable_if<is_any_range<Range>> = true>
 auto any_of(Range const& r)
 {
     return any_of_t([&r](auto const& lhs) {
