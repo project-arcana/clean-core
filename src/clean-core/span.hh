@@ -1,9 +1,11 @@
 #pragma once
 
-#include <clean-core/assert.hh>
-#include <clean-core/typedefs.hh>
+#include <type_traits>
 
+#include <clean-core/assert.hh>
+#include <clean-core/enable_if.hh>
 #include <clean-core/is_contiguous_container.hh>
+#include <clean-core/typedefs.hh>
 
 namespace cc
 {
@@ -74,12 +76,14 @@ public:
         return {_data + offset, count};
     }
 
+    constexpr span<byte const> as_bytes() const { return {reinterpret_cast<byte const*>(_data), _size * sizeof(T)}; }
+
 private:
     T* _data = nullptr;
     size_t _size = 0;
 };
 
 // deduction guide for containers
-template <class Container, std::enable_if_t<is_contiguous_container<Container, void>, int> = 0>
-span(Container& c)->span<std::remove_reference<decltype(*c.data())>>;
+template <class Container, cc::enable_if<is_contiguous_container<Container, void>> = true>
+span(Container& c)->span<std::remove_reference_t<decltype(*c.data())>>;
 }

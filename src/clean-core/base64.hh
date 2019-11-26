@@ -33,6 +33,6 @@
 
 namespace cc
 {
-cc::string base64_encode(cc::span<cc::byte> data);
+cc::string base64_encode(cc::span<cc::byte const> data);
 cc::vector<cc::byte> base64_decode(cc::string_view encoded_string);
 }

@@ -21,7 +21,7 @@ static int find_base64_char(unsigned char c)
 
 static bool is_base64(unsigned char c) { return (isalnum(c) || (c == '+') || (c == '/')); }
 
-cc::string cc::base64_encode(cc::span<cc::byte> data)
+cc::string cc::base64_encode(cc::span<cc::byte const> data)
 {
     cc::string ret;
     int i = 0;
