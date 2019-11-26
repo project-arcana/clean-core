@@ -6,6 +6,7 @@
 #include <clean-core/algorithms.hh>
 #include <clean-core/assert.hh>
 #include <clean-core/detail/compact_size_t.hh>
+#include <clean-core/detail/container_impl_util.hh>
 #include <clean-core/forward.hh>
 #include <clean-core/move.hh>
 #include <clean-core/new.hh>
@@ -79,17 +80,17 @@ public:
         CC_CONTRACT(new_size <= N);
 
         // destroy current contents
-        _destroy_reverse(_u.value, _size);
+        detail::container_destroy_reverse<T, compact_size_t>(_u.value, _size);
 
         _size = new_size;
         for (compact_size_t i = 0; i < _size; ++i)
             new (placement_new, &_u.value[i]) T(init_args...);
     }
 
-    capped_array(capped_array const& rhs) : _size(rhs.size) { _copy_range(&rhs._u.value[0], _size, &_u.value[0]); }
+    capped_array(capped_array const& rhs) : _size(rhs.size) { detail::container_copy_range<T, compact_size_t>(&rhs._u.value[0], _size, &_u.value[0]); }
     capped_array(capped_array&& rhs) noexcept : _size(rhs.size)
     {
-        _move_range(&rhs._u.value[0], _size, &_u.value[0]);
+        detail::container_move_range<T, compact_size_t>(&rhs._u.value[0], _size, &_u.value[0]);
         rhs._size = 0;
     }
 
@@ -98,7 +99,7 @@ public:
         auto common_size = _size < rhs._size ? _size : rhs._size;
 
         // destroy superfluous entries
-        _destroy_reverse(&_u.value[0], _size, rhs._size);
+        detail::container_destroy_reverse<T, compact_size_t>(&_u.value[0], _size, rhs._size);
 
         _size = rhs._size;
 
@@ -117,7 +118,7 @@ public:
         auto common_size = _size < rhs._size ? _size : rhs._size;
 
         // destroy superfluous entries
-        _destroy_reverse(_u.value, _size, rhs._size);
+        detail::container_destroy_reverse<T, compact_size_t>(_u.value, _size, rhs._size);
 
         _size = rhs._size;
 
@@ -134,7 +135,7 @@ public:
         return *this;
     }
 
-    ~capped_array() { _destroy_reverse(_u.value, _size); }
+    ~capped_array() { detail::container_destroy_reverse<T, compact_size_t>(_u.value, _size); }
 
     // methods
 public:
@@ -166,42 +167,6 @@ public:
 
     // members
 private:
-    static void _move_range(T* src, compact_size_t num, T* dest)
-    {
-        if constexpr (std::is_trivially_move_constructible_v<T> && std::is_trivially_copyable_v<T>)
-        {
-            if (num > 0)
-                std::memcpy(dest, src, sizeof(T) * num);
-        }
-        else
-        {
-            for (compact_size_t i = 0; i < num; ++i)
-                new (placement_new, &dest[i]) T(cc::move(src[i]));
-        }
-    }
-    static void _copy_range(T const* src, compact_size_t num, T* dest)
-    {
-        if constexpr (std::is_trivially_copyable_v<T>)
-        {
-            if (num > 0)
-                std::memcpy(dest, src, sizeof(T) * num);
-        }
-        else
-        {
-            for (compact_size_t i = 0; i < num; ++i)
-                new (placement_new, &dest[i]) T(src[i]);
-        }
-    }
-    static void _destroy_reverse(T* data, compact_size_t size, compact_size_t to_index = 0)
-    {
-        if constexpr (!std::is_trivially_destructible_v<T>)
-        {
-            for (compact_size_t i = size; i > to_index; --i)
-                data[i - 1].~T();
-        }
-    }
-
-
     compact_size_t _size = 0;
     storage_for<T[N]> _u;
 };
