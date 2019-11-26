@@ -4,6 +4,7 @@
 
 #include <clean-core/algorithms.hh>
 #include <clean-core/assert.hh>
+#include <clean-core/detail/container_impl_util.hh>
 #include <clean-core/forward.hh>
 #include <clean-core/fwd.hh>
 #include <clean-core/span.hh>
@@ -79,21 +80,21 @@ struct array<T, dynamic_size>
     {
         _size = data.size();
         _data = new T[_size];
-        cc::copy(data, *this);
+        detail::container_copy_range<T>(data.begin(), _size, _data);
     }
 
     array(span<T> data)
     {
         _size = data.size();
         _data = new T[_size];
-        cc::copy(data, *this);
+        detail::container_copy_range<T>(data.data(), _size, _data);
     }
 
     array(array const& a)
     {
         _size = a._size;
         _data = new T[a._size];
-        cc::copy(a, *this);
+        detail::container_copy_range<T>(a.data(), _size, _data);
     }
     array(array&& a) noexcept
     {
@@ -109,7 +110,7 @@ struct array<T, dynamic_size>
             delete[] _data;
             _size = a._size;
             _data = new T[a._size];
-            cc::copy(a, *this);
+            detail::container_copy_range<T>(a.data(), _size, _data);
         }
         return *this;
     }
@@ -154,7 +155,7 @@ private:
 
 // deduction guides
 template <class T, class... U>
-array(T, U...) -> array<T, 1 + sizeof...(U)>;
+array(T, U...)->array<T, 1 + sizeof...(U)>;
 
 template <class T, class... Args>
 [[nodiscard]] array<T, 1 + sizeof...(Args)> make_array(T&& v0, Args&&... rest)

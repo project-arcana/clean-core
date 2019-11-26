@@ -1,7 +1,11 @@
 #pragma once
 
+#include <cstring>
+#include <type_traits>
+
 #include <clean-core/assert.hh>
 #include <clean-core/detail/compact_size_t.hh>
+#include <clean-core/detail/container_impl_util.hh>
 #include <clean-core/forward.hh>
 #include <clean-core/move.hh>
 #include <clean-core/new.hh>
@@ -20,7 +24,7 @@ public:
     constexpr T* end() { return &_u.value[0] + _size; }
     constexpr T const* end() const { return &_u.value[0] + _size; }
 
-    constexpr size_t size() const { return _size; }
+    constexpr size_t size() const { return static_cast<size_t>(_size); }
     constexpr size_t capacity() const { return N; }
     constexpr bool empty() const { return _size == 0; }
 
@@ -63,10 +67,12 @@ public:
 
     // ctors
 public:
+    using compact_size_t = detail::compact_size_t_typed<T, N>;
     constexpr capped_vector() = default;
 
     [[nodiscard]] static capped_vector defaulted(size_t size)
     {
+        CC_CONTRACT(size <= N);
         capped_vector cv;
         cv.resize(size, T());
         return cv;
@@ -74,6 +80,7 @@ public:
 
     [[nodiscard]] static capped_vector uninitialized(size_t size)
     {
+        CC_CONTRACT(size <= N);
         capped_vector cv;
         cv._size = size;
         return cv;
@@ -81,22 +88,19 @@ public:
 
     [[nodiscard]] static capped_vector filled(size_t size, T const& value)
     {
+        CC_CONTRACT(size <= N);
         capped_vector cv;
         cv.resize(size, value);
         return cv;
     }
 
-    capped_vector(capped_vector const& rhs)
+    capped_vector(capped_vector const& rhs) : _size(rhs.size())
     {
-        _size = rhs._size;
-        for (size_t i = 0; i < _size; ++i)
-            new (placement_new, &_u.value[i]) T(rhs._u.value[i]);
+        detail::container_copy_range<T, compact_size_t>(&rhs._u.value[0], _size, &_u.value[0]);
     }
-    capped_vector(capped_vector&& rhs) noexcept
+    capped_vector(capped_vector&& rhs) noexcept : _size(rhs.size())
     {
-        _size = rhs._size;
-        for (size_t i = 0; i < _size; ++i)
-            new (placement_new, &_u.value[i]) T(cc::move(rhs._u.value[i]));
+        detail::container_move_range<T, compact_size_t>(&rhs._u.value[0], _size, &_u.value[0]);
         rhs._size = 0;
     }
 
@@ -105,8 +109,7 @@ public:
         auto common_size = _size < rhs._size ? _size : rhs._size;
 
         // destroy superfluous entries
-        for (size_t i = _size; i > rhs._size; --i)
-            _u.value[i - 1].~T();
+        detail::container_destroy_reverse<T, compact_size_t>(&_u.value[0], _size, rhs._size);
 
         _size = rhs._size;
 
@@ -125,8 +128,7 @@ public:
         auto common_size = _size < rhs._size ? _size : rhs._size;
 
         // destroy superfluous entries
-        for (size_t i = _size; i > rhs._size; --i)
-            _u.value[i - 1].~T();
+        detail::container_destroy_reverse<T, compact_size_t>(&_u.value[0], _size, rhs._size);
 
         _size = rhs._size;
 
@@ -143,12 +145,7 @@ public:
         return *this;
     }
 
-    ~capped_vector()
-    {
-        // deconstruct in reverse order
-        for (size_t i = _size; i > 0; --i)
-            _u.value[i - 1].~T();
-    }
+    ~capped_vector() { detail::container_destroy_reverse<T, compact_size_t>(&_u.value[0], _size); }
 
     // methods
 public:
@@ -237,8 +234,6 @@ public:
     }
 
 private:
-    using compact_size_t = detail::compact_size_t_typed<T, N>;
-
     compact_size_t _size = 0;
     storage_for<T[N]> _u;
 };
