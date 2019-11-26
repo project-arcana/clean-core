@@ -6,6 +6,7 @@
 #include <type_traits>
 
 #include <clean-core/assert.hh>
+#include <clean-core/detail/container_impl_util.hh>
 #include <clean-core/forward.hh>
 #include <clean-core/fwd.hh>
 #include <clean-core/move.hh>
@@ -70,14 +71,14 @@ public:
     vector(std::initializer_list<T> l)
     {
         reserve(l.size());
-        _copy_range(l.begin(), l.size(), _data);
+        detail::container_copy_range<T>(l.begin(), l.size(), _data);
         _size = l.size();
     }
 
     vector(vector const& rhs)
     {
         reserve(rhs._size);
-        _copy_range(rhs._data, rhs._size, _data);
+        detail::container_copy_range<T>(rhs._data, rhs._size, _data);
         _size = rhs._size;
     }
     vector(vector&& rhs) noexcept
@@ -91,14 +92,14 @@ public:
     }
     ~vector()
     {
-        _destroy_reverse(_data, _size);
+        detail::container_destroy_reverse<T>(_data, _size);
         _free(_data);
     }
     vector& operator=(vector const& rhs)
     {
         if (this != &rhs)
         {
-            _destroy_reverse(_data, _size);
+            detail::container_destroy_reverse<T>(_data, _size);
             // ensure enough memory has been allocated
             if (_capacity < rhs._size)
             {
@@ -106,14 +107,14 @@ public:
                 _data = _alloc(rhs._size);
                 _capacity = rhs._size;
             }
-            _copy_range(rhs._data, rhs._size, _data);
+            detail::container_copy_range<T>(rhs._data, rhs._size, _data);
             _size = rhs._size;
         }
         return *this;
     }
     vector& operator=(vector&& rhs) noexcept
     {
-        _destroy_reverse(_data, _size);
+        detail::container_destroy_reverse<T>(_data, _size);
         _free(_data);
         _data = rhs._data;
         _size = rhs._size;
@@ -162,8 +163,8 @@ public:
         if (size <= _capacity)
             return;
         T* new_data = _alloc(size);
-        _move_range(_data, _size, new_data);
-        _destroy_reverse(_data, _size);
+        detail::container_move_range<T>(_data, _size, new_data);
+        detail::container_destroy_reverse<T>(_data, _size);
         _free(_data);
         _data = new_data;
         _capacity = size;
@@ -193,7 +194,7 @@ public:
 
     void clear()
     {
-        _destroy_reverse(_data, _size);
+        detail::container_destroy_reverse<T>(_data, _size);
         _size = 0;
     }
 
@@ -202,7 +203,7 @@ public:
         if (_size != _capacity)
         {
             T* new_data = _alloc(_size);
-            _move_range(_data, _size, new_data);
+            detail::container_move_range<T>(_data, _size, new_data);
             _free(_data);
             _data = new_data;
             _capacity = _size;
@@ -233,32 +234,7 @@ public:
 private:
     static T* _alloc(size_t size) { return reinterpret_cast<T*>(new std::byte[size * sizeof(T)]); }
     static void _free(T* p) { delete[] reinterpret_cast<std::byte*>(p); }
-    static void _move_range(T* src, size_t num, T* dest)
-    {
-        for (size_t i = 0; i < num; ++i)
-            new (placement_new, &dest[i]) T(cc::move(src[i]));
-    }
-    static void _copy_range(T const* src, size_t num, T* dest)
-    {
-        if constexpr (std::is_trivially_copyable_v<T>)
-        {
-            if (num > 0)
-                std::memcpy(dest, src, sizeof(T) * num);
-        }
-        else
-        {
-            for (size_t i = 0; i < num; ++i)
-                new (placement_new, &dest[i]) T(src[i]);
-        }
-    }
-    static void _destroy_reverse(T* data, size_t num)
-    {
-        if constexpr (!std::is_trivially_destructible_v<T>)
-        {
-            for (size_t i = num; i > 0; --i)
-                data[i - 1].~T();
-        }
-    }
+
     void _grow() { reserve(_capacity == 0 ? 1 : _capacity << 1); }
 
     // members
