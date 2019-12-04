@@ -32,6 +32,8 @@ public:
 
     explicit constexpr span(T& val) : _data(&val), _size(1) {}
 
+    constexpr operator span<T const>() const noexcept { return {_data, _size}; }
+
     // container
 public:
     constexpr T* begin() const { return _data; }

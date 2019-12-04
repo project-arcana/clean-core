@@ -94,11 +94,11 @@ public:
         return cv;
     }
 
-    capped_vector(capped_vector const& rhs) : _size(rhs.size())
+    capped_vector(capped_vector const& rhs) : _size(static_cast<compact_size_t>(rhs.size()))
     {
         detail::container_copy_range<T, compact_size_t>(&rhs._u.value[0], _size, &_u.value[0]);
     }
-    capped_vector(capped_vector&& rhs) noexcept : _size(rhs.size())
+    capped_vector(capped_vector&& rhs) noexcept : _size(static_cast<compact_size_t>(rhs.size()))
     {
         detail::container_move_range<T, compact_size_t>(&rhs._u.value[0], _size, &_u.value[0]);
         rhs._size = 0;
