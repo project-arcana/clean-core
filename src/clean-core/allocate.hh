@@ -38,7 +38,7 @@ template <size_t Size>
 struct pool_block
 {
     size_t curr = Size;
-    void* ptrs[Size];
+    void* ptrs[Size] = {};
 
     bool can_pop() const { return curr < Size; }
     bool can_push() const { return curr > 0; }

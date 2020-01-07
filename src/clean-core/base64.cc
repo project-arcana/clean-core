@@ -66,7 +66,7 @@ cc::string cc::base64_encode(cc::span<cc::byte const> data)
 }
 cc::vector<cc::byte> cc::base64_decode(cc::string_view encoded_string)
 {
-    int in_len = encoded_string.size();
+    int in_len = static_cast<int>(encoded_string.size());
     int i = 0;
     int j = 0;
     int in_ = 0;
