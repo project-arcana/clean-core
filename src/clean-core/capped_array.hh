@@ -26,6 +26,7 @@ public:
     constexpr T const* end() const { return &_u.value[0] + _size; }
 
     constexpr size_t size() const { return _size; }
+    constexpr size_t max_size() const { return N; }
 
     constexpr T* data() { return &_u.value[0]; }
     constexpr T const* data() const { return &_u.value[0]; }
@@ -75,14 +76,14 @@ public:
     }
 
     template <class... Args>
-    void emplace(compact_size_t new_size, Args&&... init_args)
+    void emplace(size_t new_size, Args&&... init_args)
     {
         CC_CONTRACT(new_size <= N);
 
         // destroy current contents
         detail::container_destroy_reverse<T, compact_size_t>(_u.value, _size);
 
-        _size = new_size;
+        _size = static_cast<compact_size_t>(new_size);
         for (compact_size_t i = 0; i < _size; ++i)
             new (placement_new, &_u.value[i]) T(init_args...);
     }
