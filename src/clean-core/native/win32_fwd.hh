@@ -15,5 +15,20 @@ typedef struct HWND__* HWND;
 typedef struct HMONITOR__* HMONITOR;
 typedef struct _SECURITY_ATTRIBUTES SECURITY_ATTRIBUTES;
 typedef long HRESULT;
+typedef unsigned int UINT;
+
+#ifdef _WIN64
+typedef __int64 INT_PTR, *PINT_PTR;
+typedef unsigned __int64 UINT_PTR, *PUINT_PTR;
+
+typedef __int64 LONG_PTR, *PLONG_PTR;
+typedef unsigned __int64 ULONG_PTR, *PULONG_PTR;
+#else
+#error "Unsupported platform"
+#endif
+
+typedef UINT_PTR WPARAM;
+typedef LONG_PTR LPARAM;
+typedef LONG_PTR LRESULT;
 
 #endif
