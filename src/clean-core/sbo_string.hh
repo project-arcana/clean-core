@@ -419,10 +419,25 @@ template <size_t C>
     lhs += rhs;
     return lhs;
 }
+template <size_t C1, size_t C2>
+[[nodiscard]] sbo_string<C1> operator+(sbo_string<C1> lhs, sbo_string<C2> const& rhs)
+{
+    lhs += rhs;
+    return lhs;
+}
 template <size_t C>
 [[nodiscard]] sbo_string<C> operator+(sbo_string<C> lhs, char rhs)
 {
     lhs += rhs;
     return lhs;
+}
+template <size_t C>
+[[nodiscard]] sbo_string<C> operator+(string_view lhs, sbo_string<C> const& rhs)
+{
+    auto r = sbo_string<C>::uninitialized(lhs.size() + rhs.size());
+    auto d = r.data();
+    std::memcpy(d, lhs.data(), lhs.size());
+    std::memcpy(d + lhs.size(), rhs.data(), rhs.size());
+    return r;
 }
 }
