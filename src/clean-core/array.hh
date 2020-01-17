@@ -16,6 +16,8 @@ namespace cc
 template <class T, size_t N>
 struct array
 {
+    static_assert(sizeof(T) > 0, "cannot make array of incomplete object");
+
     // must be public for ctor
     T _values[N];
 
@@ -49,6 +51,8 @@ struct array
 template <class T>
 struct array<T, dynamic_size>
 {
+    static_assert(sizeof(T) > 0, "cannot make array of incomplete object");
+
     array() = default;
 
     explicit array(size_t size)
