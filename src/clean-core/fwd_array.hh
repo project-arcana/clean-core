@@ -64,14 +64,6 @@ struct fwd_array
         detail::container_copy_range<T>(data.data(), _size, _data);
     }
 
-    fwd_array(fwd_array const& a)
-    {
-        if (a._data)
-        {
-            _op = a._op;
-            _op.ctor_copy(*this, a);
-        }
-    }
     fwd_array(fwd_array&& a) noexcept
     {
         _op = a._op;
@@ -79,18 +71,6 @@ struct fwd_array
         _size = a._size;
         a._data = nullptr;
         a._size = 0;
-    }
-    fwd_array& operator=(fwd_array const& a)
-    {
-        if (&a != this)
-        {
-            if (a._data)
-            {
-                _op = a._op;
-                _op.assign_copy(*this, a);
-            }
-        }
-        return *this;
     }
     fwd_array& operator=(fwd_array&& a) noexcept
     {
@@ -108,6 +88,9 @@ struct fwd_array
         if (_data)
             _op.delete_data(*this);
     }
+
+    fwd_array(fwd_array const& a) = delete;
+    fwd_array& operator=(fwd_array const& a) = delete;
 
     constexpr T* begin() { return _data; }
     constexpr T* end() { return _data + _size; }
@@ -129,18 +112,6 @@ struct fwd_array
         return _data[i];
     }
 
-    constexpr bool operator==(fwd_array const& rhs) const
-    {
-        CC_CONTRACT((!_data || _op.are_equal) && "T does not have operator==");
-        CC_CONTRACT((!rhs._data || rhs._op.are_equal) && "T does not have operator==");
-
-        if (_size != rhs._size)
-            return false;
-
-        return (_data ? _op.are_equal : rhs._op.are_equal)(*this, rhs);
-    }
-    constexpr bool operator!=(fwd_array const& rhs) const { return !operator==(rhs); }
-
 private:
     T* _data = nullptr;
     size_t _size = 0;
@@ -148,34 +119,12 @@ private:
     struct ops
     {
         cc::function_ptr<void(fwd_array&)> delete_data = nullptr;
-        cc::function_ptr<void(fwd_array&, fwd_array const&)> ctor_copy = nullptr;
-        cc::function_ptr<void(fwd_array&, fwd_array const&)> assign_copy = nullptr;
-        cc::function_ptr<bool(fwd_array const&, fwd_array const&)> are_equal = nullptr;
 
         void init()
         {
             static_assert(sizeof(T) > 0, "cannot construct array of incomplete object");
 
             delete_data = [](fwd_array& a) { delete[] a._data; };
-
-            if constexpr (std::is_copy_constructible_v<T>)
-            {
-                ctor_copy = [](fwd_array& lhs, fwd_array const& rhs) {
-                    lhs._size = rhs._size;
-                    lhs._data = new T[rhs._size];
-                    detail::container_copy_range<T>(rhs.data(), lhs._size, lhs._data);
-                };
-
-                assign_copy = [](fwd_array& lhs, fwd_array const& rhs) {
-                    delete[] lhs._data;
-                    lhs._size = rhs._size;
-                    lhs._data = new T[rhs._size];
-                    detail::container_copy_range<T>(rhs.data(), lhs._size, lhs._data);
-                };
-            }
-
-            if constexpr (cc::has_operator_equal<T>)
-                are_equal = static_cast<bool (*)(fwd_array const&, fwd_array const&)>(cc::are_ranges_equal);
         }
     } _op;
 };
