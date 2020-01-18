@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstring>
+#include <initializer_list>
 #include <type_traits>
 
 #include <clean-core/assert.hh>
@@ -102,6 +103,12 @@ public:
     {
         detail::container_move_range<T, compact_size_t>(&rhs._u.value[0], _size, &_u.value[0]);
         rhs._size = 0;
+    }
+    capped_vector(std::initializer_list<T> data)
+    {
+        CC_CONTRACT(data.size() <= N);
+        _size = data.size();
+        detail::container_copy_range<T>(data.begin(), _size, &_u.value[0]);
     }
 
     capped_vector& operator=(capped_vector const& rhs)
