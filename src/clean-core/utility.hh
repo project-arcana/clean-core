@@ -1,6 +1,7 @@
 #pragma once
 
 #include <clean-core/assert.hh>
+#include <clean-core/typedefs.hh>
 
 namespace cc
 {
@@ -21,5 +22,12 @@ template <class T>
 {
     CC_CONTRACT(!(hi < lo));
     return (v < lo) ? lo : (hi < v) ? hi : v;
+}
+
+// https://godbolt.org/z/rTklbk
+inline size_t wrap_increment(size_t pos, size_t max)
+{
+    ++pos;
+    return pos == max ? 0 : pos;
 }
 }
