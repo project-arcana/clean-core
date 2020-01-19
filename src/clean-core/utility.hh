@@ -22,4 +22,14 @@ template <class T>
     CC_CONTRACT(!(hi < lo));
     return (v < lo) ? lo : (hi < v) ? hi : v;
 }
+
+// optimal assembly for increment with custom wrap-around
+// https://godbolt.org/z/rTklbk
+// (assembly only tested for integral types)
+template <class T>
+[[nodiscard]] constexpr T wrapped_increment(T pos, T max)
+{
+    ++pos;
+    return pos == max ? 0 : pos;
+}
 }
