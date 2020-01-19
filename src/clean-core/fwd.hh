@@ -40,6 +40,18 @@ struct fwd_array;
 template <class T, size_t N>
 struct capped_array;
 
+// values
+template <class T>
+struct box;
+template <class T>
+struct fwd_box;
+template <class T>
+struct poly_box;
+template <class T, size_t MaxSize = sizeof(T)>
+struct capped_box;
+template <class T>
+using pimpl = fwd_box<T>;
+
 // strings
 struct string_view;
 template <size_t sbo_capacity>
