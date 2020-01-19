@@ -38,6 +38,7 @@ struct poly_unique_ptr
     }
     poly_unique_ptr& operator=(poly_unique_ptr&& rhs) noexcept
     {
+        static_assert(sizeof(T) > 0, "cannot delete incomplete class");
         // self-move is reset
         delete _ptr;
         _ptr = rhs._ptr;
@@ -54,6 +55,7 @@ struct poly_unique_ptr
     template <class U, class = std::enable_if_t<std::is_base_of_v<T, U>>>
     poly_unique_ptr& operator=(poly_unique_ptr<U>&& rhs) noexcept
     {
+        static_assert(sizeof(T) > 0, "cannot delete incomplete class");
         // self-move is reset
         delete _ptr;
         _ptr = rhs.release();
@@ -68,6 +70,7 @@ struct poly_unique_ptr
 
     void reset(T* p = nullptr)
     {
+        static_assert(sizeof(T) > 0, "cannot delete incomplete class");
         CC_CONTRACT(p == nullptr || p != _ptr); // no self-reset
         delete _ptr;
         _ptr = p;
@@ -82,21 +85,21 @@ struct poly_unique_ptr
         return p;
     }
 
-    [[nodiscard]] T* operator->() const
+    T* operator->() const
     {
         CC_ASSERT_NOT_NULL(_ptr);
         return _ptr;
     }
-    [[nodiscard]] T& operator*() const
+    T& operator*() const
     {
         CC_ASSERT_NOT_NULL(_ptr);
         return *_ptr;
     }
 
-    [[nodiscard]] bool operator==(poly_unique_ptr const& rhs) const { return _ptr == rhs._ptr; }
-    [[nodiscard]] bool operator!=(poly_unique_ptr const& rhs) const { return _ptr != rhs._ptr; }
-    [[nodiscard]] bool operator==(T const* rhs) const { return _ptr == rhs; }
-    [[nodiscard]] bool operator!=(T const* rhs) const { return _ptr != rhs; }
+    bool operator==(poly_unique_ptr const& rhs) const { return _ptr == rhs._ptr; }
+    bool operator!=(poly_unique_ptr const& rhs) const { return _ptr != rhs._ptr; }
+    bool operator==(T const* rhs) const { return _ptr == rhs; }
+    bool operator!=(T const* rhs) const { return _ptr != rhs; }
 
 private:
     T* _ptr = nullptr;
@@ -109,14 +112,24 @@ struct poly_unique_ptr<T[]>
 };
 
 template <class T>
-[[nodiscard]] bool operator==(T const* lhs, poly_unique_ptr<T> const& rhs)
+bool operator==(T const* lhs, poly_unique_ptr<T> const& rhs)
 {
     return lhs == rhs.get();
 }
 template <class T>
-[[nodiscard]] bool operator==(nullptr_t, poly_unique_ptr<T> const& rhs)
+bool operator!=(T const* lhs, poly_unique_ptr<T> const& rhs)
+{
+    return lhs != rhs.get();
+}
+template <class T>
+bool operator==(nullptr_t, poly_unique_ptr<T> const& rhs)
 {
     return rhs.get() == nullptr;
+}
+template <class T>
+bool operator!=(nullptr_t, poly_unique_ptr<T> const& rhs)
+{
+    return rhs.get() != nullptr;
 }
 
 template <typename T, typename... Args>

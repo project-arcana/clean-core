@@ -39,6 +39,7 @@ struct unique_ptr
     }
     unique_ptr& operator=(unique_ptr&& rhs) noexcept
     {
+        static_assert(sizeof(T) > 0, "cannot delete incomplete class");
         // self-move is reset
         if (_ptr)
             cc::free(_ptr);
@@ -56,21 +57,21 @@ struct unique_ptr
 
     [[nodiscard]] T* get() const { return _ptr; }
 
-    [[nodiscard]] T* operator->() const
+    T* operator->() const
     {
         CC_ASSERT_NOT_NULL(_ptr);
         return _ptr;
     }
-    [[nodiscard]] T& operator*() const
+    T& operator*() const
     {
         CC_ASSERT_NOT_NULL(_ptr);
         return *_ptr;
     }
 
-    [[nodiscard]] bool operator==(unique_ptr const& rhs) const { return _ptr == rhs._ptr; }
-    [[nodiscard]] bool operator!=(unique_ptr const& rhs) const { return _ptr != rhs._ptr; }
-    [[nodiscard]] bool operator==(T const* rhs) const { return _ptr == rhs; }
-    [[nodiscard]] bool operator!=(T const* rhs) const { return _ptr != rhs; }
+    bool operator==(unique_ptr const& rhs) const { return _ptr == rhs._ptr; }
+    bool operator!=(unique_ptr const& rhs) const { return _ptr != rhs._ptr; }
+    bool operator==(T const* rhs) const { return _ptr == rhs; }
+    bool operator!=(T const* rhs) const { return _ptr != rhs; }
 
     template <typename U, typename... Args>
     friend unique_ptr<U> make_unique(Args&&... args);
@@ -91,9 +92,19 @@ template <class T>
     return lhs == rhs.get();
 }
 template <class T>
+[[nodiscard]] bool operator!=(T const* lhs, unique_ptr<T> const& rhs)
+{
+    return lhs != rhs.get();
+}
+template <class T>
 [[nodiscard]] bool operator==(nullptr_t, unique_ptr<T> const& rhs)
 {
     return rhs.get() == nullptr;
+}
+template <class T>
+[[nodiscard]] bool operator!=(nullptr_t, unique_ptr<T> const& rhs)
+{
+    return rhs.get() != nullptr;
 }
 
 template <typename T, typename... Args>

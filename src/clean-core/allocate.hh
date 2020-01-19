@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <type_traits>
 
 #include <clean-core/assert.hh>
 #include <clean-core/forward.hh>
