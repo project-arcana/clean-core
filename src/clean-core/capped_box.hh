@@ -6,6 +6,7 @@
 #include <clean-core/enable_if.hh>
 #include <clean-core/forward.hh>
 #include <clean-core/function_ptr.hh>
+#include <clean-core/fwd.hh>
 #include <clean-core/move.hh>
 #include <clean-core/new.hh>
 #include <clean-core/typedefs.hh>
@@ -48,7 +49,7 @@ struct capped_box_move<true>
 /// a polymorphic move-only value type (allocated on the stack with a maximum size)
 /// (basically a non-nullable poly_unique_ptr but on the stack)
 /// TODO: are there alignment issues?
-template <class T, size_t MaxSize = sizeof(T)>
+template <class T, size_t MaxSize>
 struct capped_box : private detail::capped_box_storage<MaxSize>, //
                     private detail::capped_box_dtor<!std::is_trivially_destructible_v<T>>,
                     private detail::capped_box_move<!std::is_trivially_move_constructible_v<T>>
