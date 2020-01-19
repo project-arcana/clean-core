@@ -27,6 +27,7 @@ public:
 
     constexpr size_t size() const { return _size; }
     constexpr size_t max_size() const { return N; }
+    constexpr bool empty() const { return _size == 0; }
 
     constexpr T* data() { return &_u.value[0]; }
     constexpr T const* data() const { return &_u.value[0]; }
@@ -88,8 +89,11 @@ public:
             new (placement_new, &_u.value[i]) T(init_args...);
     }
 
-    capped_array(capped_array const& rhs) : _size(rhs.size) { detail::container_copy_range<T, compact_size_t>(&rhs._u.value[0], _size, &_u.value[0]); }
-    capped_array(capped_array&& rhs) noexcept : _size(rhs.size)
+    capped_array(capped_array const& rhs) : _size(rhs._size)
+    {
+        detail::container_copy_range<T, compact_size_t>(&rhs._u.value[0], _size, &_u.value[0]);
+    }
+    capped_array(capped_array&& rhs) noexcept : _size(rhs._size)
     {
         detail::container_move_range<T, compact_size_t>(&rhs._u.value[0], _size, &_u.value[0]);
         rhs._size = 0;

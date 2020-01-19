@@ -35,6 +35,8 @@ struct capped_vector;
 
 template <class T, size_t N = dynamic_size>
 struct array;
+template <class T>
+struct fwd_array;
 template <class T, size_t N>
 struct capped_array;
 
