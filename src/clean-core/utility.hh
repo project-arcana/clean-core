@@ -1,7 +1,6 @@
 #pragma once
 
 #include <clean-core/assert.hh>
-#include <clean-core/typedefs.hh>
 
 namespace cc
 {
