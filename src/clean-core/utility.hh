@@ -26,7 +26,9 @@ template <class T>
 
 // optimal assembly for increment with custom wrap-around
 // https://godbolt.org/z/rTklbk
-[[nodiscard]] inline constexpr size_t wrapped_increment(size_t pos, size_t max)
+// (assembly only tested for integral types)
+template <class T>
+[[nodiscard]] constexpr T wrapped_increment(T pos, T max)
 {
     ++pos;
     return pos == max ? 0 : pos;
