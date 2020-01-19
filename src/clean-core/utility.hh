@@ -25,7 +25,7 @@ template <class T>
 }
 
 // https://godbolt.org/z/rTklbk
-inline size_t wrap_increment(size_t pos, size_t max)
+[[nodiscard]] inline constexpr size_t wrap_increment(size_t pos, size_t max)
 {
     ++pos;
     return pos == max ? 0 : pos;
