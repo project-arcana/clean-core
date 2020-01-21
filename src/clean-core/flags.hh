@@ -26,7 +26,13 @@ struct flags_iterator;
 struct flags_iterator_sentinel
 {
 };
+
+struct no_flags_t
+{
+};
 }
+
+inline constexpr detail::no_flags_t no_flags = {};
 
 template <class EnumT, size_t Bits = 8 * sizeof(EnumT)>
 struct flags
@@ -62,6 +68,7 @@ public:
     // ctors and factories
 public:
     constexpr flags() = default;
+    constexpr flags(detail::no_flags_t) {}
     template <class... Args>
     constexpr flags(EnumT f, Args... other_flags)
     {
