@@ -80,6 +80,14 @@ struct array<T, dynamic_size>
         return a;
     }
 
+    void resize(size_t new_size, T const& value = {})
+    {
+        delete[] _data;
+        _size = new_size;
+        _data = new T[new_size];
+        cc::fill(*this, value);
+    }
+
     array(std::initializer_list<T> data)
     {
         _size = data.size();
