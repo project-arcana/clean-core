@@ -102,6 +102,9 @@ struct poly_unique_ptr
     bool operator!=(T const* rhs) const { return _ptr != rhs; }
 
 private:
+    template<class U>
+    friend struct poly_unique_ptr;
+
     T* _ptr = nullptr;
 };
 
