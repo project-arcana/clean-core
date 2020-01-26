@@ -48,7 +48,11 @@ public:
 public:
     vector() = default;
 
-    explicit vector(size_t size) : _data(new T[size]()), _size(size), _capacity(size) {}
+    explicit vector(size_t size) : _data(_alloc(size)), _size(size), _capacity(size)
+    {
+        for (size_t i = 0; i < size; ++i)
+            new (placement_new, &_data[i]) T();
+    }
 
     [[nodiscard]] static vector defaulted(size_t size) { return vector(size); }
 
@@ -57,7 +61,7 @@ public:
         vector v;
         v._size = size;
         v._capacity = size;
-        v._data = new T[size];
+        v._data = _alloc(size);
         return v;
     }
 
