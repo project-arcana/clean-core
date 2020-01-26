@@ -32,4 +32,12 @@ template <class T>
     ++pos;
     return pos == max ? 0 : pos;
 }
+
+template <class T>
+void swap(T& a, T& b)
+{
+    T tmp = static_cast<T&&>(a);
+    a = static_cast<T&&>(b);
+    b = static_cast<T&&>(tmp);
+}
 }
