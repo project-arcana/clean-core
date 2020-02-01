@@ -180,8 +180,7 @@ public:
             reserve(new_size);
         for (size_t i = _size; i < new_size; ++i)
             new (placement_new, &_data[i]) T();
-        for (size_t i = _size; i > new_size; --i)
-            _data[i - 1].~T();
+        detail::container_destroy_reverse<T>(_data, _size, new_size);
         _size = new_size;
     }
 
@@ -191,8 +190,7 @@ public:
             reserve(new_size);
         for (size_t i = _size; i < new_size; ++i)
             new (placement_new, &_data[i]) T(default_value);
-        for (size_t i = _size; i > new_size; --i)
-            _data[i - 1].~T();
+        detail::container_destroy_reverse<T>(_data, _size, new_size);
         _size = new_size;
     }
 
