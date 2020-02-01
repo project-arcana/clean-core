@@ -97,7 +97,7 @@ public:
     }
     sbo_string(char const* s)
     {
-        _size = std::strlen(s);
+        _size = s == nullptr ? 0 : std::strlen(s);
 
         if (_size <= sbo_capacity)
             _data = _sbo;
@@ -107,7 +107,10 @@ public:
             _data = new char[_size + 1];
         }
 
-        std::memcpy(_data, s, _size);
+        if (s != nullptr)
+        {
+            std::memcpy(_data, s, _size);
+        }
         _data[_size] = '\0';
     }
 
