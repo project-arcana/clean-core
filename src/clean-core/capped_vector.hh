@@ -108,7 +108,7 @@ public:
     capped_vector(T const* begin, size_t num_elements)
     {
         CC_CONTRACT(num_elements <= N);
-        _size = num_elements;
+        _size = static_cast<compact_size_t>(num_elements);
         detail::container_copy_range<T>(begin, num_elements, &_u.value[0]);
     }
     capped_vector(std::initializer_list<T> data) : capped_vector(data.begin(), data.size()) {}
