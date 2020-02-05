@@ -10,6 +10,7 @@
 #include <clean-core/forward.hh>
 #include <clean-core/move.hh>
 #include <clean-core/new.hh>
+#include <clean-core/span.hh>
 #include <clean-core/storage.hh>
 
 namespace cc
@@ -104,12 +105,14 @@ public:
         detail::container_move_range<T, compact_size_t>(&rhs._u.value[0], _size, &_u.value[0]);
         rhs._size = 0;
     }
-    capped_vector(std::initializer_list<T> data)
+    capped_vector(T const* begin, size_t num_elements)
     {
-        CC_CONTRACT(data.size() <= N);
-        _size = data.size();
-        detail::container_copy_range<T>(data.begin(), _size, &_u.value[0]);
+        CC_CONTRACT(num_elements <= N);
+        _size = static_cast<compact_size_t>(num_elements);
+        detail::container_copy_range<T>(begin, num_elements, &_u.value[0]);
     }
+    capped_vector(std::initializer_list<T> data) : capped_vector(data.begin(), data.size()) {}
+    capped_vector(cc::span<T const> data) : capped_vector(data.begin(), data.size()) {}
 
     capped_vector& operator=(capped_vector const& rhs)
     {
@@ -214,29 +217,23 @@ public:
         _size = compact_size_t(new_size);
     }
 
-    template <size_t M>
-    constexpr bool operator==(capped_vector<T, M> const& rhs) const noexcept
+    bool operator==(cc::span<T const> rhs) const noexcept
     {
-        if (_size != rhs._size)
+        if (_size != rhs.size())
             return false;
         for (size_t i = 0; i < _size; ++i)
-        {
-            if ((*this)[i] != rhs[i])
+            if (!((*this)[i] == rhs[i]))
                 return false;
-        }
         return true;
     }
 
-    template <size_t M>
-    constexpr bool operator!=(capped_vector<T, M> const& rhs) const noexcept
+    bool operator!=(cc::span<T const> rhs) const noexcept
     {
-        if (_size != rhs._size)
+        if (_size != rhs.size())
             return true;
         for (size_t i = 0; i < _size; ++i)
-        {
             if ((*this)[i] != rhs[i])
                 return true;
-        }
         return false;
     }
 
