@@ -11,6 +11,7 @@
 #include <clean-core/fwd.hh>
 #include <clean-core/move.hh>
 #include <clean-core/new.hh>
+#include <clean-core/span.hh>
 
 namespace cc
 {
@@ -72,19 +73,16 @@ public:
         return v;
     }
 
-    vector(std::initializer_list<T> l)
+    vector(T const* begin, size_t num_elements)
     {
-        reserve(l.size());
-        detail::container_copy_range<T>(l.begin(), l.size(), _data);
-        _size = l.size();
+        reserve(num_elements);
+        detail::container_copy_range<T>(begin, num_elements, _data);
+        _size = num_elements;
     }
+    vector(std::initializer_list<T> data) : vector(data.begin(), data.size()) {}
+    vector(cc::span<T const> data) : vector(data.begin(), data.size()) {}
+    vector(vector const& rhs) : vector(rhs.begin(), rhs.size()) {}
 
-    vector(vector const& rhs)
-    {
-        reserve(rhs._size);
-        detail::container_copy_range<T>(rhs._data, rhs._size, _data);
-        _size = rhs._size;
-    }
     vector(vector&& rhs) noexcept
     {
         _data = rhs._data;
@@ -212,22 +210,22 @@ public:
         }
     }
 
-    bool operator==(vector const& rhs) const noexcept
+    bool operator==(cc::span<T const> rhs) const noexcept
     {
-        if (_size != rhs._size)
+        if (_size != rhs.size())
             return false;
         for (size_t i = 0; i < _size; ++i)
-            if (_data[i] != rhs._data[i])
+            if (!(_data[i] == rhs[i]))
                 return false;
         return true;
     }
 
-    bool operator!=(vector const& rhs) const noexcept
+    bool operator!=(cc::span<T const> rhs) const noexcept
     {
-        if (_size != rhs._size)
+        if (_size != rhs.size())
             return true;
         for (size_t i = 0; i < _size; ++i)
-            if (_data[i] != rhs._data[i])
+            if (_data[i] != rhs[i])
                 return true;
         return false;
     }
