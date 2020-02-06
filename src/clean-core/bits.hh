@@ -9,6 +9,14 @@
 
 namespace cc
 {
+// Divide ints and round up
+// a > 0, b > 0
+template <class T>
+constexpr T int_div_ceil(T a, T b)
+{
+    return 1 + ((a - 1) / b);
+}
+
 #ifdef CC_COMPILER_MSVC
 
 inline int popcount(uint8 v) { return static_cast<int>(__popcnt16(v)); }
