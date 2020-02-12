@@ -41,7 +41,7 @@ public:
         }
         else // function pointers
         {
-            static_assert(std::is_function_v<F>, "argument not callable or a function pointer");
+            static_assert(std::is_function_v<std::remove_pointer_t<F>>, "argument not callable or a function pointer");
             _data.fun = &f;
             _fun = [](storage const& s, Args... args) -> Result { return s.fun(cc::forward<Args>(args)...); };
         }
