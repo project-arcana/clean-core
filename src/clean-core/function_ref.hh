@@ -26,10 +26,11 @@ public:
     template <class F, enable_if<std::is_invocable_r_v<Result, F, Args...> && !std::is_same_v<std::decay_t<F>, function_ref>> = true>
     constexpr function_ref(F&& f)
     {
-        if constexpr (std::is_function_v<std::remove_pointer_t<F>>) // function pointer
+        if constexpr (std::is_function_v<std::remove_pointer_t<std::remove_reference_t<F>>>) // function pointer
         {
             // comes first since in some architectures function pointers are void* convertible as well
             _data.fun = f;
+            CC_CONTRACT(_data.fun != nullptr && "null function pointers not allowed in cc::function_ref");
             _fun = [](storage const& s, Args... args) -> Result { return s.fun(cc::forward<Args>(args)...); };
         }
         else if constexpr (std::is_assignable_v<void*&, decltype(&f)>) // ptr / ref to callable
