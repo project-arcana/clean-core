@@ -40,7 +40,7 @@ public:
                 return (*static_cast<std::remove_reference_t<F>*>(s.obj))(cc::forward<Args>(args)...);
             };
         }
-        else if constexpr (0 && std::is_assignable_v<void const*&, decltype(&f)>) // ptr / ref to const callable
+        else if constexpr (std::is_assignable_v<void const*&, decltype(&f)>) // ptr / ref to const callable
         {
             _data.obj_const = &f;
             _fun = [](storage const& s, Args... args) -> Result {
