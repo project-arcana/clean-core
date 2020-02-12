@@ -19,29 +19,29 @@ namespace cc
 template <class Result, class... Args>
 struct function_ref<Result(Args...)>
 {
-private:
-    union storage {
-        void* obj;
-        function_ptr<Result(Args...)> fun;
-
-        storage() {}
-    };
-
 public:
     constexpr Result operator()(Args... args) const { return _fun(_data, cc::forward<Args>(args)...); }
 
     template <class F, enable_if<std::is_invocable_r_v<Result, F, Args...> && !std::is_same_v<std::decay_t<F>, function_ref>> = true>
     constexpr function_ref(F&& f)
     {
-        if constexpr (std::is_assignable_v<void*&, decltype(&f)>)
+        if constexpr (std::is_assignable_v<void*&, decltype(&f)>) // ptr / ref to callable
         {
             _data.obj = &f;
             _fun = [](storage const& s, Args... args) -> Result {
                 return (*static_cast<std::remove_reference_t<F>*>(s.obj))(cc::forward<Args>(args)...);
             };
         }
+        else if constexpr (std::is_assignable_v<void const*&, decltype(&f)>) // ptr / ref to const callable
+        {
+            _data.obj_const = &f;
+            _fun = [](storage const& s, Args... args) -> Result {
+                return (*static_cast<std::remove_reference_t<F>*>(s.obj))(cc::forward<Args>(args)...);
+            };
+        }
         else // function pointers
         {
+            static_assert(std::is_function_v<F>, "argument not callable or a function pointer");
             _data.fun = &f;
             _fun = [](storage const& s, Args... args) -> Result { return s.fun(cc::forward<Args>(args)...); };
         }
@@ -51,8 +51,16 @@ public:
     constexpr function_ref& operator=(function_ref const&) = default;
 
 private:
-    storage _data;
-    function_ptr<Result(storage const&, Args...)> _fun = nullptr;
+    union storage {
+        void* obj;                         // pointer to callable
+        void const* obj_const;             // pointer to const callable
+        function_ptr<Result(Args...)> fun; // original function pointer
+
+        storage() {}
+    };
+
+    storage _data;                                                // storage for a pointer to the callable
+    function_ptr<Result(storage const&, Args...)> _fun = nullptr; // the function used to invoke the callable
 };
 
 template <class Result, class... Args>
