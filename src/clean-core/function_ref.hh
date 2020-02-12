@@ -1,5 +1,6 @@
 #pragma once
 
+#include <clean-core/assert.hh>
 #include <clean-core/enable_if.hh>
 #include <clean-core/forward.hh>
 #include <clean-core/function_ptr.hh>
@@ -25,25 +26,29 @@ public:
     template <class F, enable_if<std::is_invocable_r_v<Result, F, Args...> && !std::is_same_v<std::decay_t<F>, function_ref>> = true>
     constexpr function_ref(F&& f)
     {
-        if constexpr (std::is_assignable_v<void*&, decltype(&f)>) // ptr / ref to callable
+        if constexpr (std::is_function_v<std::remove_pointer_t<F>>) // function pointer
+        {
+            // comes first since in some architectures function pointers are void* convertible as well
+            _data.fun = f;
+            _fun = [](storage const& s, Args... args) -> Result { return s.fun(cc::forward<Args>(args)...); };
+        }
+        else if constexpr (std::is_assignable_v<void*&, decltype(&f)>) // ptr / ref to callable
         {
             _data.obj = &f;
             _fun = [](storage const& s, Args... args) -> Result {
                 return (*static_cast<std::remove_reference_t<F>*>(s.obj))(cc::forward<Args>(args)...);
             };
         }
-        else if constexpr (std::is_assignable_v<void const*&, decltype(&f)>) // ptr / ref to const callable
+        else if constexpr (0 && std::is_assignable_v<void const*&, decltype(&f)>) // ptr / ref to const callable
         {
             _data.obj_const = &f;
             _fun = [](storage const& s, Args... args) -> Result {
                 return (*static_cast<std::remove_reference_t<F>*>(s.obj))(cc::forward<Args>(args)...);
             };
         }
-        else // function pointers
+        else
         {
-            static_assert(std::is_function_v<std::remove_pointer_t<F>>, "argument not callable or a function pointer");
-            _data.fun = &f;
-            _fun = [](storage const& s, Args... args) -> Result { return s.fun(cc::forward<Args>(args)...); };
+            static_assert(cc::always_false<F>, "argument cannot be converted to cc::function_ref");
         }
     }
 
