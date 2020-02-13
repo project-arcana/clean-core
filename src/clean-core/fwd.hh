@@ -63,6 +63,8 @@ using string = sbo_string<15>;
 // functional
 template <class Signature>
 struct unique_function;
+template <class Signature>
+struct function_ref;
 
 // smart pointer
 template <class T>

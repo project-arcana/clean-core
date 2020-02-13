@@ -11,12 +11,12 @@
 
 namespace cc
 {
-#define CC_FLAGS_ENUM(_enum_t_)                                                                   \
-    constexpr ::cc::flags<_enum_t_> operator|(_enum_t_ a, _enum_t_ b) noexcept { return {a, b}; } \
+#define CC_FLAGS_ENUM(_enum_t_)                                                                                    \
+    [[maybe_unused]] constexpr ::cc::flags<_enum_t_> operator|(_enum_t_ a, _enum_t_ b) noexcept { return {a, b}; } \
     CC_FORCE_SEMICOLON
 
-#define CC_FLAGS_ENUM_SIZED(_enum_t_, _size_)                                                             \
-    constexpr ::cc::flags<_enum_t_, _size_> operator|(_enum_t_ a, _enum_t_ b) noexcept { return {a, b}; } \
+#define CC_FLAGS_ENUM_SIZED(_enum_t_, _size_)                                                                              \
+    [[maybe_unused]] constexpr ::cc::flags<_enum_t_, _size_> operator|(_enum_t_ a, _enum_t_ b) noexcept { return {a, b}; } \
     CC_FORCE_SEMICOLON
 
 namespace detail
