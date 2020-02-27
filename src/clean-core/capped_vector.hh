@@ -264,17 +264,16 @@ public:
 public:
     constexpr capped_vector() = default;
 
-
     template <size_t M>
     constexpr bool operator==(capped_vector<T, M> const& rhs) const noexcept
     {
-        return (rhs._size == 0);
+        return rhs._size == 0;
     }
 
     template <size_t M>
     constexpr bool operator!=(capped_vector<T, M> const& rhs) const noexcept
     {
-        return (rhs._size != 0);
+        return rhs._size != 0;
     }
 };
 }
