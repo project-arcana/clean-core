@@ -353,6 +353,44 @@ public:
 
     operator string_view() const { return string_view(_data, _size); }
 
+    friend bool operator==(string_view lhs, sbo_string const& rhs) { return lhs == string_view(rhs); }
+    friend bool operator!=(string_view lhs, sbo_string const& rhs) { return lhs != string_view(rhs); }
+    template <size_t B>
+    friend bool operator==(sbo_string const& lhs, sbo_string<B> const& rhs)
+    {
+        return string_view(lhs) == string_view(rhs);
+    }
+    template <size_t B>
+    friend bool operator!=(sbo_string const& lhs, sbo_string<B> const& rhs)
+    {
+        return string_view(lhs) != string_view(rhs);
+    }
+
+    friend sbo_string operator+(sbo_string lhs, string_view rhs)
+    {
+        lhs += rhs;
+        return lhs;
+    }
+    template <size_t C2>
+    friend sbo_string operator+(sbo_string lhs, sbo_string<C2> const& rhs)
+    {
+        lhs += rhs;
+        return lhs;
+    }
+    friend sbo_string operator+(sbo_string lhs, char rhs)
+    {
+        lhs += rhs;
+        return lhs;
+    }
+    friend sbo_string operator+(string_view lhs, sbo_string const& rhs)
+    {
+        auto r = uninitialized(lhs.size() + rhs.size());
+        auto d = r.data();
+        std::memcpy(d, lhs.data(), lhs.size());
+        std::memcpy(d + lhs.size(), rhs.data(), rhs.size());
+        return r;
+    }
+
     // helper
 private:
     bool _is_short() const { return _data == _sbo; }
@@ -391,53 +429,4 @@ private:
         words _sbo_words;
     };
 };
-
-template <size_t C>
-bool operator==(string_view lhs, sbo_string<C> const& rhs)
-{
-    return lhs == string_view(rhs);
-}
-template <size_t C>
-bool operator!=(string_view lhs, sbo_string<C> const& rhs)
-{
-    return lhs != string_view(rhs);
-}
-template <size_t A, size_t B>
-bool operator==(sbo_string<A> const& lhs, sbo_string<B> const& rhs)
-{
-    return string_view(lhs) == string_view(rhs);
-}
-template <size_t A, size_t B>
-bool operator!=(sbo_string<A> const& lhs, sbo_string<B> const& rhs)
-{
-    return string_view(lhs) != string_view(rhs);
-}
-
-template <size_t C>
-[[nodiscard]] sbo_string<C> operator+(sbo_string<C> lhs, string_view rhs)
-{
-    lhs += rhs;
-    return lhs;
-}
-template <size_t C1, size_t C2>
-[[nodiscard]] sbo_string<C1> operator+(sbo_string<C1> lhs, sbo_string<C2> const& rhs)
-{
-    lhs += rhs;
-    return lhs;
-}
-template <size_t C>
-[[nodiscard]] sbo_string<C> operator+(sbo_string<C> lhs, char rhs)
-{
-    lhs += rhs;
-    return lhs;
-}
-template <size_t C>
-[[nodiscard]] sbo_string<C> operator+(string_view lhs, sbo_string<C> const& rhs)
-{
-    auto r = sbo_string<C>::uninitialized(lhs.size() + rhs.size());
-    auto d = r.data();
-    std::memcpy(d, lhs.data(), lhs.size());
-    std::memcpy(d + lhs.size(), rhs.data(), rhs.size());
-    return r;
-}
 }

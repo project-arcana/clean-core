@@ -101,8 +101,13 @@ struct poly_unique_ptr
     bool operator==(T const* rhs) const { return _ptr == rhs; }
     bool operator!=(T const* rhs) const { return _ptr != rhs; }
 
+    friend bool operator==(T const* lhs, poly_unique_ptr const& rhs) { return lhs == rhs.get(); }
+    friend bool operator!=(T const* lhs, poly_unique_ptr const& rhs) { return lhs != rhs.get(); }
+    friend bool operator==(nullptr_t, poly_unique_ptr const& rhs) { return rhs.get() == nullptr; }
+    friend bool operator!=(nullptr_t, poly_unique_ptr const& rhs) { return rhs.get() != nullptr; }
+
 private:
-    template<class U>
+    template <class U>
     friend struct poly_unique_ptr;
 
     T* _ptr = nullptr;
@@ -113,27 +118,6 @@ struct poly_unique_ptr<T[]>
 {
     static_assert(always_false<T>, "poly_unique_ptr does not support arrays, use cc::vector or cc::array instead");
 };
-
-template <class T>
-bool operator==(T const* lhs, poly_unique_ptr<T> const& rhs)
-{
-    return lhs == rhs.get();
-}
-template <class T>
-bool operator!=(T const* lhs, poly_unique_ptr<T> const& rhs)
-{
-    return lhs != rhs.get();
-}
-template <class T>
-bool operator==(nullptr_t, poly_unique_ptr<T> const& rhs)
-{
-    return rhs.get() == nullptr;
-}
-template <class T>
-bool operator!=(nullptr_t, poly_unique_ptr<T> const& rhs)
-{
-    return rhs.get() != nullptr;
-}
 
 template <typename T, typename... Args>
 [[nodiscard]] poly_unique_ptr<T> make_poly_unique(Args&&... args)

@@ -76,6 +76,11 @@ struct unique_ptr
     template <typename U, typename... Args>
     friend unique_ptr<U> make_unique(Args&&... args);
 
+    friend bool operator==(T const* lhs, unique_ptr const& rhs) { return lhs == rhs.get(); }
+    friend bool operator!=(T const* lhs, unique_ptr const& rhs) { return lhs != rhs.get(); }
+    friend bool operator==(nullptr_t, unique_ptr const& rhs) { return rhs.get() == nullptr; }
+    friend bool operator!=(nullptr_t, unique_ptr const& rhs) { return rhs.get() != nullptr; }
+
 private:
     T* _ptr = nullptr;
 };
@@ -85,27 +90,6 @@ struct unique_ptr<T[]>
 {
     static_assert(always_false<T>, "unique_ptr does not support arrays, use cc::vector or cc::array instead");
 };
-
-template <class T>
-[[nodiscard]] bool operator==(T const* lhs, unique_ptr<T> const& rhs)
-{
-    return lhs == rhs.get();
-}
-template <class T>
-[[nodiscard]] bool operator!=(T const* lhs, unique_ptr<T> const& rhs)
-{
-    return lhs != rhs.get();
-}
-template <class T>
-[[nodiscard]] bool operator==(nullptr_t, unique_ptr<T> const& rhs)
-{
-    return rhs.get() == nullptr;
-}
-template <class T>
-[[nodiscard]] bool operator!=(nullptr_t, unique_ptr<T> const& rhs)
-{
-    return rhs.get() != nullptr;
-}
 
 template <typename T, typename... Args>
 [[nodiscard]] unique_ptr<T> make_unique(Args&&... args)

@@ -198,13 +198,13 @@ public:
     template <size_t M>
     constexpr bool operator==(capped_array<T, M> const& rhs) const noexcept
     {
-        return (rhs._size == 0);
+        return rhs._size == 0;
     }
 
     template <size_t M>
     constexpr bool operator!=(capped_array<T, M> const& rhs) const noexcept
     {
-        return (rhs._size != 0);
+        return rhs._size != 0;
     }
 };
 }
