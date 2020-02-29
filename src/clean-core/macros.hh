@@ -60,6 +60,8 @@
 #define CC_COLD_FUNC
 #define CC_HOT_FUNC
 
+#define CC_BUILTIN_UNREACHABLE __assume(0)
+
 #elif defined(CC_COMPILER_POSIX)
 
 #define CC_PRETTY_FUNC __PRETTY_FUNCTION__
@@ -71,6 +73,8 @@
 #define CC_UNLIKELY(x) __builtin_expect((x), 0)
 #define CC_COLD_FUNC __attribute__((cold))
 #define CC_HOT_FUNC __attribute__((hot))
+
+#define CC_BUILTIN_UNREACHABLE __builtin_unreachable()
 
 #else
 #error "Unknown compiler"

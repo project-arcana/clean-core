@@ -53,7 +53,7 @@ public:
     }
 
     /// looks up the given key and returns the element
-    /// contract violation if key is not present
+    /// UB if key is not present
     template <class T>
     ValueT& get(T const& key)
     {
@@ -62,7 +62,7 @@ public:
             if (EqualT{}(e.key, key))
                 return e.value;
 
-        CC_CONTRACT(false && "key not found");
+        CC_UNREACHABLE("key not found");
     }
     template <class T>
     ValueT const& get(T const& key) const
@@ -72,7 +72,7 @@ public:
             if (EqualT{}(e.key, key))
                 return e.value;
 
-        CC_CONTRACT(false && "key not found");
+        CC_UNREACHABLE("key not found");
     }
 
     // helper
