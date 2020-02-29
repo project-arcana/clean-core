@@ -42,6 +42,11 @@ struct fwd_array;
 template <class T, size_t N>
 struct capped_array;
 
+template <class KeyT, class ValueT, class HashT = cc::hash<KeyT>, class EqualT = cc::equal_to<void>>
+struct map;
+template <class T, class HashT = cc::hash<T>, class EqualT = cc::equal_to<void>>
+struct set;
+
 // values
 template <class T>
 struct box;

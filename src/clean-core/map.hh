@@ -3,11 +3,12 @@
 #include <clean-core/array.hh>
 #include <clean-core/equal_to.hh>
 #include <clean-core/forward_list.hh>
+#include <clean-core/fwd.hh>
 #include <clean-core/hash.hh>
 
 namespace cc
 {
-template <class KeyT, class ValueT, class HashT = cc::hash<KeyT>, class EqualT = cc::equal_to<void>>
+template <class KeyT, class ValueT, class HashT, class EqualT>
 struct map
 {
     // container
