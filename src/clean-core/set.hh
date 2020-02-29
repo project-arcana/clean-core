@@ -36,7 +36,9 @@ public:
 
     // operators
 public:
-    void add(T const& value)
+    /// adds a value to the set
+    /// returns true if already contained
+    bool add(T const& value)
     {
         if (_size >= _entries.size())
             _reserve(_size == 0 ? 4 : _size * 2);
@@ -45,10 +47,11 @@ public:
         auto& l = _entries[idx];
         for (auto& e : l)
             if (EqualT{}(e, value))
-                return; // already contained
+                return false; // already contained
 
         ++_size;
         l.emplace_front(value);
+        return true;
     }
 
     /// removes an element from the set
