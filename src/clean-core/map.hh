@@ -52,6 +52,29 @@ public:
         return l.emplace_front(KeyT(key)).value;
     }
 
+    /// looks up the given key and returns the element
+    /// contract violation if key is not present
+    template <class T>
+    ValueT& get(T const& key)
+    {
+        auto idx = this->_get_location(key);
+        for (auto& e : _entries[idx])
+            if (EqualT{}(e.key, key))
+                return e.value;
+
+        CC_CONTRACT(false && "key not found");
+    }
+    template <class T>
+    ValueT const& get(T const& key) const
+    {
+        auto idx = this->_get_location(key);
+        for (auto& e : _entries[idx])
+            if (EqualT{}(e.key, key))
+                return e.value;
+
+        CC_CONTRACT(false && "key not found");
+    }
+
     // helper
 private:
     template <class T>
