@@ -83,7 +83,7 @@ struct hash<T, cc::enable_if<std::is_trivially_copyable_v<T> && std::has_unique_
         hash_t words[wcnt] = {}; // zero-init
         std::memcpy(words, &value, sizeof(value));
         auto h = words[0];
-        for (auto i = 1; i < wcnt; ++i)
+        for (size_t i = 1; i < wcnt; ++i)
             h = cc::hash_combine(h, words[i]);
         return h;
     }

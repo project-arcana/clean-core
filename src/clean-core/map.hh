@@ -3,11 +3,12 @@
 #include <clean-core/array.hh>
 #include <clean-core/equal_to.hh>
 #include <clean-core/forward_list.hh>
+#include <clean-core/fwd.hh>
 #include <clean-core/hash.hh>
 
 namespace cc
 {
-template <class KeyT, class ValueT, class HashT = cc::hash<KeyT>, class EqualT = cc::equal_to<void>>
+template <class KeyT, class ValueT, class HashT, class EqualT>
 struct map
 {
     // container
@@ -49,6 +50,29 @@ public:
 
         ++_size;
         return l.emplace_front(KeyT(key)).value;
+    }
+
+    /// looks up the given key and returns the element
+    /// UB if key is not present
+    template <class T>
+    ValueT& get(T const& key)
+    {
+        auto idx = this->_get_location(key);
+        for (auto& e : _entries[idx])
+            if (EqualT{}(e.key, key))
+                return e.value;
+
+        CC_UNREACHABLE("key not found");
+    }
+    template <class T>
+    ValueT const& get(T const& key) const
+    {
+        auto idx = this->_get_location(key);
+        for (auto& e : _entries[idx])
+            if (EqualT{}(e.key, key))
+                return e.value;
+
+        CC_UNREACHABLE("key not found");
     }
 
     // helper

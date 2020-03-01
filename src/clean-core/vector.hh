@@ -29,10 +29,27 @@ public:
     T const* begin() const { return _data; }
     T* end() { return _data + _size; }
     T const* end() const { return _data + _size; }
-    T& front() { return _data[0]; }
-    T const& front() const { return _data[0]; }
-    T& back() { return _data[_size - 1]; }
-    T const& back() const { return _data[_size - 1]; }
+
+    T& front()
+    {
+        CC_CONTRACT(!empty());
+        return _data[0];
+    }
+    T const& front() const
+    {
+        CC_CONTRACT(!empty());
+        return _data[0];
+    }
+    T& back()
+    {
+        CC_CONTRACT(!empty());
+        return _data[_size - 1];
+    }
+    T const& back() const
+    {
+        CC_CONTRACT(!empty());
+        return _data[_size - 1];
+    }
 
     T& operator[](size_t i)
     {
