@@ -1,10 +1,14 @@
 #pragma once
 
+#include <initializer_list>
+
 #include <clean-core/array.hh>
 #include <clean-core/equal_to.hh>
 #include <clean-core/forward_list.hh>
 #include <clean-core/fwd.hh>
 #include <clean-core/hash.hh>
+#include <clean-core/is_range.hh>
+#include <clean-core/sentinel.hh>
 
 namespace cc
 {
@@ -34,10 +38,27 @@ public:
 public:
     set() = default;
 
+    /// constructs a set by adding all elements of the range
+    /// TODO: proper support for move-only types
+    template <class Range, cc::enable_if<cc::is_range<Range, T const>> = true>
+    explicit set(Range&& range)
+    {
+        for (auto&& e : range)
+            this->add(e);
+    }
+
+    /// constructs a set by adding all elements of the range
+    set(std::initializer_list<T> values)
+    {
+        for (auto&& e : values)
+            this->add(e);
+    }
+
     // operators
 public:
     /// adds a value to the set
     /// returns true if already contained
+    /// TODO: proper support for move-only types
     bool add(T const& value)
     {
         if (_size >= _entries.size())
@@ -91,6 +112,83 @@ public:
 
         return false;
     }
+
+    /// adds a value to this set
+    set& operator|=(T const& value)
+    {
+        add(value);
+        return *this;
+    }
+    /// adds all values of the range to this set
+    /// TODO: proper support for move-only types
+    template <class Range, cc::enable_if<cc::is_range<Range, T const>> = true>
+    set& operator|=(Range&& range)
+    {
+        for (auto&& e : range)
+            this->add(e);
+        return *this;
+    }
+    /// adds all values of the range to this set
+    set& operator|=(std::initializer_list<T> range)
+    {
+        for (auto&& e : range)
+            this->add(e);
+        return *this;
+    }
+    /// returns a set that is the union of lhs and rhs
+    template <class Range, cc::enable_if<cc::is_range<Range, T const>> = true>
+    set operator|(Range&& rhs) const
+    {
+        auto r = *this; // copy
+        r |= cc::forward<Range>(rhs);
+        return r; // guaranteed copy elision
+    }
+
+    // iteration
+public:
+    struct iterator
+    {
+        friend struct set;
+
+        T const& operator*() { return *it; }
+        void operator++()
+        {
+            ++it;
+
+            if (!(it != cc::sentinel{}))
+            {
+                curr++;
+                find_next_it();
+            }
+        }
+        bool operator!=(cc::sentinel) const { return curr != last; }
+
+    private:
+        iterator(set const& s)
+        {
+            curr = s._entries.begin();
+            last = s._entries.end();
+            find_next_it();
+        }
+        cc::forward_list<T> const* curr;
+        cc::forward_list<T> const* last;
+        typename cc::forward_list<T>::const_iterator it;
+
+        void find_next_it()
+        {
+            while (curr != last)
+            {
+                it = curr->begin();
+
+                if (it != cc::sentinel{})
+                    break; // found valid
+
+                curr++; // otherwise go to next
+            }
+        }
+    };
+    iterator begin() const { return {*this}; }
+    cc::sentinel end() const { return {}; }
 
     // helper
 private:

@@ -6,19 +6,36 @@ namespace cc
 {
 namespace detail
 {
+template <class Container, class ElementT, class = void>
+struct is_range_t : std::false_type
+{
+};
 template <class Container, class ElementT>
-auto range_test(Container* c) -> decltype(static_cast<ElementT&>(*c->begin()), (void)c->end(), 0);
-template <class Container, class ElementT>
-char range_test(...);
+struct is_range_t<Container,
+                  ElementT,
+                  std::void_t<                                                              //
+                      decltype(static_cast<ElementT&>(*std::declval<Container>().begin())), //
+                      decltype(std::declval<Container>().end())                             //
+                      >> : std::true_type
+{
+};
 
+template <class Container, class = void>
+struct is_any_range_t : std::false_type
+{
+};
 template <class Container>
-auto any_range_test(Container* c) -> decltype((void)(*c->begin()), (void)c->end(), 0);
-template <class Container>
-char any_range_test(...);
+struct is_any_range_t<Container,
+                      std::void_t<                                     //
+                          decltype(std::declval<Container>().begin()), //
+                          decltype(std::declval<Container>().end())    //
+                          >> : std::true_type
+{
+};
 }
 
 template <class Container, class ElementT>
-static constexpr bool is_range = sizeof(detail::range_test<Container, ElementT>(nullptr)) == sizeof(int);
+static constexpr bool is_range = detail::is_range_t<Container, ElementT>::value;
 template <class Container>
-static constexpr bool is_any_range = sizeof(detail::any_range_test<Container>(nullptr)) == sizeof(int);
+static constexpr bool is_any_range = detail::is_any_range_t<Container>::value;
 }
