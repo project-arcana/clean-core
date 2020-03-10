@@ -41,9 +41,25 @@ constexpr auto begin(ContainerT& c)
     else
         return cc::detail::begin_impl(c, cc::priority_tag<1>{});
 }
+template <class ContainerT>
+constexpr auto begin(ContainerT const& c)
+{
+    if constexpr (std::is_array_v<ContainerT>)
+        return c;
+    else
+        return cc::detail::begin_impl(c, cc::priority_tag<1>{});
+}
 
 template <class ContainerT>
 constexpr auto end(ContainerT& c)
+{
+    if constexpr (std::is_array_v<ContainerT>)
+        return c + std::extent_v<ContainerT>;
+    else
+        return cc::detail::end_impl(c, cc::priority_tag<1>{});
+}
+template <class ContainerT>
+constexpr auto end(ContainerT const& c)
 {
     if constexpr (std::is_array_v<ContainerT>)
         return c + std::extent_v<ContainerT>;
