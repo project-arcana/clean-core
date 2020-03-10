@@ -99,9 +99,10 @@ public:
         T& operator*() { return n->value; }
         bool operator!=(sentinel) { return n; }
 
+        iterator() = default;
     private:
         iterator(node* n) : n(n) {}
-        node* n;
+        node* n = nullptr;
 
         friend forward_list;
     };
@@ -113,9 +114,10 @@ public:
 
         const_iterator(iterator it) : n(it.n) {}
 
+        const_iterator() = default;
     private:
         const_iterator(node const* n) : n(n) {}
-        node const* n;
+        node const* n = nullptr;
 
         friend forward_list;
     };
@@ -135,6 +137,7 @@ public:
         {
             auto n = cc::alloc<node>(rn->value);
             (pn ? pn->next : _first) = n;
+            pn = n;
             rn = rn->next;
         }
     }
@@ -153,6 +156,7 @@ public:
         {
             auto n = cc::alloc<node>(rn->value);
             (pn ? pn->next : _first) = n;
+            pn = n;
             rn = rn->next;
         }
     }
