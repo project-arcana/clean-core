@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <type_traits>
 
 namespace cc
@@ -8,6 +9,22 @@ namespace detail
 {
 template <class Container, class ElementT, class = void>
 struct is_range_t : std::false_type
+{
+};
+template <class ElementT, size_t N>
+struct is_range_t<ElementT[N], ElementT> : std::true_type
+{
+};
+template <class ElementT, size_t N>
+struct is_range_t<ElementT[N], ElementT const> : std::true_type
+{
+};
+template <class ElementT, size_t N>
+struct is_range_t<ElementT (&)[N], ElementT> : std::true_type
+{
+};
+template <class ElementT, size_t N>
+struct is_range_t<ElementT (&)[N], ElementT const> : std::true_type
 {
 };
 template <class Container, class ElementT>
@@ -22,6 +39,14 @@ struct is_range_t<Container,
 
 template <class Container, class = void>
 struct is_any_range_t : std::false_type
+{
+};
+template <class ElementT, size_t N>
+struct is_any_range_t<ElementT[N]> : std::true_type
+{
+};
+template <class ElementT, size_t N>
+struct is_any_range_t<ElementT (&)[N]> : std::true_type
 {
 };
 template <class Container>
