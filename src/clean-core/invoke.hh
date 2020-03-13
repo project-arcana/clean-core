@@ -12,7 +12,7 @@ namespace cc
 namespace detail
 {
 template <class T, class Type, class T1, class... Args>
-auto perform_invoke(Type T::*f, T1&& t1, Args&&... args)
+constexpr decltype(auto) perform_invoke(Type T::*f, T1&& t1, Args&&... args)
 {
     if constexpr (std::is_member_function_pointer_v<decltype(f)>)
     {
@@ -37,14 +37,14 @@ auto perform_invoke(Type T::*f, T1&& t1, Args&&... args)
 }
 
 template <class F, class... Args>
-auto perform_invoke(F&& f, Args&&... args)
+constexpr decltype(auto) perform_invoke(F&& f, Args&&... args)
 {
     return cc::forward<F>(f)(cc::forward<Args>(args)...);
 }
 }
 
 template <class F, class... Args>
-std::invoke_result_t<F, Args...> invoke(F&& f, Args&&... args) noexcept(std::is_nothrow_invocable_v<F, Args...>)
+constexpr decltype(auto) invoke(F&& f, Args&&... args) noexcept(std::is_nothrow_invocable_v<F, Args...>)
 {
     return detail::perform_invoke(cc::forward<F>(f), cc::forward<Args>(args)...);
 }

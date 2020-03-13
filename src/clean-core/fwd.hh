@@ -25,6 +25,8 @@ struct optional;
 
 template <class A, class B>
 struct pair;
+template <class... Types>
+struct tuple;
 
 // containers and ranges
 template <class T>
