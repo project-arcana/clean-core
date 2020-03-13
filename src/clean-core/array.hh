@@ -1,8 +1,10 @@
 #pragma once
 
 #include <initializer_list>
+#include <utility> // for tuple_size
 
 #include <clean-core/algorithms.hh>
+#include <clean-core/always_false.hh>
 #include <clean-core/assert.hh>
 #include <clean-core/detail/container_impl_util.hh>
 #include <clean-core/forward.hh>
@@ -40,6 +42,19 @@ struct array
     {
         CC_CONTRACT(i < N);
         return _values[i];
+    }
+
+    template <size_t I>
+    constexpr T& get()
+    {
+        static_assert(I < N);
+        return _values[I];
+    }
+    template <size_t I>
+    constexpr T const& get() const
+    {
+        static_assert(I < N);
+        return _values[I];
     }
 
     constexpr bool operator==(array const& rhs) const { return cc::are_ranges_equal(*this, rhs); }
@@ -174,4 +189,22 @@ template <class T, class... Args>
 {
     return {{cc::forward<T>(v0), cc::forward<Args>(rest)...}};
 }
+}
+
+namespace std
+{
+template <class T, size_t N>
+struct tuple_size<cc::array<T, N>> : public std::integral_constant<std::size_t, N>
+{
+};
+template <class T>
+struct tuple_size<cc::array<T, cc::dynamic_size>>
+{
+    static_assert(cc::always_false<T>, "does not work with dynamically sized arrays");
+};
+template <std::size_t I, class T, size_t N>
+struct tuple_element<I, cc::array<T, N>>
+{
+    using type = T;
+};
 }
