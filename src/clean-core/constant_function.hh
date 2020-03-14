@@ -7,7 +7,7 @@ template <auto C>
 struct constant_function
 {
     template <class... Args>
-    constexpr auto operator()(Args&&... args) const noexcept
+    constexpr auto operator()(Args&&...) const noexcept
     {
         return C;
     }
