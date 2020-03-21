@@ -91,7 +91,7 @@ struct tuple_helper
     template <size_t... I>
     static constexpr hash_t make_hash(tuple<Types...> const& v, std::index_sequence<I...>)
     {
-        return cc::hash_combine(v.template get<I>()...);
+        return cc::hash_combine(cc::hash<Types>{}(v.template get<I>())...);
     }
 };
 }
