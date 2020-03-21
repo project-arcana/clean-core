@@ -1,8 +1,8 @@
 #pragma once
 
-#include <clean-core/always_false.hh>
 #include <clean-core/enable_if.hh>
 #include <clean-core/fwd.hh>
+#include <clean-core/hash_combine.hh>
 #include <clean-core/typedefs.hh>
 
 #include <cstring>
@@ -43,22 +43,6 @@ struct can_hash_t<T, Hasher, std::void_t<decltype(std::declval<Hasher>()(std::de
 /// true if T can be hashed by Hasher
 template <class T, class Hasher = hash<T>>
 static constexpr bool can_hash = detail::can_hash_t<T, Hasher>::value;
-
-// ============== hash_combine ==============
-
-constexpr inline hash_t hash_combine() noexcept { return 0x2a5114b5c6133408uLL; }
-constexpr inline hash_t hash_combine(hash_t a) noexcept { return a; }
-constexpr inline hash_t hash_combine(hash_t a, hash_t b) noexcept { return a * 6364136223846793005ULL + b + 0xda3e39cb94b95bdbULL; }
-
-template <class... Args>
-constexpr hash_t hash_combine(hash_t a, hash_t b, hash_t c, Args... rest) noexcept
-{
-    static_assert((std::is_same_v<Args, hash_t> && ...), "extra arguments need to be hash_t as well");
-    auto h = hash_combine(a, b);
-    h = hash_combine(h, c);
-    ((h = hash_combine(h, rest)), ...);
-    return h;
-}
 
 
 // ============== make_hash ==============
