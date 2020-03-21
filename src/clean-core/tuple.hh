@@ -4,6 +4,7 @@
 
 #include <clean-core/forward.hh>
 #include <clean-core/fwd.hh>
+#include <clean-core/hash_combine.hh>
 
 namespace cc
 {
@@ -14,6 +15,11 @@ struct tuple_impl;
 template <>
 struct tuple_impl<>
 {
+    template <size_t I>
+    constexpr void get() const
+    {
+        static_assert(cc::always_false<I>, "cannot get element of empty tuple");
+    }
 };
 template <class T>
 struct tuple_impl<T>
@@ -81,6 +87,12 @@ struct tuple_helper
             return (false || ... || (lhs.template get<I>() != rhs.template get<I>()));
         }
     };
+
+    template <size_t... I>
+    static constexpr hash_t make_hash(tuple<Types...> const& v, std::index_sequence<I...>)
+    {
+        return cc::hash_combine(cc::hash<Types>{}(v.template get<I>())...);
+    }
 };
 }
 
@@ -107,6 +119,16 @@ struct tuple : private detail::tuple_impl<Types...>
 // deduction guide
 template <class... Types>
 tuple(Types...)->tuple<Types...>;
+
+// hash
+template <class... Ts>
+struct hash<tuple<Ts...>>
+{
+    [[nodiscard]] constexpr hash_t operator()(tuple<Ts...> const& v) const noexcept
+    {
+        return cc::detail::tuple_helper<Ts...>::make_hash(v, std::index_sequence_for<Ts...>{});
+    }
+};
 }
 
 namespace std

@@ -146,19 +146,19 @@ public:
 
     // methods
 public:
-    void push_back(T const& t)
+    void push_back(T const& value)
     {
         if (_size == _capacity)
             _grow();
-        new (placement_new, &_data[_size]) T(t);
+        new (placement_new, &_data[_size]) T(value);
         ++_size;
     }
 
-    void push_back(T&& t)
+    void push_back(T&& value)
     {
         if (_size == _capacity)
             _grow();
-        new (placement_new, &_data[_size]) T(cc::move(t));
+        new (placement_new, &_data[_size]) T(cc::move(value));
         ++_size;
     }
 
