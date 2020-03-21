@@ -75,6 +75,9 @@ public:
         CC_UNREACHABLE("key not found");
     }
 
+    /// reserves internal resources to hold at least n elements without forcing a rehash
+    void reserve(size_t n) { _reserve(n); }
+
     // helper
 private:
     template <class T>
@@ -86,6 +89,7 @@ private:
         return hash % _entries.size();
     }
 
+    /// resizes _entries to the given amount of buckets
     void _reserve(size_t new_cap)
     {
         auto old_entries = cc::move(_entries);
