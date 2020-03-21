@@ -20,7 +20,7 @@ public:
     size_t size() const { return _size; }
     bool empty() const { return _size == 0; }
 
-    template <class U>
+    template <class U = T>
     bool contains(U const& value) const
     {
         if (_size == 0)
@@ -37,6 +37,9 @@ public:
     // ctors
 public:
     set() = default;
+
+    set(set&&) = default;
+    set(set const&) = default;
 
     /// constructs a set by adding all elements of the range
     /// TODO: proper support for move-only types
@@ -78,7 +81,7 @@ public:
     /// removes an element from the set
     /// returns true iff something was removed
     /// supports heterogeneous lookup
-    template <class U>
+    template <class U = T>
     bool remove(U const& value)
     {
         if (_size == 0)
@@ -157,7 +160,7 @@ public:
 
             if (!(it != cc::sentinel{}))
             {
-                curr++;
+                ++curr;
                 find_next_it();
             }
         }
