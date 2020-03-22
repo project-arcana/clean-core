@@ -147,6 +147,28 @@ public:
         return r; // guaranteed copy elision
     }
 
+    /// reserves internal resources to hold at least n elements without forcing a rehash
+    void reserve(size_t n) { _reserve(n); }
+
+    template <class U>
+    bool operator==(set<U> const& rhs) const
+    {
+        if (_size != rhs._size)
+            return false;
+
+        for (auto const& l : rhs._entries)
+            for (auto const& v : l)
+                if (!this->contains(v))
+                    return false;
+
+        return true;
+    }
+    template <class U>
+    bool operator!=(set<U> const& rhs) const
+    {
+        return !this->operator==(rhs);
+    }
+
     // iteration
 public:
     struct iterator
