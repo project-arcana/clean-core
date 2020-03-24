@@ -9,6 +9,7 @@
 #include <clean-core/detail/container_impl_util.hh>
 #include <clean-core/forward.hh>
 #include <clean-core/fwd.hh>
+#include <clean-core/hash_combine.hh>
 #include <clean-core/span.hh>
 #include <clean-core/typedefs.hh>
 
@@ -189,6 +190,19 @@ template <class T, class... Args>
 {
     return {{cc::forward<T>(v0), cc::forward<Args>(rest)...}};
 }
+
+// hash
+template <class T, size_t N>
+struct hash<array<T, N>>
+{
+    [[nodiscard]] constexpr hash_t operator()(array<T, N> const& a) const noexcept
+    {
+        size_t h = 0;
+        for (auto const& v : a)
+            h = cc::hash_combine(h, hash<T>{}(v));
+        return h;
+    }
+};
 }
 
 namespace std

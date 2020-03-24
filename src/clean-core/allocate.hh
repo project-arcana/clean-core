@@ -138,8 +138,7 @@ template <class T, class... Args>
 T* alloc(Args&&... args)
 {
     auto p = detail::get_pool_allocator<sizeof(T), alignof(T)>().alloc();
-    new (cc::placement_new, p) T(cc::forward<Args>(args)...);
-    return reinterpret_cast<T*>(p);
+    return new (cc::placement_new, p) T(cc::forward<Args>(args)...);
 }
 template <class T>
 void free(T* p)

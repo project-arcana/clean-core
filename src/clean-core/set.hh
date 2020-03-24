@@ -37,9 +37,11 @@ public:
     // ctors
 public:
     set() = default;
-
+    
     set(set&&) = default;
     set(set const&) = default;
+    set& operator=(set&&) = default;
+    set& operator=(set const&) = default;
 
     /// constructs a set by adding all elements of the range
     /// TODO: proper support for move-only types
@@ -145,6 +147,35 @@ public:
         auto r = *this; // copy
         r |= cc::forward<Range>(rhs);
         return r; // guaranteed copy elision
+    }
+
+    /// reserves internal resources to hold at least n elements without forcing a rehash
+    void reserve(size_t n) { _reserve(n); }
+
+    template <class U>
+    bool operator==(set<U> const& rhs) const
+    {
+        if (_size != rhs._size)
+            return false;
+
+        for (auto const& l : rhs._entries)
+            for (auto const& v : l)
+                if (!this->contains(v))
+                    return false;
+
+        return true;
+    }
+    template <class U>
+    bool operator!=(set<U> const& rhs) const
+    {
+        return !this->operator==(rhs);
+    }
+
+    void clear()
+    {
+        _size = 0;
+        for (auto& l : _entries)
+            l.clear();
     }
 
     // iteration
