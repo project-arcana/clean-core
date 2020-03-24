@@ -37,9 +37,11 @@ public:
     // ctors
 public:
     set() = default;
-
+    
     set(set&&) = default;
     set(set const&) = default;
+    set& operator=(set&&) = default;
+    set& operator=(set const&) = default;
 
     /// constructs a set by adding all elements of the range
     /// TODO: proper support for move-only types

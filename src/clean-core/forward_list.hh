@@ -97,7 +97,7 @@ public:
     {
         void operator++() { n = n->next; }
         T& operator*() { return n->value; }
-        bool operator!=(sentinel) { return n; }
+        bool operator!=(sentinel) const { return n; }
 
         iterator() = default;
     private:
@@ -110,7 +110,7 @@ public:
     {
         void operator++() { n = n->next; }
         T const& operator*() { return n->value; }
-        bool operator!=(sentinel) { return n; }
+        bool operator!=(sentinel) const { return n; }
 
         const_iterator(iterator it) : n(it.n) {}
 
@@ -159,6 +159,8 @@ public:
             pn = n;
             rn = rn->next;
         }
+
+        return *this;
     }
     forward_list& operator=(forward_list&& rhs) noexcept
     {
@@ -166,6 +168,8 @@ public:
 
         _first = rhs._first;
         rhs._first = nullptr;
+
+        return *this;
     }
 
     ~forward_list()

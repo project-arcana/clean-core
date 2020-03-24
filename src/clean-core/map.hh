@@ -11,6 +11,8 @@ namespace cc
 template <class KeyT, class ValueT, class HashT, class EqualT>
 struct map
 {
+    static_assert(!std::is_reference_v<KeyT>, "keys cannot be references");
+
     // container
 public:
     size_t size() const { return _size; }
@@ -109,8 +111,8 @@ private:
         KeyT key;
         ValueT value;
 
-        entry(KeyT&& key) : key(cc::move(key)) {}
-        entry(KeyT&& key, ValueT&& value) : key(cc::move(key)), value(cc::move(value)) {}
+        entry(KeyT key) : key(cc::move(key)) {}
+        entry(KeyT key, ValueT value) : key(cc::move(key)), value(cc::move(value)) {}
     };
     cc::array<cc::forward_list<entry>> _entries;
     size_t _size = 0;
