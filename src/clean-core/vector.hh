@@ -9,6 +9,7 @@
 #include <clean-core/detail/container_impl_util.hh>
 #include <clean-core/forward.hh>
 #include <clean-core/fwd.hh>
+#include <clean-core/hash_combine.hh>
 #include <clean-core/move.hh>
 #include <clean-core/new.hh>
 #include <clean-core/span.hh>
@@ -259,5 +260,18 @@ private:
     T* _data = nullptr;
     size_t _size = 0;
     size_t _capacity = 0;
+};
+
+// hash
+template <class T>
+struct hash<vector<T>>
+{
+    [[nodiscard]] constexpr hash_t operator()(vector<T> const& a) const noexcept
+    {
+        size_t h = 0;
+        for (auto const& v : a)
+            h = cc::hash_combine(h, hash<T>{}(v));
+        return h;
+    }
 };
 }
