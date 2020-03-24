@@ -1,10 +1,12 @@
 #pragma once
 
 #include <clean-core/array.hh>
+#include <clean-core/detail/srange.hh>
 #include <clean-core/equal_to.hh>
 #include <clean-core/forward_list.hh>
 #include <clean-core/fwd.hh>
 #include <clean-core/hash.hh>
+#include <clean-core/sentinel.hh>
 
 namespace cc
 {
@@ -79,6 +81,95 @@ public:
 
     /// reserves internal resources to hold at least n elements without forcing a rehash
     void reserve(size_t n) { _reserve(n); }
+
+    void clear()
+    {
+        _size = 0;
+        for (auto& l : _entries)
+            l.clear();
+    }
+
+    // iteration
+private:
+    struct entry;
+    template <class ValueRefT>
+    struct entry_ref
+    {
+        KeyT const& key;
+        ValueRefT value;
+    };
+
+public:
+    template <class EntryListT>
+    struct iterator_base
+    {
+        using it_t = std::decay_t<decltype(std::declval<EntryListT>().begin())>;
+
+        friend struct map;
+
+        void operator++()
+        {
+            ++it;
+
+            if (!(it != cc::sentinel{}))
+            {
+                ++curr;
+                find_next_it();
+            }
+        }
+        bool operator!=(cc::sentinel) const { return curr != last; }
+
+        iterator_base(EntryListT* curr, EntryListT* last) : curr(curr), last(last) { find_next_it(); }
+
+    protected:
+        EntryListT* curr;
+        EntryListT* last;
+        it_t it;
+
+        void find_next_it()
+        {
+            while (curr != last)
+            {
+                it = curr->begin();
+
+                if (it != cc::sentinel{})
+                    break; // found valid
+
+                ++curr; // otherwise go to next
+            }
+        }
+    };
+    struct iterator : iterator_base<cc::forward_list<entry>>
+    {
+        using iterator_base<cc::forward_list<entry>>::iterator_base;
+        entry_ref<ValueT&> operator*() { return {(*this->it).key, (*this->it).value}; }
+    };
+    struct const_iterator : iterator_base<cc::forward_list<entry> const>
+    {
+        using iterator_base<cc::forward_list<entry> const>::iterator_base;
+        entry_ref<ValueT const&> operator*() { return {(*this->it).key, (*this->it).value}; }
+    };
+    struct key_iterator : iterator_base<cc::forward_list<entry> const>
+    {
+        using iterator_base<cc::forward_list<entry> const>::iterator_base;
+        KeyT const& operator*() { return (*this->it).key; }
+    };
+    struct value_iterator : iterator_base<cc::forward_list<entry>>
+    {
+        using iterator_base<cc::forward_list<entry>>::iterator_base;
+        ValueT& operator*() { return (*this->it).value; }
+    };
+    struct value_const_iterator : iterator_base<cc::forward_list<entry> const>
+    {
+        using iterator_base<cc::forward_list<entry> const>::iterator_base;
+        ValueT const& operator*() { return (*this->it).value; }
+    };
+    iterator begin() { return {_entries.begin(), _entries.end()}; }
+    const_iterator begin() const { return {_entries.begin(), _entries.end()}; }
+    cc::sentinel end() const { return {}; }
+    auto keys() const { return detail::srange<key_iterator>(_entries.begin(), _entries.end()); }
+    auto values() { return detail::srange<value_iterator>(_entries.begin(), _entries.end()); }
+    auto values() const { return detail::srange<value_const_iterator>(_entries.begin(), _entries.end()); }
 
     // helper
 private:

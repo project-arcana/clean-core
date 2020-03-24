@@ -171,6 +171,13 @@ public:
         return !this->operator==(rhs);
     }
 
+    void clear()
+    {
+        _size = 0;
+        for (auto& l : _entries)
+            l.clear();
+    }
+
     // iteration
 public:
     struct iterator
