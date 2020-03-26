@@ -35,4 +35,11 @@ struct hash<pair<A, B>>
         return cc::hash_combine(hash<A>{}(v.first), hash<B>{}(v.second));
     }
 };
+
+template <class I, class A, class B>
+constexpr void introspect(I&& i, pair<A, B>& p)
+{
+    i(p.first, "first");
+    i(p.second, "second");
+}
 }
