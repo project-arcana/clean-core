@@ -49,8 +49,22 @@ public:
 public:
     constexpr string_view subview(size_t offset, size_t size) const
     {
+        CC_CONTRACT(offset <= _size);
         CC_CONTRACT(offset + size <= _size);
         return {_data + offset, size};
+    }
+    constexpr string_view subview(size_t offset) const
+    {
+        CC_CONTRACT(offset <= _size);
+        return {_data + offset, _size - offset};
+    }
+
+    constexpr bool contains(char c) const
+    {
+        for (auto d : *this)
+            if (d == c)
+                return true;
+        return false;
     }
 
     // operators
