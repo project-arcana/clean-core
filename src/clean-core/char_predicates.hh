@@ -22,4 +22,9 @@ namespace cc
 
 [[nodiscard]] constexpr char to_lower(char c) { return is_upper(c) ? char('a' + (c - 'A')) : c; }
 [[nodiscard]] constexpr char to_upper(char c) { return is_lower(c) ? char('A' + (c - 'a')) : c; }
+
+[[nodiscard]] constexpr auto is_equal_fun(char c)
+{
+    return [c](char cc) { return c == cc; };
+}
 }

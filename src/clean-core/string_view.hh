@@ -109,7 +109,7 @@ public:
 
     [[nodiscard]] constexpr auto split(char sep, split_options opts = split_options::keep_empty) const
     {
-        return string_split_range(_data, _data + _size, opts, [sep](char c) { return c == sep; });
+        return string_split_range(_data, _data + _size, opts, cc::is_equal_fun(sep));
     }
     template <class Pred>
     [[nodiscard]] constexpr auto split(Pred&& pred, split_options opts = split_options::keep_empty) const
@@ -129,10 +129,7 @@ public:
         }
         return {d, s};
     }
-    [[nodiscard]] constexpr string_view trim_start(char c) const
-    {
-        return trim_start([c](char cc) { return c == cc; });
-    }
+    [[nodiscard]] constexpr string_view trim_start(char c) const { return trim_start(cc::is_equal_fun(c)); }
     [[nodiscard]] constexpr string_view trim_start() const { return trim_start(cc::is_space); }
 
     template <class Pred>
@@ -144,10 +141,7 @@ public:
             --s;
         return {d, s};
     }
-    [[nodiscard]] constexpr string_view trim_end(char c) const
-    {
-        return trim_end([c](char cc) { return c == cc; });
-    }
+    [[nodiscard]] constexpr string_view trim_end(char c) const { return trim_end(cc::is_equal_fun(c)); }
     [[nodiscard]] constexpr string_view trim_end() const { return trim_end(cc::is_space); }
 
     template <class Pred>
@@ -164,10 +158,7 @@ public:
             --s;
         return {d, s};
     }
-    [[nodiscard]] constexpr string_view trim(char c) const
-    {
-        return trim([c](char cc) { return c == cc; });
-    }
+    [[nodiscard]] constexpr string_view trim(char c) const { return trim(cc::is_equal_fun(c)); }
     [[nodiscard]] constexpr string_view trim() const { return trim(cc::is_space); }
 
     [[nodiscard]] constexpr string_view remove_prefix(size_t n) const
@@ -191,6 +182,9 @@ public:
         CC_CONTRACT(ends_with(s));
         return {_data, _size - s._size};
     }
+
+    [[nodiscard]] constexpr string_view first(size_t n) const { return {_data, n < _size ? n : _size}; }
+    [[nodiscard]] constexpr string_view last(size_t n) const { return n <= _size ? string_view(_data + _size - n, n) : *this; }
 
     // operators
 public:

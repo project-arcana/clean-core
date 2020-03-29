@@ -326,6 +326,161 @@ public:
         return string_view(_data, _size).split(pred, opts);
     }
 
+    void fill(char c, size_t n = dynamic_size)
+    {
+        if (n <= capacity())
+        {
+            _size = n;
+            _data[n] = '\0';
+        }
+        else if (n != dynamic_size)
+        {
+            if (!_is_short())
+                delete[] _data;
+
+            CC_ASSERT(n >= sbo_capacity);
+            _data = new char[n + 1];
+            _data[n] = '\0';
+            _size = n;
+            _capacity = n;
+        }
+
+        for (size_t i = 0; i < _size; ++i)
+            _data[i] = c;
+    }
+
+    [[nodiscard]] sbo_string to_lower() const
+    {
+        auto r = uninitialized(_size);
+        for (size_t i = 0; i < _size; ++i)
+            r._data[i] = cc::to_lower(_data[i]);
+        return r;
+    }
+    [[nodiscard]] sbo_string to_upper() const
+    {
+        auto r = uninitialized(_size);
+        for (size_t i = 0; i < _size; ++i)
+            r._data[i] = cc::to_upper(_data[i]);
+        return r;
+    }
+    void capitalize()
+    {
+        if (_size > 0)
+            _data[0] = cc::to_upper(_data[0]);
+        for (size_t i = 1; i < _size; ++i)
+            _data[i] = cc::to_lower(_data[i]);
+    }
+    [[nodiscard]] sbo_string capitalized() const
+    {
+        auto r = uninitialized(_size);
+        if (_size > 0)
+            r._data[0] = cc::to_upper(_data[0]);
+        for (size_t i = 1; i < _size; ++i)
+            r._data[i] = cc::to_lower(_data[i]);
+        return r;
+    }
+
+    void remove_prefix(size_t n)
+    {
+        CC_CONTRACT(_size >= n);
+        for (size_t i = 0; i < _size - n; ++i)
+            _data[i] = _data[i + n];
+        _size -= n;
+    }
+    void remove_prefix(string_view s)
+    {
+        CC_CONTRACT(starts_with(s));
+        remove_prefix(s.size());
+    }
+
+    void remove_suffix(size_t n)
+    {
+        CC_CONTRACT(_size >= n);
+        _size -= n;
+    }
+    void remove_suffix(string_view s)
+    {
+        CC_CONTRACT(ends_with(s));
+        _size -= s.size();
+    }
+
+    [[nodiscard]] sbo_string removed_prefix(size_t n) const { return string_view(_data, _size).remove_prefix(n); }
+    [[nodiscard]] sbo_string removed_prefix(string_view s) const { return string_view(_data, _size).remove_prefix(s); }
+    [[nodiscard]] sbo_string removed_suffix(size_t n) const { return string_view(_data, _size).remove_suffix(n); }
+    [[nodiscard]] sbo_string removed_suffix(string_view s) const { return string_view(_data, _size).remove_suffix(s); }
+
+    [[nodiscard]] sbo_string first(size_t n) const { return string_view(_data, _size).first(n); }
+    [[nodiscard]] sbo_string last(size_t n) const { return string_view(_data, _size).last(n); }
+
+    template <class Pred>
+    void trim_start(Pred&& pred)
+    {
+        size_t n = 0;
+        while (n < _size && pred(_data[n]))
+            ++n;
+
+        if (n == 0)
+            return; // no change
+
+        for (size_t i = 0; i < _size - n; ++i)
+            _data[i] = _data[i + n];
+        _size -= n;
+        _data[_size] = '\0';
+    }
+    void trim_start(char c) { return trim_start(cc::is_equal_fun(c)); }
+    void trim_start() { return trim_start(cc::is_space); }
+
+    template <class Pred>
+    void trim_end(Pred&& pred)
+    {
+        while (_size > 0 && pred(_data[_size - 1]))
+            --_size;
+        _data[_size] = '\0';
+    }
+    void trim_end(char c) { trim_end(cc::is_equal_fun(c)); }
+    void trim_end() { trim_end(cc::is_space); }
+
+    template <class Pred>
+    void trim(Pred&& pred)
+    {
+        size_t n = 0;
+        while (n < _size && pred(_data[n]))
+            ++n;
+        size_t s = _size - n;
+        while (s > 0 && pred(_data[n + s - 1]))
+            --s;
+        for (size_t i = 0; i < s; ++i)
+            _data[i] = _data[i + n];
+        _data[s] = '\0';
+        _size = s;
+    }
+    void trim(char c) { trim(cc::is_equal_fun(c)); }
+    void trim() { trim(cc::is_space); }
+
+    template <class Pred>
+    [[nodiscard]] sbo_string trimmed_start(Pred&& pred) const
+    {
+        return string_view(_data, _size).trim_start(pred);
+    }
+    [[nodiscard]] sbo_string trimmed_start(char c) const { return string_view(_data, _size).trim_start(c); }
+    [[nodiscard]] sbo_string trimmed_start() const { return string_view(_data, _size).trim_start(cc::is_space); }
+
+    template <class Pred>
+    [[nodiscard]] sbo_string trimmed_end(Pred&& pred) const
+    {
+        return string_view(_data, _size).trim_end(pred);
+    }
+    [[nodiscard]] sbo_string trimmed_end(char c) const { return string_view(_data, _size).trim_end(c); }
+    [[nodiscard]] sbo_string trimmed_end() const { return string_view(_data, _size).trim_end(cc::is_space); }
+
+    template <class Pred>
+    [[nodiscard]] sbo_string trimmed(Pred&& pred) const
+    {
+        return string_view(_data, _size).trim(pred);
+    }
+    [[nodiscard]] sbo_string trimmed(char c) const { return string_view(_data, _size).trim(c); }
+    [[nodiscard]] sbo_string trimmed() const { return string_view(_data, _size).trim(cc::is_space); }
+
     void pad_start(size_t length, char c = ' ')
     {
         if (_size >= length)
