@@ -306,6 +306,183 @@ public:
         }
     }
 
+    // string processing
+public:
+    string_view subview(size_t offset, size_t size) const { return string_view(_data, _size).subview(offset, size); }
+    string_view subview(size_t offset) const { return string_view(_data, _size).subview(offset); }
+    sbo_string substring(size_t offset, size_t size) const { return subview(offset, size); }
+    sbo_string substring(size_t offset) const { return subview(offset); }
+    bool contains(char c) const { return string_view(_data, _size).contains(c); }
+    bool contains(string_view s) const { return string_view(_data, _size).contains(s); }
+    bool starts_with(char c) const { return string_view(_data, _size).starts_with(c); }
+    bool starts_with(string_view s) const { return string_view(_data, _size).starts_with(s); }
+    bool ends_with(char c) const { return string_view(_data, _size).ends_with(c); }
+    bool ends_with(string_view s) const { return string_view(_data, _size).ends_with(s); }
+
+    [[nodiscard]] auto split(char sep, split_options opts = split_options::keep_empty) const { return string_view(_data, _size).split(sep, opts); }
+    template <class Pred>
+    [[nodiscard]] auto split(Pred&& pred, split_options opts = split_options::keep_empty) const
+    {
+        return string_view(_data, _size).split(pred, opts);
+    }
+
+    void pad_start(size_t length, char c = ' ')
+    {
+        if (_size >= length)
+            return;
+
+        reserve(length);
+
+        for (size_t i = 1; i <= _size; ++i)
+            _data[length - i] = _data[_size - i];
+        for (size_t i = 0; i < length - _size; ++i)
+            _data[i] = c;
+
+        _size = length;
+        _data[_size] = '\0';
+    }
+    void pad_end(size_t length, char c = ' ')
+    {
+        if (_size >= length)
+            return;
+
+        reserve(length);
+
+        for (size_t i = _size; i < length; ++i)
+            _data[i] = c;
+
+        _size = length;
+        _data[_size] = '\0';
+    }
+
+    void replace(char old, char replacement)
+    {
+        for (auto& c : *this)
+            if (c == old)
+                c = replacement;
+    }
+    void replace(size_t pos, size_t count, string_view replacement)
+    {
+        CC_CONTRACT(pos <= _size);
+        CC_CONTRACT(pos + count <= _size);
+
+        // early out: replace same size
+        if (count == replacement.size())
+        {
+            std::memcpy(_data + pos, replacement.data(), replacement.size());
+            return;
+        }
+
+        auto new_size = _size - count + replacement.size();
+        auto new_cap = capacity();
+
+        if (new_size > new_cap) // realloc
+        {
+            // set to new size but at least double
+            new_cap = new_cap << 1;
+            if (new_size > new_cap)
+                new_cap = new_size;
+
+            auto new_data = new char[new_cap + 1];
+
+            std::memcpy(new_data, _data, pos);
+            std::memcpy(new_data + pos, replacement.data(), replacement.size());
+            std::memcpy(new_data + pos + replacement.size(), _data + pos + count, _size - count - pos);
+            new_data[new_size] = '\0';
+
+            if (!_is_short())
+                delete[] _data;
+
+            _size = new_size;
+            _data = new_data;
+            _capacity = new_cap;
+        }
+        else
+        {
+            if (replacement.size() > count) // enlarge
+            {
+                for (size_t i = 1; i <= _size - count - pos; ++i)
+                    _data[new_size - i] = _data[_size - i];
+            }
+            else // shrink
+            {
+                for (size_t i = 0; i < _size - count - pos; ++i)
+                    _data[pos + replacement.size() + i] = _data[pos + count + i];
+            }
+            std::memcpy(_data + pos, replacement.data(), replacement.size());
+
+            _size = new_size;
+            _data[new_size] = '\0';
+        }
+    }
+    void replace(string_view old, string_view replacement)
+    {
+        CC_CONTRACT(!old.empty());
+
+        if (old.size() > _size)
+            return; // cannot replace anything
+
+        size_t i = 0;
+        auto os = old.size();
+        while (i + os <= _size)
+        {
+            if (subview(i, os) == old) // found
+            {
+                replace(i, os, replacement);
+                i += replacement.size();
+            }
+            else
+                ++i;
+        }
+    }
+
+    [[nodiscard]] sbo_string replaced(char old, char replacement) const
+    {
+        auto r = uninitialized(_size);
+        for (size_t i = 0; i < _size; ++i)
+        {
+            auto c = _data[i];
+            r._data[i] = c == old ? replacement : c;
+        }
+        return r;
+    }
+    [[nodiscard]] sbo_string replaced(size_t pos, size_t count, string_view replacement) const
+    {
+        CC_CONTRACT(pos <= _size);
+        CC_CONTRACT(pos + count <= _size);
+        auto r = uninitialized(_size - count + replacement.size());
+        std::memcpy(r._data, _data, pos);
+        std::memcpy(r._data + pos, replacement.data(), replacement.size());
+        std::memcpy(r._data + pos + replacement.size(), _data + pos + count, _size - count - pos);
+        return r;
+    }
+    [[nodiscard]] sbo_string replaced(string_view old, string_view replacement) const
+    {
+        CC_CONTRACT(!old.empty());
+        if (old.size() > _size)
+            return *this; // early out
+
+        sbo_string r;
+        size_t i = 0;
+        auto const os = old.size();
+        while (i < _size)
+        {
+            if (subview(i, os) == old) // found
+            {
+                r += replacement;
+                i += old.size();
+            }
+            else
+            {
+                r += _data[i];
+                ++i;
+            }
+        }
+        return r;
+    }
+
+    void insert(size_t pos, string_view s) { replace(pos, 0, s); }
+
     // operators
 public:
     bool operator==(string_view rhs) const { return string_view(_data, _size) == rhs; }
@@ -332,8 +509,12 @@ public:
         else
         {
             CC_ASSERT(new_cap >= sbo_capacity);
-            while (new_cap < new_size)
-                new_cap = new_cap << 1;
+
+            // take new size but at least double cap
+            new_cap = new_cap << 1;
+            if (new_cap < new_size)
+                new_cap = new_size;
+
             auto new_data = new char[new_cap + 1];
 
             std::memcpy(new_data, _data, _size);
@@ -381,6 +562,14 @@ public:
     {
         lhs += rhs;
         return lhs;
+    }
+    friend sbo_string operator+(char lhs, sbo_string const& rhs)
+    {
+        auto r = uninitialized(1 + rhs.size());
+        auto d = r.data();
+        d[0] = lhs;
+        std::memcpy(d + 1, rhs.data(), rhs.size());
+        return r;
     }
     friend sbo_string operator+(string_view lhs, sbo_string const& rhs)
     {
