@@ -4,6 +4,7 @@
 
 #include <clean-core/assert.hh>
 #include <clean-core/fwd.hh>
+#include <clean-core/hash_combine.hh>
 #include <clean-core/macros.hh>
 #include <clean-core/string_view.hh>
 #include <clean-core/typedefs.hh>
@@ -773,5 +774,19 @@ private:
         char _sbo[sbo_capacity + 1];
         words _sbo_words;
     };
+};
+
+// hash
+template <size_t sbo_capacity>
+struct hash<sbo_string<sbo_capacity>>
+{
+    [[nodiscard]] constexpr hash_t operator()(sbo_string<sbo_capacity> const& a) const noexcept
+    {
+        // TODO: better string hash
+        size_t h = 0;
+        for (auto const& c : a)
+            h = cc::hash_combine(h, c);
+        return h;
+    }
 };
 }
