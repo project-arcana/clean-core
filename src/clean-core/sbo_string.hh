@@ -325,6 +325,7 @@ public:
     {
         return string_view(_data, _size).split(pred, opts);
     }
+    [[nodiscard]] auto split() const { return string_view(_data, _size).split(cc::is_space, split_options::skip_empty); }
 
     void fill(char c, size_t n = dynamic_size)
     {

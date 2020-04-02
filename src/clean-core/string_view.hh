@@ -3,6 +3,7 @@
 #include <clean-core/assert.hh>
 #include <clean-core/char_predicates.hh>
 #include <clean-core/enable_if.hh>
+#include <clean-core/forward.hh>
 #include <clean-core/fwd.hh>
 #include <clean-core/is_contiguous_container.hh>
 #include <clean-core/move.hh>
@@ -116,6 +117,7 @@ public:
     {
         return string_split_range(_data, _data + _size, opts, cc::forward<Pred>(pred));
     }
+    [[nodiscard]] constexpr auto split() const { return split(cc::is_space, split_options::skip_empty); }
 
     template <class Pred>
     [[nodiscard]] constexpr string_view trim_start(Pred&& pred) const
