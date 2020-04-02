@@ -202,7 +202,7 @@ private:
         KeyT key;
         ValueT value;
 
-        entry(KeyT key) : key(cc::move(key)) {}
+        entry(KeyT key) : key(cc::move(key)), value() {}
         entry(KeyT key, ValueT value) : key(cc::move(key)), value(cc::move(value)) {}
     };
     cc::array<cc::forward_list<entry>> _entries;
