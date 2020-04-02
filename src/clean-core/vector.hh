@@ -10,6 +10,7 @@
 #include <clean-core/forward.hh>
 #include <clean-core/fwd.hh>
 #include <clean-core/hash_combine.hh>
+#include <clean-core/is_range.hh>
 #include <clean-core/move.hh>
 #include <clean-core/new.hh>
 #include <clean-core/span.hh>
@@ -100,6 +101,13 @@ public:
     vector(std::initializer_list<T> data) : vector(data.begin(), data.size()) {}
     vector(cc::span<T const> data) : vector(data.begin(), data.size()) {}
     vector(vector const& rhs) : vector(rhs.begin(), rhs.size()) {}
+
+    template <class Range, cc::enable_if<cc::is_any_range<Range>> = true>
+    explicit vector(Range const& range)
+    {
+        for (auto const& e : range)
+            this->emplace_back(e);
+    }
 
     vector(vector&& rhs) noexcept
     {

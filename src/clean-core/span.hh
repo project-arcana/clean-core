@@ -4,6 +4,7 @@
 
 #include <clean-core/assert.hh>
 #include <clean-core/enable_if.hh>
+#include <clean-core/fwd.hh>
 #include <clean-core/is_contiguous_container.hh>
 #include <clean-core/typedefs.hh>
 
@@ -41,6 +42,7 @@ public:
 
     constexpr T* data() const { return _data; }
     constexpr size_t size() const { return _size; }
+    constexpr size_t size_bytes() const { return _size * sizeof(T); }
     constexpr bool empty() const { return _size == 0; }
 
     constexpr T& operator[](size_t i) const
@@ -74,11 +76,21 @@ public:
     }
     constexpr span subspan(size_t offset, size_t count) const
     {
-        CC_CONTRACT(offset + count <= _size);
+        CC_CONTRACT(offset <= _size && offset + count <= _size);
         return {_data + offset, count};
+    }
+    constexpr span subspan(size_t offset) const
+    {
+        CC_CONTRACT(offset <= _size);
+        return {_data + offset, _size - offset};
     }
 
     constexpr span<byte const> as_bytes() const { return {reinterpret_cast<byte const*>(_data), _size * sizeof(T)}; }
+    template <class U = T, cc::enable_if<!std::is_const_v<U>> = true>
+    constexpr span<byte> as_writable_bytes() const
+    {
+        return {reinterpret_cast<byte*>(_data), _size * sizeof(T)};
+    }
 
 private:
     T* _data = nullptr;

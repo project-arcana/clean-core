@@ -17,11 +17,9 @@ struct hash
     // Custom hashes should specify:
     // [[nodiscard]] constexpr hash_t operator()(T const& value) const noexcept { ... }
 
+    template <class U = T, cc::enable_if<std::is_trivially_copyable_v<U> && std::has_unique_object_representations_v<U>> = true>
     [[nodiscard]] hash_t operator()(T const& value) const noexcept
     {
-        static_assert(std::is_trivially_copyable_v<T> && std::has_unique_object_representations_v<T>, "please provide a custom hash "
-                                                                                                      "or specialize cc::hash<T>");
-
         auto constexpr wcnt = (sizeof(value) + sizeof(hash_t) - 1) / sizeof(hash_t);
 
         hash_t words[wcnt] = {}; // zero-init

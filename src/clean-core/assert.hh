@@ -63,7 +63,7 @@ struct assertion_info
     int line;
 };
 
-CC_COLD_FUNC CC_DONT_INLINE void assertion_failed(assertion_info const& info);
+[[noreturn]] CC_COLD_FUNC CC_DONT_INLINE void assertion_failed(assertion_info const& info);
 }
 
 namespace cc
