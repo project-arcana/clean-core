@@ -10,6 +10,7 @@
 #include <clean-core/forward.hh>
 #include <clean-core/fwd.hh>
 #include <clean-core/hash_combine.hh>
+#include <clean-core/is_range.hh>
 #include <clean-core/move.hh>
 #include <clean-core/new.hh>
 #include <clean-core/span.hh>
@@ -101,6 +102,13 @@ public:
     vector(cc::span<T const> data) : vector(data.begin(), data.size()) {}
     vector(vector const& rhs) : vector(rhs.begin(), rhs.size()) {}
 
+    template <class Range, cc::enable_if<cc::is_any_range<Range>> = true>
+    explicit vector(Range const& range)
+    {
+        for (auto const& e : range)
+            this->emplace_back(e);
+    }
+
     vector(vector&& rhs) noexcept
     {
         _data = rhs._data;
@@ -147,30 +155,28 @@ public:
 
     // methods
 public:
-    void push_back(T const& value)
-    {
-        if (_size == _capacity)
-            _grow();
-        new (placement_new, &_data[_size]) T(value);
-        ++_size;
-    }
-
-    void push_back(T&& value)
-    {
-        if (_size == _capacity)
-            _grow();
-        new (placement_new, &_data[_size]) T(cc::move(value));
-        ++_size;
-    }
-
     template <class... Args>
     T& emplace_back(Args&&... args)
     {
         if (_size == _capacity)
-            _grow();
-        new (placement_new, &_data[_size]) T(cc::forward<Args>(args)...);
-        return _data[_size++];
+        {
+            auto const new_cap = _capacity == 0 ? 1 : _capacity << 1;
+            T* new_data = _alloc(new_cap);
+            T* new_element = new (placement_new, &new_data[_size]) T(cc::forward<Args>(args)...);
+            detail::container_move_range<T>(_data, _size, new_data);
+            detail::container_destroy_reverse<T>(_data, _size);
+            _free(_data);
+            _data = new_data;
+            _capacity = new_cap;
+            _size++;
+            return *new_element;
+        }
+
+        return *(new (placement_new, &_data[_size++]) T(cc::forward<Args>(args)...));
     }
+
+    T& push_back(T const& value) { return emplace_back(value); }
+    T& push_back(T&& value) { return emplace_back(cc::move(value)); }
 
     void pop_back()
     {
@@ -252,8 +258,6 @@ public:
 private:
     static T* _alloc(size_t size) { return reinterpret_cast<T*>(new std::byte[size * sizeof(T)]); }
     static void _free(T* p) { delete[] reinterpret_cast<std::byte*>(p); }
-
-    void _grow() { reserve(_capacity == 0 ? 1 : _capacity << 1); }
 
     // members
 private:

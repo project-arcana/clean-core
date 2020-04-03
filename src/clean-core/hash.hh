@@ -14,7 +14,21 @@ namespace cc
 template <class T, class>
 struct hash
 {
+    // Custom hashes should specify:
     // [[nodiscard]] constexpr hash_t operator()(T const& value) const noexcept { ... }
+
+    template <class U = T, cc::enable_if<std::is_trivially_copyable_v<U> && std::has_unique_object_representations_v<U>> = true>
+    [[nodiscard]] hash_t operator()(T const& value) const noexcept
+    {
+        auto constexpr wcnt = (sizeof(value) + sizeof(hash_t) - 1) / sizeof(hash_t);
+
+        hash_t words[wcnt] = {}; // zero-init
+        std::memcpy(words, &value, sizeof(value));
+        auto h = words[0];
+        for (size_t i = 1; i < wcnt; ++i)
+            h = cc::hash_combine(h, words[i]);
+        return h;
+    }
 };
 
 // transparent hash class
@@ -56,22 +70,6 @@ constexpr hash_t make_hash(Args const&... values) noexcept
 
 
 // ============== default specializations ==============
-
-template <class T>
-struct hash<T, cc::enable_if<std::is_trivially_copyable_v<T> && std::has_unique_object_representations_v<T>>>
-{
-    [[nodiscard]] hash_t operator()(T const& value) const noexcept
-    {
-        auto constexpr wcnt = (sizeof(value) + sizeof(hash_t) - 1) / sizeof(hash_t);
-
-        hash_t words[wcnt] = {}; // zero-init
-        std::memcpy(words, &value, sizeof(value));
-        auto h = words[0];
-        for (size_t i = 1; i < wcnt; ++i)
-            h = cc::hash_combine(h, words[i]);
-        return h;
-    }
-};
 
 template <>
 struct hash<float>
