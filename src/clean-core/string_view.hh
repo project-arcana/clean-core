@@ -108,16 +108,10 @@ public:
     constexpr bool ends_with(char c) const { return _size > 0 && back() == c; }
     constexpr bool ends_with(string_view s) const { return _size >= s.size() && subview(_size - s.size(), s.size()) == s; }
 
-    [[nodiscard]] constexpr auto split(char sep, split_options opts = split_options::keep_empty) const
-    {
-        return string_split_range(_data, _data + _size, opts, cc::is_equal_fun(sep));
-    }
+    [[nodiscard]] constexpr auto split() const;
+    [[nodiscard]] constexpr auto split(char sep, split_options opts = split_options::keep_empty) const;
     template <class Pred>
-    [[nodiscard]] constexpr auto split(Pred&& pred, split_options opts = split_options::keep_empty) const
-    {
-        return string_split_range(_data, _data + _size, opts, cc::forward<Pred>(pred));
-    }
-    [[nodiscard]] constexpr auto split() const { return split(cc::is_space, split_options::skip_empty); }
+    [[nodiscard]] constexpr auto split(Pred&& pred, split_options opts = split_options::keep_empty) const;
 
     template <class Pred>
     [[nodiscard]] constexpr string_view trim_start(Pred&& pred) const
@@ -308,4 +302,14 @@ private:
         constexpr cc::sentinel end() const { return {}; }
     };
 };
+constexpr auto string_view::split(char sep, split_options opts) const
+{
+    return string_split_range(_data, _data + _size, opts, cc::is_equal_fun(sep));
+}
+template <class Pred>
+constexpr auto string_view::split(Pred&& pred, split_options opts) const
+{
+    return string_split_range(_data, _data + _size, opts, cc::forward<Pred>(pred));
+}
+constexpr auto string_view::split() const { return split(cc::is_space, split_options::skip_empty); }
 }
