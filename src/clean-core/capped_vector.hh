@@ -217,7 +217,7 @@ public:
         _size = compact_size_t(new_size);
     }
 
-    bool operator==(cc::span<T const> rhs) const noexcept
+    constexpr bool operator==(cc::span<T const> rhs) const noexcept
     {
         if (_size != rhs.size())
             return false;
@@ -227,7 +227,7 @@ public:
         return true;
     }
 
-    bool operator!=(cc::span<T const> rhs) const noexcept
+    constexpr bool operator!=(cc::span<T const> rhs) const noexcept
     {
         if (_size != rhs.size())
             return true;
