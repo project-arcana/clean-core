@@ -34,6 +34,13 @@ template <class T>
 }
 
 template <class T>
+[[nodiscard]] constexpr T wrapped_decrement(T pos, T max)
+{
+    CC_CONTRACT(max > 0);
+    return pos == 0 ? max - 1 : pos - 1;
+}
+
+template <class T>
 void swap(T& a, T& b)
 {
     T tmp = static_cast<T&&>(a);
