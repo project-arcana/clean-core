@@ -100,4 +100,5 @@ private:
 // deduction guide for containers
 template <class Container, cc::enable_if<is_contiguous_container<Container, void>> = true>
 span(Container& c)->span<std::remove_reference_t<decltype(*c.data())>>;
+span(string_view const&)->span<char const>;
 }
