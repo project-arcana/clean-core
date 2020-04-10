@@ -12,6 +12,8 @@ inline string to_string(nullptr_t) { return "nullptr"; }
 
 string to_string(void* value);
 
+string to_string(std::byte value);
+
 string to_string(int value);
 string to_string(long value);
 string to_string(long long value);

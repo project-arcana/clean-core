@@ -33,18 +33,27 @@ target_include_directories(clean-core PUBLIC src/)
 # =========================================
 # set up compile flags
 
+# set up compile options we want for a library
+function(arcana_configure_lib_options LIB_TARGET)
+    if (MSVC)
+        target_compile_options(${LIB_TARGET} PUBLIC /MP)
+    else()
+        target_compile_options(${LIB_TARGET} PRIVATE
+            -Wall
+            -fPIC
+            -Werror=return-type # error on missing return
+            )
+        target_link_libraries(${LIB_TARGET} PUBLIC -fuse-ld=gold)
+    endif()
+endfunction()
+
 # default to RelWithDebInfo
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "RelWithDebInfo" CACHE STRING
         "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
 endif()
 
-if (MSVC)
-    target_compile_options(clean-core PUBLIC /MP)
-else()
-    target_compile_options(clean-core PRIVATE -Wall -fPIC)
-    target_link_libraries(clean-core PUBLIC -fuse-ld=gold)
-endif()
+arcana_configure_lib_options(clean-core)
 
 target_compile_definitions(clean-core PUBLIC $<$<CONFIG:DEBUG>:CC_DEBUG>)
 target_compile_definitions(clean-core PUBLIC $<$<CONFIG:RELEASE>:CC_RELEASE>)

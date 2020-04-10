@@ -85,3 +85,13 @@ cc::string cc::to_string(long double value)
     CC_ASSERT(res >= 0);
     return string_view(buffer, res);
 }
+
+cc::string cc::to_string(std::byte value)
+{
+    static constexpr auto hex = "0123456789ABCDEF";
+    auto v = uint8_t(value);
+    auto s = cc::string::uninitialized(2);
+    s[0] = hex[v % 16];
+    s[1] = hex[v / 16];
+    return s;
+}

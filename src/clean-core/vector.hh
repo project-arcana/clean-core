@@ -10,6 +10,7 @@
 #include <clean-core/forward.hh>
 #include <clean-core/fwd.hh>
 #include <clean-core/hash_combine.hh>
+#include <clean-core/invoke.hh>
 #include <clean-core/is_range.hh>
 #include <clean-core/move.hh>
 #include <clean-core/new.hh>
@@ -155,6 +156,7 @@ public:
 
     // methods
 public:
+    /// creates a new element at the end (with the given constructor arguments)
     template <class... Args>
     T& emplace_back(Args&&... args)
     {
@@ -175,11 +177,15 @@ public:
         return *(new (placement_new, &_data[_size++]) T(cc::forward<Args>(args)...));
     }
 
+    /// adds an element at the end
     T& push_back(T const& value) { return emplace_back(value); }
+    /// adds an element at the end
     T& push_back(T&& value) { return emplace_back(cc::move(value)); }
 
+    /// removes the last element
     void pop_back()
     {
+        CC_CONTRACT(_size > 0);
         --_size;
         _data[_size].~T();
     }
@@ -216,12 +222,15 @@ public:
         _size = new_size;
     }
 
+    /// delete all stored elements
+    /// does NOT deallocate internal memory
     void clear()
     {
         detail::container_destroy_reverse<T>(_data, _size);
         _size = 0;
     }
 
+    /// ensures that _capacity == _size (without changing elements)
     void shrink_to_fit()
     {
         if (_size != _capacity)
@@ -232,6 +241,86 @@ public:
             _data = new_data;
             _capacity = _size;
         }
+    }
+
+    /// removes all entries where cc::invoke(pred, entry) is true
+    /// returns the number of removed entries
+    template <class Predicate>
+    size_t remove_all(Predicate&& pred)
+    {
+        size_t idx = 0;
+        for (size_t i = 0; i < _size; ++i)
+            if (!cc::invoke(pred, _data[i]))
+            {
+                if (idx != i)
+                    _data[idx] = cc::move(_data[i]);
+                ++idx;
+            }
+        detail::container_destroy_reverse<T>(_data, _size, idx);
+        auto old_size = _size;
+        _size = idx;
+        return old_size - _size;
+    }
+
+    /// removes the first entry where cc::invoke(pred, entry) is true
+    /// returns true iff any element was removed
+    template <class Predicate>
+    bool remove_first(Predicate&& pred)
+    {
+        for (size_t i = 0; i < _size; ++i)
+            if (cc::invoke(pred, _data[i]))
+            {
+                for (size_t j = i + 1; j < _size; ++j)
+                    _data[j - 1] = cc::move(_data[j]);
+                --_size;
+                _data[_size].~T();
+                return true;
+            }
+        return false;
+    }
+
+    /// remove all entries that are == value
+    /// returns the number of removed entries
+    template <class U = T>
+    size_t remove(U const& value)
+    {
+        return remove_all([&](T const& v) { return v == value; });
+    }
+
+    /// removes a range (start + count) of elements
+    /// count == 0 is allowed and a no-op
+    void remove_range(size_t idx, size_t cnt)
+    {
+        if (cnt == 0)
+            return;
+
+        CC_CONTRACT(idx < _size);
+        CC_CONTRACT(idx + cnt <= _size);
+
+        for (size_t i = idx; i < _size - cnt; ++i)
+            _data[i] = cc::move(_data[i + cnt]);
+        detail::container_destroy_reverse<T>(_data, _size, _size - cnt);
+        _size -= cnt;
+    }
+
+    /// removes the element at the given index
+    void remove_at(size_t idx)
+    {
+        CC_CONTRACT(idx < _size);
+        for (size_t i = idx + 1; i < _size; ++i)
+            _data[i - 1] = cc::move(_data[i]);
+        --_size;
+        _data[_size].~T();
+    }
+
+    /// returns true iff any entry is == value
+    template <class U = T>
+    bool contains(U const& value) const
+    {
+        for (size_t i = 0; i < _size; ++i)
+            if (_data[i] == value)
+                return true;
+        return false;
     }
 
     bool operator==(cc::span<T const> rhs) const noexcept
