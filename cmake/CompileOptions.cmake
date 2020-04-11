@@ -17,13 +17,16 @@ function(arcana_configure_lib_options LIB_TARGET)
 
     # strict mode enables some Werror-xyz errors (mainly used in deploy and CI)
     if (CC_STRICT)
+        if (CC_VERBOSE_CMAKE)
+            message(STATUS "[${LIB_TARGET}] enable strict mode (selective Werrors)")
+        endif()
         if (MSVC)
-            target_compile_definitions(clean-core PRIVATE
+            target_compile_definitions(${LIB_TARGET} PRIVATE
                 /WX # treat linker warnings as errors
                 /we4101 # unreferenced local variable
             )
         else()
-            target_compile_options(clean-core PRIVATE
+            target_compile_options(${LIB_TARGET} PRIVATE
                 # unused entities
                 -Werror=unused-variable
                 -Werror=unused-function
