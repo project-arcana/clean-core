@@ -30,12 +30,22 @@ function(arcana_configure_lib_options LIB_TARGET)
                 # unused entities
                 -Werror=unused-variable
                 -Werror=unused-function
-                -Werror=unused-private-field
-                -Werror=unneeded-internal-declaration
 
                 -Werror=deprecated-declarations # no deprecate warnings
                 -Werror=switch # unhandled switch statements
             )
+            if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+                target_compile_options(${LIB_TARGET} PRIVATE
+                    # more unused entities
+                    -Werror=unused-private-field
+                    -Werror=unneeded-internal-declaration
+                )
+            else() # GCC
+                target_compile_options(${LIB_TARGET} PRIVATE
+                    # more unused entities
+                    -Werror=unused-but-set-variable
+                )
+            endif()
         endif()
     endif()
 endfunction()
