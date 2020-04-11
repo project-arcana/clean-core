@@ -13,6 +13,14 @@ function(arcana_configure_lib_options LIB_TARGET)
             -Werror=return-type # error on missing return
         )
         target_link_libraries(${LIB_TARGET} PUBLIC -fuse-ld=gold)
+
+        if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        else() # GCC
+            target_compile_options(${LIB_TARGET} PRIVATE
+                -Wno-sign-compare # disable signed/unsigned warnings
+                -Wno-class-memaccess # disable memset warnings
+            )
+        endif()
     endif()
 
     # strict mode enables some Werror-xyz errors (mainly used in deploy and CI)

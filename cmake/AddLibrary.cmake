@@ -31,3 +31,18 @@ function(arcana_add_library LIB_PREFIX LIB_TARGET SOURCES_VARIABLE_NAME HEADERS_
     arcana_configure_lib_options(${LIB_TARGET})
 
 endfunction()
+
+# same as arcana_add_library but without unity build
+function(arcana_add_library_no_unity LIB_PREFIX LIB_TARGET SOURCES_VARIABLE_NAME HEADERS_VARIABLE_NAME)
+
+    if (CC_VERBOSE_CMAKE)
+        message(STATUS "[${LIB_TARGET}] configuring library")
+    endif()
+
+    arcana_source_group(${SOURCES_VARIABLE_NAME} ${HEADERS_VARIABLE_NAME})
+
+    add_library(${LIB_TARGET} STATIC ${${SOURCES_VARIABLE_NAME}} ${${HEADERS_VARIABLE_NAME}})
+
+    arcana_configure_lib_options(${LIB_TARGET})
+
+endfunction()
