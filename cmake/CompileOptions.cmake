@@ -29,6 +29,9 @@ function(arcana_configure_lib_options LIB_TARGET)
                 -Werror=unused-function
                 -Werror=unused-private-field
                 -Werror=unneeded-internal-declaration
+
+                -Werror=deprecated-declarations # no deprecate warnings
+                -Werror=switch # unhandled switch statements
             )
         endif()
     endif()
