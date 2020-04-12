@@ -53,6 +53,17 @@
 #define CC_UNREACHABLE(msg) CC_BUILTIN_UNREACHABLE
 #endif
 
+// workaround for https://gcc.gnu.org/bugzilla/show_bug.cgi?id=86678
+#if defined(CC_COMPILER_GCC) && __GNUC__ < 9
+#define CC_UNREACHABLE_SWITCH_WORKAROUND(type)                \
+    if (type != decltype(type){} || type == decltype(type){}) \
+        CC_UNREACHABLE("unhandled case for " #type);          \
+    else                                                      \
+        return {} // force ;
+#else
+#define CC_UNREACHABLE_SWITCH_WORKAROUND(type) CC_UNREACHABLE("unhandled case for " #type)
+#endif
+
 namespace cc::detail
 {
 struct assertion_info

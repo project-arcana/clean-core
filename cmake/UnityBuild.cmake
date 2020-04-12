@@ -24,7 +24,7 @@
 # LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
 # ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
 MACRO (arcana_commit_unity_file UNITY_FILE FILE_CONTENT)
@@ -46,7 +46,9 @@ MACRO (arcana_commit_unity_file UNITY_FILE FILE_CONTENT)
   IF (DIRTY MATCHES TRUE)
     MESSAGE(STATUS "[arcana_commit_unity_file] writing unity build file: " ${${UNITY_FILE}})
     FILE(WRITE ${${UNITY_FILE}} "${${FILE_CONTENT}}")
-  ENDIF ()
+  ELSEIF (CC_VERBOSE_CMAKE)
+    MESSAGE(STATUS "[arcana_commit_unity_file] unchanged unity build file: " ${${UNITY_FILE}})
+  ENDIF()
   # Create a dummy copy of the unity file to trigger CMake reconfigure if it is deleted.
   SET(UNITY_FILE_PATH "")
   SET(UNITY_FILE_NAME "")
@@ -59,6 +61,9 @@ MACRO (arcana_enable_unity_build TARGET_NAME SOURCE_VARIABLE_NAME UNIT_SIZE EXTE
   # Limit is zero based conversion of unit_size
   MATH(EXPR LIMIT ${UNIT_SIZE}-1)
   SET(FILES ${SOURCE_VARIABLE_NAME})
+  IF(CC_VERBOSE_CMAKE)
+    MESSAGE(STATUS "[arcana_enable_unity_build] unity files for ${TARGET_NAME}: ${${FILES}}")
+  ENDIF()
   # Effectivly ignore the source files from the build, but keep track them for changes.
   SET_SOURCE_FILES_PROPERTIES(${${FILES}} PROPERTIES HEADER_FILE_ONLY true)
   # Counts the number of source files up to the threshold

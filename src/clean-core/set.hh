@@ -37,7 +37,7 @@ public:
     // ctors
 public:
     set() = default;
-    
+
     set(set&&) = default;
     set(set const&) = default;
     set& operator=(set&&) = default;

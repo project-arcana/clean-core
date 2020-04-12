@@ -1,9 +1,6 @@
 cmake_minimum_required(VERSION 3.8)
 project(CleanCore)
 
-include(cmake/UnityBuild.cmake)
-include(cmake/SourceGroup.cmake)
-
 # =========================================
 # global options
 
@@ -12,8 +9,15 @@ option(CC_ENABLE_ASSERTIONS "if true, enables assertions (also in RelWithDebInfo
 option(CC_ENABLE_BOUND_CHECKING "if true, enables bound checking (e.g. for containers and iterators, only if assertions are active)" ON)
 option(CC_ENABLE_NULL_CHECKING "if true, enables null checking (e.g. for smart pointers, only if assertions are active)" ON)
 option(CC_ENABLE_CONTRACT_CHECKING "if true, enables contract checking (e.g. pre- and postconditions, only if assertions are active)" ON)
+option(CC_VERBOSE_CMAKE "if true, adds more verbose cmake output (for debugging)" OFF)
 
-option(CC_ENABLE_UNITY_BUILD "If enabled, compiles this library as a single compilation unit" ON)
+# =========================================
+# import scripts
+
+include(cmake/UnityBuild.cmake)
+include(cmake/SourceGroup.cmake)
+include(cmake/CompileOptions.cmake)
+include(cmake/AddLibrary.cmake)
 
 # =========================================
 # define library
@@ -21,39 +25,17 @@ option(CC_ENABLE_UNITY_BUILD "If enabled, compiles this library as a single comp
 file(GLOB_RECURSE SOURCES "src/*.cc")
 file(GLOB_RECURSE HEADERS "src/*.hh" "src/*.inl")
 
-arcana_source_group(SOURCES HEADERS)
-
-if (CC_ENABLE_UNITY_BUILD)
-    arcana_enable_unity_build(clean-core SOURCES 100 cc)
-endif()
-
-add_library(clean-core STATIC ${SOURCES} ${HEADERS})
+arcana_add_library(CC clean-core SOURCES HEADERS)
 target_include_directories(clean-core PUBLIC src/)
 
 # =========================================
 # set up compile flags
-
-# set up compile options we want for a library
-function(arcana_configure_lib_options LIB_TARGET)
-    if (MSVC)
-        target_compile_options(${LIB_TARGET} PUBLIC /MP)
-    else()
-        target_compile_options(${LIB_TARGET} PRIVATE
-            -Wall
-            -fPIC
-            -Werror=return-type # error on missing return
-            )
-        target_link_libraries(${LIB_TARGET} PUBLIC -fuse-ld=gold)
-    endif()
-endfunction()
 
 # default to RelWithDebInfo
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "RelWithDebInfo" CACHE STRING
         "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
 endif()
-
-arcana_configure_lib_options(clean-core)
 
 target_compile_definitions(clean-core PUBLIC $<$<CONFIG:DEBUG>:CC_DEBUG>)
 target_compile_definitions(clean-core PUBLIC $<$<CONFIG:RELEASE>:CC_RELEASE>)
@@ -74,12 +56,4 @@ endif()
 
 if (CC_ENABLE_CONTRACT_CHECKING)
     target_compile_definitions(clean-core PUBLIC CC_ENABLE_CONTRACT_CHECKING)
-endif()
-
-if (CC_STRICT)
-    if (MSVC)
-        target_compile_definitions(clean-core PRIVATE /WX /W4)
-    else()
-        target_compile_options(clean-core PRIVATE -Wextra -Wpedantic -Werror)
-    endif()
 endif()

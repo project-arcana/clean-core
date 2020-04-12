@@ -100,6 +100,7 @@ public:
         bool operator!=(sentinel) const { return n; }
 
         iterator() = default;
+
     private:
         iterator(node* n) : n(n) {}
         node* n = nullptr;
@@ -115,6 +116,7 @@ public:
         const_iterator(iterator it) : n(it.n) {}
 
         const_iterator() = default;
+
     private:
         const_iterator(node const* n) : n(n) {}
         node const* n = nullptr;
@@ -172,10 +174,7 @@ public:
         return *this;
     }
 
-    ~forward_list()
-    {
-        clear();
-    }
+    ~forward_list() { clear(); }
 
     // internal types
 private:
