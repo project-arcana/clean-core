@@ -1,8 +1,9 @@
 #pragma once
 
+#include <cstring> // std::memcpy
+
 #include <clean-core/string.hh>
 #include <clean-core/string_view.hh>
-#include <cstring> // std::memcpy
 
 namespace cc
 {
@@ -19,8 +20,10 @@ public: // methods
 
     [[nodiscard]] string to_string() const
     {
+        if (empty())
+            return {};
         string s = string::uninitialized(size());
-        memcpy(s.data(), m_data, size());
+        std::memcpy(s.data(), m_data, size());
         return s;
     }
 
@@ -33,7 +36,8 @@ public: // methods
 
         size_t new_cap = (m_capacity << 1) < req_size ? req_size : (m_capacity << 1);
         char* new_data = new char[new_cap];
-        std::memcpy(new_data, m_data, this->size());
+        if (!empty())
+            std::memcpy(new_data, m_data, this->size());
         delete[] m_data;
         m_curr = m_curr - m_data + new_data;
         m_data = new_data;
@@ -51,10 +55,13 @@ public: // ctor
 
     string_stream(string_stream const& rhs)
     {
-        m_data = new char[rhs.size()];
-        std::memcpy(m_data, rhs.m_data, rhs.size());
-        m_curr = m_data + rhs.size();
-        m_capacity = rhs.size();
+        if (!rhs.empty())
+        {
+            m_data = new char[rhs.size()];
+            std::memcpy(m_data, rhs.m_data, rhs.size());
+            m_curr = m_data + rhs.size();
+            m_capacity = rhs.size();
+        }
     };
 
     string_stream(string_stream&& rhs) noexcept
@@ -104,6 +111,6 @@ private: // member
     size_t m_capacity = 0;
 };
 
-string to_string(string_stream const& ss) { return ss.to_string(); }
+inline string to_string(string_stream const& ss) { return ss.to_string(); }
 
 }
