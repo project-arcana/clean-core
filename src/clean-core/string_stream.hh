@@ -1,9 +1,8 @@
 #pragma once
 
-#include <cstring> // std::memcpy
-
 #include <clean-core/string.hh>
 #include <clean-core/string_view.hh>
+#include <cstring> // std::memcpy
 
 namespace cc
 {
@@ -31,10 +30,12 @@ public: // methods
         size_t req_size = this->size() + size;
         if (req_size <= m_capacity)
             return;
-        size_t new_cap = (m_capacity << 1) < req_size ? req_size : m_capacity;
+
+        size_t new_cap = (m_capacity << 1) < req_size ? req_size : (m_capacity << 1);
         char* new_data = new char[new_cap];
         std::memcpy(new_data, m_data, this->size());
         delete[] m_data;
+        m_curr = m_curr - m_data + new_data;
         m_data = new_data;
         m_capacity = new_cap;
     }
@@ -80,7 +81,7 @@ public: // assignment
                 m_capacity = rhs.size();
             }
             std::memcpy(m_data, rhs.m_data, rhs.size());
-            m_curr = rhs.m_curr;
+            m_curr = m_data + rhs.size();
         }
         return *this;
     };
@@ -94,6 +95,7 @@ public: // assignment
         rhs.m_data = nullptr;
         rhs.m_curr = nullptr;
         rhs.m_capacity = 0;
+        return *this;
     };
 
 private: // member
