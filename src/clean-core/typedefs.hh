@@ -12,7 +12,7 @@ using int64 = signed long long;
 using uint8 = unsigned char;
 using uint16 = unsigned short;
 using uint32 = unsigned int;
-using uint64 = unsigned long long;
+using uint64 = std::size_t;
 
 using float32 = float;
 using float64 = double;
@@ -23,4 +23,6 @@ using hash_t = uint64;
 using size_t = std::size_t;
 
 using nullptr_t = decltype(nullptr);
+
+static_assert(sizeof(uint64) == sizeof(size_t), "only 64bit supported");
 }

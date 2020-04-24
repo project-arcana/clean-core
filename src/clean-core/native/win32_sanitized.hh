@@ -1,11 +1,10 @@
 #pragma once
 
-#include <clean-core/macros.hh>
-#ifdef CC_OS_WINDOWS
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32)
 
 // Check if <Windows.h> was included somewhere before this header
 #if defined(_WINDOWS_) && !defined(CC_SANITIZED_WINDOWS_H)
-#pragma message("Including unsanitized Windows.h")
+#pragma message("[clean-core][native/win32_sanitized.hh] Detected unsanitized Windows.h")
 #endif
 #define CC_SANITIZED_WINDOWS_H
 

@@ -88,6 +88,16 @@ struct optional
             return _data.value != rhs._data.value;
         return _has_value != rhs._has_value;
     }
+    template <class U>
+    friend constexpr bool operator==(U const& lhs, optional const& rhs)
+    {
+        return rhs._has_value ? rhs._data.value == lhs : false;
+    }
+    template <class U>
+    friend constexpr bool operator!=(U const& lhs, optional const& rhs)
+    {
+        return rhs._has_value ? rhs._data.value != lhs : true;
+    }
 
 private:
     storage_for<T> _data;

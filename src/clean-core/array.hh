@@ -1,12 +1,15 @@
 #pragma once
 
 #include <initializer_list>
+#include <utility> // for tuple_size
 
 #include <clean-core/algorithms.hh>
+#include <clean-core/always_false.hh>
 #include <clean-core/assert.hh>
 #include <clean-core/detail/container_impl_util.hh>
 #include <clean-core/forward.hh>
 #include <clean-core/fwd.hh>
+#include <clean-core/hash_combine.hh>
 #include <clean-core/span.hh>
 #include <clean-core/typedefs.hh>
 
@@ -40,6 +43,19 @@ struct array
     {
         CC_CONTRACT(i < N);
         return _values[i];
+    }
+
+    template <size_t I>
+    constexpr T& get()
+    {
+        static_assert(I < N);
+        return _values[I];
+    }
+    template <size_t I>
+    constexpr T const& get() const
+    {
+        static_assert(I < N);
+        return _values[I];
     }
 
     constexpr bool operator==(array const& rhs) const { return cc::are_ranges_equal(*this, rhs); }
@@ -78,6 +94,14 @@ struct array<T, dynamic_size>
         a._data = new T[size];
         cc::fill(a, value);
         return a;
+    }
+
+    void resize(size_t new_size, T const& value = {})
+    {
+        delete[] _data;
+        _size = new_size;
+        _data = new T[new_size];
+        cc::fill(*this, value);
     }
 
     array(std::initializer_list<T> data)
@@ -166,4 +190,35 @@ template <class T, class... Args>
 {
     return {{cc::forward<T>(v0), cc::forward<Args>(rest)...}};
 }
+
+// hash
+template <class T, size_t N>
+struct hash<array<T, N>>
+{
+    [[nodiscard]] constexpr hash_t operator()(array<T, N> const& a) const noexcept
+    {
+        size_t h = 0;
+        for (auto const& v : a)
+            h = cc::hash_combine(h, hash<T>{}(v));
+        return h;
+    }
+};
+}
+
+namespace std
+{
+template <class T, size_t N>
+struct tuple_size<cc::array<T, N>> : public std::integral_constant<std::size_t, N>
+{
+};
+template <class T>
+struct tuple_size<cc::array<T, cc::dynamic_size>>
+{
+    static_assert(cc::always_false<T>, "does not work with dynamically sized arrays");
+};
+template <std::size_t I, class T, size_t N>
+struct tuple_element<I, cc::array<T, N>>
+{
+    using type = T;
+};
 }

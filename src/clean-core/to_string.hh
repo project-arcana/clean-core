@@ -6,11 +6,13 @@ namespace cc
 {
 inline string to_string(char value) { return string::filled(1, value); }
 inline string to_string(bool value) { return value ? "true" : "false"; }
-inline string to_string(char const* value) { return value; }
+inline string to_string(char const* value) { return value == nullptr ? "[nullptr]" : value; }
 inline string to_string(string_view value) { return value; }
 inline string to_string(nullptr_t) { return "nullptr"; }
 
 string to_string(void* value);
+
+string to_string(std::byte value);
 
 string to_string(int value);
 string to_string(long value);

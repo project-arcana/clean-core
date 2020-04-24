@@ -16,6 +16,8 @@ struct hash;
 
 template <class T = void, class = bool> // SFINAE-friendly for cc::enable_if
 struct less;
+template <class T = void, class = bool> // SFINAE-friendly for cc::enable_if
+struct equal_to;
 
 struct nullopt_t;
 template <class T>
@@ -23,6 +25,8 @@ struct optional;
 
 template <class A, class B>
 struct pair;
+template <class... Types>
+struct tuple;
 
 // containers and ranges
 template <class T>
@@ -39,6 +43,11 @@ template <class T>
 struct fwd_array;
 template <class T, size_t N>
 struct capped_array;
+
+template <class KeyT, class ValueT, class HashT = cc::hash<KeyT>, class EqualT = cc::equal_to<void>>
+struct map;
+template <class T, class HashT = cc::hash<T>, class EqualT = cc::equal_to<void>>
+struct set;
 
 // values
 template <class T>
@@ -61,6 +70,8 @@ using string = sbo_string<15>;
 // functional
 template <class Signature>
 struct unique_function;
+template <class Signature>
+struct function_ref;
 
 // smart pointer
 template <class T>

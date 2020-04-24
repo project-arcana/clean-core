@@ -46,6 +46,24 @@
 #define CC_CONTRACT(condition) CC_UNUSED(condition && "")
 #endif
 
+#ifdef CC_ENABLE_ASSERTIONS
+#define CC_UNREACHABLE(msg) \
+    (::cc::detail::assertion_failed({"unreachable code reached: " msg, CC_PRETTY_FUNC, __FILE__, __LINE__}), CC_BUILTIN_UNREACHABLE)
+#else
+#define CC_UNREACHABLE(msg) CC_BUILTIN_UNREACHABLE
+#endif
+
+// workaround for https://gcc.gnu.org/bugzilla/show_bug.cgi?id=86678
+#if defined(CC_COMPILER_GCC) && __GNUC__ < 9
+#define CC_UNREACHABLE_SWITCH_WORKAROUND(type)                \
+    if (type != decltype(type){} || type == decltype(type){}) \
+        CC_UNREACHABLE("unhandled case for " #type);          \
+    else                                                      \
+        return {} // force ;
+#else
+#define CC_UNREACHABLE_SWITCH_WORKAROUND(type) CC_UNREACHABLE("unhandled case for " #type)
+#endif
+
 namespace cc::detail
 {
 struct assertion_info
@@ -56,7 +74,7 @@ struct assertion_info
     int line;
 };
 
-CC_COLD_FUNC CC_DONT_INLINE void assertion_failed(assertion_info const& info);
+[[noreturn]] CC_COLD_FUNC CC_DONT_INLINE void assertion_failed(assertion_info const& info);
 }
 
 namespace cc

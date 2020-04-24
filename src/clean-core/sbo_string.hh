@@ -4,6 +4,7 @@
 
 #include <clean-core/assert.hh>
 #include <clean-core/fwd.hh>
+#include <clean-core/hash_combine.hh>
 #include <clean-core/macros.hh>
 #include <clean-core/string_view.hh>
 #include <clean-core/typedefs.hh>
@@ -306,6 +307,339 @@ public:
         }
     }
 
+    // string processing
+public:
+    string_view subview(size_t offset, size_t size) const { return string_view(_data, _size).subview(offset, size); }
+    string_view subview(size_t offset) const { return string_view(_data, _size).subview(offset); }
+    sbo_string substring(size_t offset, size_t size) const { return subview(offset, size); }
+    sbo_string substring(size_t offset) const { return subview(offset); }
+    bool contains(char c) const { return string_view(_data, _size).contains(c); }
+    bool contains(string_view s) const { return string_view(_data, _size).contains(s); }
+    bool starts_with(char c) const { return string_view(_data, _size).starts_with(c); }
+    bool starts_with(string_view s) const { return string_view(_data, _size).starts_with(s); }
+    bool ends_with(char c) const { return string_view(_data, _size).ends_with(c); }
+    bool ends_with(string_view s) const { return string_view(_data, _size).ends_with(s); }
+
+    [[nodiscard]] auto split(char sep, split_options opts = split_options::keep_empty) const { return string_view(_data, _size).split(sep, opts); }
+    template <class Pred>
+    [[nodiscard]] auto split(Pred&& pred, split_options opts = split_options::keep_empty) const
+    {
+        return string_view(_data, _size).split(pred, opts);
+    }
+    [[nodiscard]] auto split() const { return string_view(_data, _size).split(cc::is_space, split_options::skip_empty); }
+
+    void fill(char c, size_t n = dynamic_size)
+    {
+        if (n <= capacity())
+        {
+            _size = n;
+            _data[n] = '\0';
+        }
+        else if (n != dynamic_size)
+        {
+            if (!_is_short())
+                delete[] _data;
+
+            CC_ASSERT(n >= sbo_capacity);
+            _data = new char[n + 1];
+            _data[n] = '\0';
+            _size = n;
+            _capacity = n;
+        }
+
+        for (size_t i = 0; i < _size; ++i)
+            _data[i] = c;
+    }
+
+    [[nodiscard]] sbo_string to_lower() const
+    {
+        auto r = uninitialized(_size);
+        for (size_t i = 0; i < _size; ++i)
+            r._data[i] = cc::to_lower(_data[i]);
+        return r;
+    }
+    [[nodiscard]] sbo_string to_upper() const
+    {
+        auto r = uninitialized(_size);
+        for (size_t i = 0; i < _size; ++i)
+            r._data[i] = cc::to_upper(_data[i]);
+        return r;
+    }
+    void capitalize()
+    {
+        if (_size > 0)
+            _data[0] = cc::to_upper(_data[0]);
+        for (size_t i = 1; i < _size; ++i)
+            _data[i] = cc::to_lower(_data[i]);
+    }
+    [[nodiscard]] sbo_string capitalized() const
+    {
+        auto r = uninitialized(_size);
+        if (_size > 0)
+            r._data[0] = cc::to_upper(_data[0]);
+        for (size_t i = 1; i < _size; ++i)
+            r._data[i] = cc::to_lower(_data[i]);
+        return r;
+    }
+
+    void remove_prefix(size_t n)
+    {
+        CC_CONTRACT(_size >= n);
+        for (size_t i = 0; i < _size - n; ++i)
+            _data[i] = _data[i + n];
+        _size -= n;
+    }
+    void remove_prefix(string_view s)
+    {
+        CC_CONTRACT(starts_with(s));
+        remove_prefix(s.size());
+    }
+
+    void remove_suffix(size_t n)
+    {
+        CC_CONTRACT(_size >= n);
+        _size -= n;
+    }
+    void remove_suffix(string_view s)
+    {
+        CC_CONTRACT(ends_with(s));
+        _size -= s.size();
+    }
+
+    [[nodiscard]] sbo_string removed_prefix(size_t n) const { return string_view(_data, _size).remove_prefix(n); }
+    [[nodiscard]] sbo_string removed_prefix(string_view s) const { return string_view(_data, _size).remove_prefix(s); }
+    [[nodiscard]] sbo_string removed_suffix(size_t n) const { return string_view(_data, _size).remove_suffix(n); }
+    [[nodiscard]] sbo_string removed_suffix(string_view s) const { return string_view(_data, _size).remove_suffix(s); }
+
+    [[nodiscard]] sbo_string first(size_t n) const { return string_view(_data, _size).first(n); }
+    [[nodiscard]] sbo_string last(size_t n) const { return string_view(_data, _size).last(n); }
+
+    template <class Pred>
+    void trim_start(Pred&& pred)
+    {
+        size_t n = 0;
+        while (n < _size && pred(_data[n]))
+            ++n;
+
+        if (n == 0)
+            return; // no change
+
+        for (size_t i = 0; i < _size - n; ++i)
+            _data[i] = _data[i + n];
+        _size -= n;
+        _data[_size] = '\0';
+    }
+    void trim_start(char c) { return trim_start(cc::is_equal_fun(c)); }
+    void trim_start() { return trim_start(cc::is_space); }
+
+    template <class Pred>
+    void trim_end(Pred&& pred)
+    {
+        while (_size > 0 && pred(_data[_size - 1]))
+            --_size;
+        _data[_size] = '\0';
+    }
+    void trim_end(char c) { trim_end(cc::is_equal_fun(c)); }
+    void trim_end() { trim_end(cc::is_space); }
+
+    template <class Pred>
+    void trim(Pred&& pred)
+    {
+        size_t n = 0;
+        while (n < _size && pred(_data[n]))
+            ++n;
+        size_t s = _size - n;
+        while (s > 0 && pred(_data[n + s - 1]))
+            --s;
+        for (size_t i = 0; i < s; ++i)
+            _data[i] = _data[i + n];
+        _data[s] = '\0';
+        _size = s;
+    }
+    void trim(char c) { trim(cc::is_equal_fun(c)); }
+    void trim() { trim(cc::is_space); }
+
+    template <class Pred>
+    [[nodiscard]] sbo_string trimmed_start(Pred&& pred) const
+    {
+        return string_view(_data, _size).trim_start(pred);
+    }
+    [[nodiscard]] sbo_string trimmed_start(char c) const { return string_view(_data, _size).trim_start(c); }
+    [[nodiscard]] sbo_string trimmed_start() const { return string_view(_data, _size).trim_start(cc::is_space); }
+
+    template <class Pred>
+    [[nodiscard]] sbo_string trimmed_end(Pred&& pred) const
+    {
+        return string_view(_data, _size).trim_end(pred);
+    }
+    [[nodiscard]] sbo_string trimmed_end(char c) const { return string_view(_data, _size).trim_end(c); }
+    [[nodiscard]] sbo_string trimmed_end() const { return string_view(_data, _size).trim_end(cc::is_space); }
+
+    template <class Pred>
+    [[nodiscard]] sbo_string trimmed(Pred&& pred) const
+    {
+        return string_view(_data, _size).trim(pred);
+    }
+    [[nodiscard]] sbo_string trimmed(char c) const { return string_view(_data, _size).trim(c); }
+    [[nodiscard]] sbo_string trimmed() const { return string_view(_data, _size).trim(cc::is_space); }
+
+    void pad_start(size_t length, char c = ' ')
+    {
+        if (_size >= length)
+            return;
+
+        reserve(length);
+
+        for (size_t i = 1; i <= _size; ++i)
+            _data[length - i] = _data[_size - i];
+        for (size_t i = 0; i < length - _size; ++i)
+            _data[i] = c;
+
+        _size = length;
+        _data[_size] = '\0';
+    }
+    void pad_end(size_t length, char c = ' ')
+    {
+        if (_size >= length)
+            return;
+
+        reserve(length);
+
+        for (size_t i = _size; i < length; ++i)
+            _data[i] = c;
+
+        _size = length;
+        _data[_size] = '\0';
+    }
+
+    void replace(char old, char replacement)
+    {
+        for (auto& c : *this)
+            if (c == old)
+                c = replacement;
+    }
+    void replace(size_t pos, size_t count, string_view replacement)
+    {
+        CC_CONTRACT(pos <= _size);
+        CC_CONTRACT(pos + count <= _size);
+
+        // early out: replace same size
+        if (count == replacement.size())
+        {
+            std::memcpy(_data + pos, replacement.data(), replacement.size());
+            return;
+        }
+
+        auto new_size = _size - count + replacement.size();
+        auto new_cap = capacity();
+
+        if (new_size > new_cap) // realloc
+        {
+            // set to new size but at least double
+            new_cap = new_cap << 1;
+            if (new_size > new_cap)
+                new_cap = new_size;
+
+            auto new_data = new char[new_cap + 1];
+
+            std::memcpy(new_data, _data, pos);
+            std::memcpy(new_data + pos, replacement.data(), replacement.size());
+            std::memcpy(new_data + pos + replacement.size(), _data + pos + count, _size - count - pos);
+            new_data[new_size] = '\0';
+
+            if (!_is_short())
+                delete[] _data;
+
+            _size = new_size;
+            _data = new_data;
+            _capacity = new_cap;
+        }
+        else
+        {
+            if (replacement.size() > count) // enlarge
+            {
+                for (size_t i = 1; i <= _size - count - pos; ++i)
+                    _data[new_size - i] = _data[_size - i];
+            }
+            else // shrink
+            {
+                for (size_t i = 0; i < _size - count - pos; ++i)
+                    _data[pos + replacement.size() + i] = _data[pos + count + i];
+            }
+            std::memcpy(_data + pos, replacement.data(), replacement.size());
+
+            _size = new_size;
+            _data[new_size] = '\0';
+        }
+    }
+    void replace(string_view old, string_view replacement)
+    {
+        CC_CONTRACT(!old.empty());
+
+        if (old.size() > _size)
+            return; // cannot replace anything
+
+        size_t i = 0;
+        auto os = old.size();
+        while (i + os <= _size)
+        {
+            if (subview(i, os) == old) // found
+            {
+                replace(i, os, replacement);
+                i += replacement.size();
+            }
+            else
+                ++i;
+        }
+    }
+
+    [[nodiscard]] sbo_string replaced(char old, char replacement) const
+    {
+        auto r = uninitialized(_size);
+        for (size_t i = 0; i < _size; ++i)
+        {
+            auto c = _data[i];
+            r._data[i] = c == old ? replacement : c;
+        }
+        return r;
+    }
+    [[nodiscard]] sbo_string replaced(size_t pos, size_t count, string_view replacement) const
+    {
+        CC_CONTRACT(pos <= _size);
+        CC_CONTRACT(pos + count <= _size);
+        auto r = uninitialized(_size - count + replacement.size());
+        std::memcpy(r._data, _data, pos);
+        std::memcpy(r._data + pos, replacement.data(), replacement.size());
+        std::memcpy(r._data + pos + replacement.size(), _data + pos + count, _size - count - pos);
+        return r;
+    }
+    [[nodiscard]] sbo_string replaced(string_view old, string_view replacement) const
+    {
+        CC_CONTRACT(!old.empty());
+        if (old.size() > _size)
+            return *this; // early out
+
+        sbo_string r;
+        size_t i = 0;
+        auto const os = old.size();
+        while (i < _size)
+        {
+            if (subview(i, os) == old) // found
+            {
+                r += replacement;
+                i += old.size();
+            }
+            else
+            {
+                r += _data[i];
+                ++i;
+            }
+        }
+        return r;
+    }
+
+    void insert(size_t pos, string_view s) { replace(pos, 0, s); }
+
     // operators
 public:
     bool operator==(string_view rhs) const { return string_view(_data, _size) == rhs; }
@@ -332,8 +666,12 @@ public:
         else
         {
             CC_ASSERT(new_cap >= sbo_capacity);
-            while (new_cap < new_size)
-                new_cap = new_cap << 1;
+
+            // take new size but at least double cap
+            new_cap = new_cap << 1;
+            if (new_cap < new_size)
+                new_cap = new_size;
+
             auto new_data = new char[new_cap + 1];
 
             std::memcpy(new_data, _data, _size);
@@ -352,6 +690,52 @@ public:
     }
 
     operator string_view() const { return string_view(_data, _size); }
+
+    friend bool operator==(string_view lhs, sbo_string const& rhs) { return lhs == string_view(rhs); }
+    friend bool operator!=(string_view lhs, sbo_string const& rhs) { return lhs != string_view(rhs); }
+    template <size_t B>
+    friend bool operator==(sbo_string const& lhs, sbo_string<B> const& rhs)
+    {
+        return string_view(lhs) == string_view(rhs);
+    }
+    template <size_t B>
+    friend bool operator!=(sbo_string const& lhs, sbo_string<B> const& rhs)
+    {
+        return string_view(lhs) != string_view(rhs);
+    }
+
+    friend sbo_string operator+(sbo_string lhs, string_view rhs)
+    {
+        lhs += rhs;
+        return lhs;
+    }
+    template <size_t C2>
+    friend sbo_string operator+(sbo_string lhs, sbo_string<C2> const& rhs)
+    {
+        lhs += rhs;
+        return lhs;
+    }
+    friend sbo_string operator+(sbo_string lhs, char rhs)
+    {
+        lhs += rhs;
+        return lhs;
+    }
+    friend sbo_string operator+(char lhs, sbo_string const& rhs)
+    {
+        auto r = uninitialized(1 + rhs.size());
+        auto d = r.data();
+        d[0] = lhs;
+        std::memcpy(d + 1, rhs.data(), rhs.size());
+        return r;
+    }
+    friend sbo_string operator+(string_view lhs, sbo_string const& rhs)
+    {
+        auto r = uninitialized(lhs.size() + rhs.size());
+        auto d = r.data();
+        std::memcpy(d, lhs.data(), lhs.size());
+        std::memcpy(d + lhs.size(), rhs.data(), rhs.size());
+        return r;
+    }
 
     // helper
 private:
@@ -392,52 +776,17 @@ private:
     };
 };
 
-template <size_t C>
-bool operator==(string_view lhs, sbo_string<C> const& rhs)
+// hash
+template <size_t sbo_capacity>
+struct hash<sbo_string<sbo_capacity>>
 {
-    return lhs == string_view(rhs);
-}
-template <size_t C>
-bool operator!=(string_view lhs, sbo_string<C> const& rhs)
-{
-    return lhs != string_view(rhs);
-}
-template <size_t A, size_t B>
-bool operator==(sbo_string<A> const& lhs, sbo_string<B> const& rhs)
-{
-    return string_view(lhs) == string_view(rhs);
-}
-template <size_t A, size_t B>
-bool operator!=(sbo_string<A> const& lhs, sbo_string<B> const& rhs)
-{
-    return string_view(lhs) != string_view(rhs);
-}
-
-template <size_t C>
-[[nodiscard]] sbo_string<C> operator+(sbo_string<C> lhs, string_view rhs)
-{
-    lhs += rhs;
-    return lhs;
-}
-template <size_t C1, size_t C2>
-[[nodiscard]] sbo_string<C1> operator+(sbo_string<C1> lhs, sbo_string<C2> const& rhs)
-{
-    lhs += rhs;
-    return lhs;
-}
-template <size_t C>
-[[nodiscard]] sbo_string<C> operator+(sbo_string<C> lhs, char rhs)
-{
-    lhs += rhs;
-    return lhs;
-}
-template <size_t C>
-[[nodiscard]] sbo_string<C> operator+(string_view lhs, sbo_string<C> const& rhs)
-{
-    auto r = sbo_string<C>::uninitialized(lhs.size() + rhs.size());
-    auto d = r.data();
-    std::memcpy(d, lhs.data(), lhs.size());
-    std::memcpy(d + lhs.size(), rhs.data(), rhs.size());
-    return r;
-}
+    [[nodiscard]] constexpr hash_t operator()(sbo_string<sbo_capacity> const& a) const noexcept
+    {
+        // TODO: better string hash
+        size_t h = 0;
+        for (auto const& c : a)
+            h = cc::hash_combine(h, c);
+        return h;
+    }
+};
 }
