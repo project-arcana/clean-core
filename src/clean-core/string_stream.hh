@@ -53,7 +53,7 @@ public: // ctor
     {
         m_data = new char[rhs.size()];
         std::memcpy(m_data, rhs.m_data, rhs.size());
-        m_curr = rhs.m_curr;
+        m_curr = m_data + rhs.size();
         m_capacity = rhs.size();
     };
 
