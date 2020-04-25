@@ -27,7 +27,7 @@ public: // methods
         return s;
     }
 
-    /// reseve space for at least size more elements
+    /// reserve space for at least size more elements
     void reserve(size_t size)
     {
         size_t req_size = this->size() + size;
@@ -62,7 +62,7 @@ public: // ctor
             m_curr = m_data + rhs.size();
             m_capacity = rhs.size();
         }
-    };
+    }
 
     string_stream(string_stream&& rhs) noexcept
     {
@@ -91,7 +91,7 @@ public: // assignment
             m_curr = m_data + rhs.size();
         }
         return *this;
-    };
+    }
 
     string_stream& operator=(string_stream&& rhs) noexcept
     {
@@ -103,7 +103,7 @@ public: // assignment
         rhs.m_curr = nullptr;
         rhs.m_capacity = 0;
         return *this;
-    };
+    }
 
 private: // member
     char* m_data = nullptr;
