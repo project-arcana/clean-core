@@ -7,7 +7,7 @@
 
 namespace cc
 {
-class string_stream
+struct string_stream
 {
 public: // methods
     string_stream& operator<<(string_view sv)
