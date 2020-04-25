@@ -1,5 +1,7 @@
 #include <clean-core/assert.hh>
 
+#include <clean-core/breakpoint.hh>
+
 #include <cstdio>
 #include <cstdlib>
 
@@ -24,6 +26,9 @@ void default_assertion_handler(cc::detail::assertion_info const& info)
 
     // TODO: stacktrace
 
+#ifndef CC_RELEASE
+    cc::breakpoint();
+#endif
     std::abort();
 }
 } // namespace
