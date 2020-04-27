@@ -34,7 +34,6 @@ struct default_formatter
 struct arg_info
 {
     function_ptr<void(string_stream&, void const*, string_view)> do_format;
-    function_ptr<bool(string_view)> verify_format_str;
     void const* data = nullptr;
     char const* name = nullptr;
 };
@@ -54,10 +53,6 @@ arg_info make_arg_info(T const& v)
                 // todo take correct version
                 ss << to_string(*static_cast<T const*>(data));
             },
-            [](string_view options) -> bool {
-                // todo: not always the case
-                return options.empty();
-            },
             &v};
 }
 
@@ -69,11 +64,6 @@ arg_info make_arg_info(int const& v)
                 // todo take correct version
                 ss << std::to_string(*static_cast<int const*>(data));
             },
-            [](string_view options) -> bool {
-                // todo: not always the case
-                return options.empty();
-                // todo: special formatting
-            },
             &v};
 }
 
@@ -83,10 +73,6 @@ arg_info make_arg_info(arg<T> const& a)
     return {[](string_stream& ss, void const* data, string_view options) -> void {
                 // todo take correct version
                 ss << to_string(*static_cast<T const*>(data));
-            },
-            [](string_view options) -> bool {
-                // todo: not always the case
-                return options.empty();
             },
             &a.value, a.name};
 }
@@ -194,7 +180,6 @@ void vformat_to(string_stream& s, string_view fmt_str, span<arg_info> args)
                     ++it;
                 CC_ASSERT(it != fmt_str.end() && "Invalid format string: Missing closing }");
                 // todo: this is double parsing!
-                CC_ASSERT(args[argument_index].verify_format_str(string_view(args_start, it)) && "Invalid format arguments");
                 args[argument_index].do_format(s, args[argument_index].data, string_view(args_start, it));
             }
         }
