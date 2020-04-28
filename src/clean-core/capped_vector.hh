@@ -26,7 +26,8 @@ public:
     constexpr T* end() { return &_u.value[0] + _size; }
     constexpr T const* end() const { return &_u.value[0] + _size; }
 
-    constexpr size_t size() const { return static_cast<size_t>(_size); }
+    constexpr size_t size() const { return size_t(_size); }
+    constexpr size_t size_bytes() const { return size_t(_size) * sizeof(T); }
     constexpr size_t capacity() const { return N; }
     constexpr bool empty() const { return _size == 0; }
 
