@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string> // temporary
+#include <type_traits>
 
 #include <clean-core/function_ptr.hh>
 #include <clean-core/span.hh>
@@ -8,28 +9,153 @@
 #include <clean-core/string_stream.hh>
 #include <clean-core/string_view.hh>
 
-/*
- * TODO:
- * * No arguments currently not possible
- * * allow formatter customization
- */
-
 namespace cc
 {
+namespace detail
+{
+template <class T, class = std::void_t<>>
+struct has_to_string_ss_args_t : std::false_type
+{
+};
+template <class T>
+struct has_to_string_ss_args_t<T, std::void_t<decltype(to_string(std::declval<string_stream>(), std::declval<T>(), std::declval<string_view>()))>> : std::true_type
+{
+};
+template <class T>
+constexpr bool has_to_string_ss_args = has_to_string_ss_args_t<T>::value;
+
+template <class T, class = std::void_t<>>
+struct has_to_string_ss_t : std::false_type
+{
+};
+template <class T>
+struct has_to_string_ss_t<T, std::void_t<decltype(to_string(std::declval<string_stream>(), std::declval<T>()))>> : std::true_type
+{
+};
+template <class T>
+constexpr bool has_to_string_ss = has_to_string_ss_t<T>::value;
+
+template <class T, class = std::void_t<>>
+struct has_to_string_args_t : std::false_type
+{
+};
+template <class T>
+struct has_to_string_args_t<T, std::void_t<decltype(string_view(o_string(std::declval<T>(), std::declval<string_view>())))>> : std::true_type
+{
+};
+template <class T>
+constexpr bool has_to_string_args = has_to_string_ss_t<T>::value;
+
+template <class T, class = std::void_t<>>
+struct has_to_string_t : std::false_type
+{
+};
+template <class T>
+struct has_to_string_t<T, std::void_t<decltype(string_view(to_string(std::declval<T>())))>> : std::true_type
+{
+};
+template <class T>
+constexpr bool has_to_string = has_to_string_t<T>::value;
+
+template <class T, class = std::void_t<>>
+struct has_member_to_string_t : std::false_type
+{
+};
+template <class T>
+struct has_member_to_string_t<T, std::void_t<decltype(string_view(std::declval<T>().to_string()))>> : std::true_type
+{
+};
+template <class T>
+constexpr bool has_member_to_string = has_member_to_string_t<T>::value;
+}
+
+// to_string implementations for builtin types
+// format_spec ::=  [[fill]align][sign]["#"]["0"][width]["." precision][type]
+// fill        ::=  <a character other than '{' or '}'>
+// align       ::=  "<" | ">" | "^"
+// sign        ::=  "+" | "-" | " "
+// width       ::=  integer | "{" arg_id "}"
+// precision   ::=  integer | "{" arg_id "}"
+// type        ::=  int_type | "a" | "A" | "c" | "e" | "E" | "f" | "F" | "g" | "G" | "L" | "p" | "s"
+// int_type    ::=  "b" | "B" | "d" | "o" | "x" | "X"
+
+template <class T>
+void to_string(string_stream& ss, T const* b, string_view fmt_args)
+{
+    // todo parse
+}
+
+void to_string(string_stream& ss, bool b, string_view fmt_args)
+{
+    // todo parse
+}
+
+void to_string(string_stream& ss, string const& s, string_view fmt_args)
+{
+    // todo parse
+}
+
+void to_string(string_stream& ss, char c, string_view fmt_args)
+{
+    // todo parse
+}
+
+void to_string(string_stream& ss, int v, string_view fmt_args)
+{
+    // todo parse
+}
+
+void to_string(string_stream& ss, float v, string_view fmt_args)
+{
+    // todo parse
+}
+
+void to_string(string_stream& ss, double v, string_view fmt_args)
+{
+    // todo parse
+}
+
 struct default_formatter
 {
     template <class T>
-    void to_string(string_stream& ss, T const& v, string_view fmt_args)
+    static void do_format(string_stream& ss, T const& v, string_view fmt_args)
     {
-        // todo:
-        // Select one of
-        // cc::string to_string(T const&);
-        // cc::string to_string(T const&, cc::string_view fmt_args);
-        // void to_string(cc::string_stream&, T const&);
-        // void to_string(cc::string_stream&, T const&, cc::string_view fmt_args);
+        if constexpr (detail::has_to_string_ss_args<T>)
+        {
+            to_string(ss, v, fmt_args);
+        }
+        else if constexpr (detail::has_to_string_args<T>)
+        {
+            if constexpr (detail::has_to_string_ss<T>)
+            {
+                if (fmt_args.empty())
+                    to_string(ss, v);
+                else
+                    ss << to_string(v, fmt_args);
+            }
+            else
+            {
+                ss << string_view(to_string(v, fmt_args));
+            }
+        }
+        else if constexpr (detail::has_to_string_ss<T>)
+        {
+            to_string(ss, v);
+        }
+        else if constexpr (detail::has_to_string<T>)
+        {
+            ss << string_view(to_string(v));
+        }
+        else if constexpr (detail::has_member_to_string<T>)
+        {
+            ss << string_view(v.to_string());
+        }
+        else
+        {
+            static_assert(false, "Type requires a to_string() method");
+        }
     }
 };
-
 
 struct arg_info
 {
@@ -46,148 +172,22 @@ struct arg
     T const& value = {};
 };
 
-template <class T>
+template <class Formatter = default_formatter, class T>
 arg_info make_arg_info(T const& v)
 {
-    return {[](string_stream& ss, void const* data, string_view options) -> void {
-                // todo take correct version
-                ss << to_string(*static_cast<T const*>(data));
-            },
-            &v};
+    return {[](string_stream& ss, void const* data, string_view options) -> void { Formatter::do_format(ss, *static_cast<T const*>(data), options); }, &v};
 }
 
-// todo: all builtin types
-
-arg_info make_arg_info(int const& v)
-{
-    return {[](string_stream& ss, void const* data, string_view options) -> void {
-                // todo take correct version
-                ss << std::to_string(*static_cast<int const*>(data));
-            },
-            &v};
-}
-
-template <class T>
+template <class Formatter = default_formatter, class T>
 arg_info make_arg_info(arg<T> const& a)
 {
-    return {[](string_stream& ss, void const* data, string_view options) -> void {
-                // todo take correct version
-                ss << to_string(*static_cast<T const*>(data));
-            },
+    return {[](string_stream& ss, void const* data, string_view options) -> void { Formatter::do_format(ss, *static_cast<T const*>(data), options); },
             &a.value, a.name};
 }
 
+void vformat_to(string_stream& ss, string_view fmt_str, span<arg_info> args);
 
-void vformat_to(string_stream& s, string_view fmt_str, span<arg_info> args)
-{
-    auto const is_digit = [](unsigned char c) -> bool { return '0' <= c && c <= '9'; };
-    auto const is_letter = [](unsigned char c) -> bool { return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z'); };
-
-    // todo: benchmark if useful
-    s.reserve(fmt_str.size());
-
-    // if not explicityly given, take the next argument
-    // todo: what happens when named / numbered args are used before {}
-    int arg_id = 0;
-
-    // each iteration handle one argument (if there are any)
-    auto it = fmt_str.begin();
-    while (it != fmt_str.end())
-    {
-        auto segment_start = it;
-        // find next occurence of '{', or end, and all occurrences of }}
-        while (*it != '{' && it != fmt_str.end())
-        {
-            if (*it == '}')
-            {
-                s << string_view(segment_start, it);
-                ++it;
-                CC_ASSERT(*it == '}' && it != fmt_str.end() && "Invalid format string: Unmatched }");
-                segment_start = it;
-            }
-            ++it;
-        }
-
-        // append current segment
-        if (it != segment_start)
-            s << string_view(segment_start, it);
-
-        // nothing to replace
-        if (it == fmt_str.end())
-            return;
-
-        // else it now points to {
-        ++it;
-        CC_ASSERT(it != fmt_str.end() && "Invalid format string: Missing closing }");
-        if (*it == '{') // escape
-            s << string_view(it, it + 1);
-        else if (*it == '}')
-        {
-            // case {}
-            args[arg_id].do_format(s, args[arg_id].data, {});
-            ++arg_id;
-        }
-        else
-        {
-            // either number or named argument or parse args
-            size_t argument_index = -1;
-            if (is_digit(*it)) // number
-            {
-                // todo: are leading zeros valid?
-                size_t index = *it - '0';
-                ++it;
-                while (is_digit(*it))
-                {
-                    index *= 10;
-                    index += *it - '0';
-                    ++it;
-                }
-                CC_ASSERT(index < args.size() && "Invalid format string: index too large");
-                argument_index = index;
-            }
-            else if (*it == '_' || is_letter(*it)) // named
-            {
-                auto const name_start = it;
-                ++it;
-                while (*it == '_' || is_letter(*it) || is_digit(*it))
-                {
-                    ++it;
-                    CC_ASSERT(it != fmt_str.end() && "Invalid format string: index too large");
-                }
-                auto const name = string_view(name_start, it);
-                for (auto i = 0; i < args.size(); ++i)
-                {
-                    if (args[i].name != nullptr && string_view(args[i].name) == name)
-                    {
-                        argument_index = i;
-                        break;
-                    }
-                }
-                CC_ASSERT(argument_index < args.size() && "Invalid format string: argument name not found");
-            }
-
-            if (*it == '}')
-            {
-                // parse arg
-                args[argument_index].do_format(s, args[argument_index].data, {});
-            }
-            else
-            {
-                CC_ASSERT(*it == ':' && "Invalid format string: Missing closing }");
-                ++it;
-                auto args_start = it;
-                while (*it != '}' && it != fmt_str.end())
-                    ++it;
-                CC_ASSERT(it != fmt_str.end() && "Invalid format string: Missing closing }");
-                // todo: this is double parsing!
-                args[argument_index].do_format(s, args[argument_index].data, string_view(args_start, it));
-            }
-        }
-        ++it;
-    }
-}
-
-string vformat(string_view fmt_str, span<arg_info> args)
+inline string vformat(string_view fmt_str, span<arg_info> args)
 {
     string_stream ss;
     vformat_to(ss, fmt_str, args);
@@ -197,15 +197,29 @@ string vformat(string_view fmt_str, span<arg_info> args)
 template <class Formatter = default_formatter, class... Args>
 void format_to(string_stream& ss, string_view fmt_str, Args const&... args)
 {
-    arg_info vargs[] = {make_arg_info(args)...};
-    vformat_to(ss, fmt_str, vargs);
+    if constexpr (sizeof...(args) == 0)
+    {
+        vformat_to(ss, fmt_str, {});
+    }
+    else
+    {
+        arg_info vargs[] = {make_arg_info(args)...};
+        vformat_to(ss, fmt_str, vargs);
+    }
 }
 
 template <class Formatter = default_formatter, class... Args>
 string format(char const* fmt_str, Args const&... args)
 {
-    arg_info vargs[] = {make_arg_info(args)...};
-    return vformat(fmt_str, vargs);
+    if constexpr (sizeof...(args) == 0)
+    {
+        return vformat(fmt_str, {});
+    }
+    else
+    {
+        arg_info vargs[] = {make_arg_info(args)...};
+        return vformat(fmt_str, vargs);
+    }
 }
 
 /* Do we want this?
