@@ -30,6 +30,7 @@ struct array
     constexpr T const* end() const { return _values + N; }
 
     constexpr size_t size() const { return N; }
+    constexpr size_t size_bytes() const { return N * sizeof(T); }
 
     constexpr T* data() { return _values; }
     constexpr T const* data() const { return _values; }
@@ -160,6 +161,7 @@ struct array<T, dynamic_size>
     constexpr T* data() { return _data; }
     constexpr T const* data() const { return _data; }
     constexpr size_t size() const { return _size; }
+    constexpr size_t size_bytes() const { return _size * sizeof(T); }
     constexpr bool empty() const { return _size == 0; }
 
     constexpr T& operator[](size_t i)

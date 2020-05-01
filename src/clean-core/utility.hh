@@ -47,4 +47,12 @@ void swap(T& a, T& b)
     a = static_cast<T&&>(b);
     b = static_cast<T&&>(tmp);
 }
+
+// Divide ints and round up
+// a > 0, b > 0
+template <class T>
+[[nodiscard]] constexpr T int_div_ceil(T a, T b)
+{
+    return 1 + ((a - 1) / b);
+}
 }
