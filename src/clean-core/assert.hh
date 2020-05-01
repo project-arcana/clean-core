@@ -16,14 +16,18 @@
 // CC_ENABLE_ASSERTIONS enables assertions
 // CC_ENABLE_BOUND_CHECKING enables bound checking
 
-#define CC_RUNTIME_ASSERT(condition) \
-    (CC_UNLIKELY(!(condition)) ? ::cc::detail::assertion_failed({#condition, CC_PRETTY_FUNC, __FILE__, __LINE__}) : void(0)) // force ;
+#define CC_DETAIL_EXECUTE_ASSERT(condition, msg) \
+    (CC_UNLIKELY(!(condition)) ? ::cc::detail::assertion_failed({#condition, CC_PRETTY_FUNC, __FILE__, msg, __LINE__}) : void(0)) // force ;
+
+#define CC_RUNTIME_ASSERT(condition) CC_DETAIL_EXECUTE_ASSERT(condition, nullptr)
+#define CC_RUNTIME_ASSERT_MSG(condition, msg) CC_DETAIL_EXECUTE_ASSERT(condition, msg)
 
 #if !defined(CC_ENABLE_ASSERTIONS)
 #define CC_ASSERT(condition) CC_UNUSED(condition)
+#define CC_ASSERT_MSG(condition, msg) CC_UNUSED(condition)
 #else
-#define CC_ASSERT(condition) \
-    (CC_UNLIKELY(!(condition)) ? ::cc::detail::assertion_failed({#condition, CC_PRETTY_FUNC, __FILE__, __LINE__}) : void(0)) // force ;
+#define CC_ASSERT(condition) CC_DETAIL_EXECUTE_ASSERT(condition, nullptr)
+#define CC_ASSERT_MSG(condition, msg) CC_DETAIL_EXECUTE_ASSERT(condition, msg)
 #endif
 
 #ifdef CC_ENABLE_BOUND_CHECKING
@@ -48,7 +52,7 @@
 
 #ifdef CC_ENABLE_ASSERTIONS
 #define CC_UNREACHABLE(msg) \
-    (::cc::detail::assertion_failed({"unreachable code reached: " msg, CC_PRETTY_FUNC, __FILE__, __LINE__}), CC_BUILTIN_UNREACHABLE)
+    (::cc::detail::assertion_failed({"unreachable code reached: " msg, CC_PRETTY_FUNC, __FILE__, nullptr, __LINE__}), CC_BUILTIN_UNREACHABLE)
 #else
 #define CC_UNREACHABLE(msg) CC_BUILTIN_UNREACHABLE
 #endif
@@ -71,6 +75,7 @@ struct assertion_info
     char const* expr;
     char const* func;
     char const* file;
+    char const* msg;
     int line;
 };
 
