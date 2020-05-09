@@ -1,13 +1,12 @@
 #pragma once
 
-#include <string> // temporary
 #include <type_traits>
 
 #include <clean-core/function_ptr.hh>
 #include <clean-core/span.hh>
-#include <clean-core/string.hh>
 #include <clean-core/string_stream.hh>
 #include <clean-core/string_view.hh>
+#include <clean-core/typedefs.hh>
 
 namespace cc
 {
@@ -69,52 +68,6 @@ template <class T>
 constexpr bool has_member_to_string = has_member_to_string_t<T>::value;
 }
 
-// to_string implementations for builtin types
-// format_spec ::=  [[fill]align][sign]["#"]["0"][width]["." precision][type]
-// fill        ::=  <a character other than '{' or '}'>
-// align       ::=  "<" | ">" | "^"
-// sign        ::=  "+" | "-" | " "
-// width       ::=  integer | "{" arg_id "}"
-// precision   ::=  integer | "{" arg_id "}"
-// type        ::=  int_type | "a" | "A" | "c" | "e" | "E" | "f" | "F" | "g" | "G" | "L" | "p" | "s"
-// int_type    ::=  "b" | "B" | "d" | "o" | "x" | "X"
-
-template <class T>
-void to_string(string_stream& ss, T const* b, string_view fmt_args)
-{
-    // todo parse
-}
-
-void to_string(string_stream& ss, bool b, string_view fmt_args)
-{
-    // todo parse
-}
-
-void to_string(string_stream& ss, string const& s, string_view fmt_args)
-{
-    // todo parse
-}
-
-void to_string(string_stream& ss, char c, string_view fmt_args)
-{
-    // todo parse
-}
-
-void to_string(string_stream& ss, int v, string_view fmt_args)
-{
-    // todo parse
-}
-
-void to_string(string_stream& ss, float v, string_view fmt_args)
-{
-    // todo parse
-}
-
-void to_string(string_stream& ss, double v, string_view fmt_args)
-{
-    // todo parse
-}
-
 struct default_formatter
 {
     template <class T>
@@ -152,7 +105,7 @@ struct default_formatter
         }
         else
         {
-            static_assert(false, "Type requires a to_string() method");
+            static_assert(cc::always_false<T>, "Type requires a to_string() method");
         }
     }
 };
@@ -221,12 +174,4 @@ string format(char const* fmt_str, Args const&... args)
         return vformat(fmt_str, vargs);
     }
 }
-
-/* Do we want this?
-template <class Formatter = default_formatter, class... Args>
-void print(FILE* out, char const* fmt_str, Args const&... args)
-{
-    // todo
-}
-*/
 }
