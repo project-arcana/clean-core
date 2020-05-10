@@ -5,7 +5,7 @@
 #include <clean-core/enable_if.hh>
 #include <clean-core/forward.hh>
 #include <clean-core/fwd.hh>
-#include <clean-core/is_contiguous_container.hh>
+#include <clean-core/is_contiguous_range.hh>
 #include <clean-core/move.hh>
 #include <clean-core/sentinel.hh>
 #include <clean-core/typedefs.hh>
@@ -35,7 +35,7 @@ struct string_view
     constexpr string_view(char const* data, size_t size) : _data(data), _size(size) {}
     constexpr string_view(char const* begin, char const* end) : _data(begin), _size(end - begin) {}
 
-    template <class ContainerT, cc::enable_if<is_contiguous_container<ContainerT, char const>> = true>
+    template <class ContainerT, cc::enable_if<is_contiguous_range<ContainerT, char const>> = true>
     constexpr string_view(ContainerT const& c) : _data(c.data()), _size(c.size())
     {
     }
