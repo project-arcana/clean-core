@@ -10,6 +10,9 @@
 
 namespace cc
 {
+template <class T>
+struct arg;
+
 namespace detail
 {
 template <class T, class = std::void_t<>>
@@ -66,7 +69,6 @@ struct has_member_to_string_t<T, std::void_t<decltype(string_view(std::declval<T
 };
 template <class T>
 constexpr bool has_member_to_string = has_member_to_string_t<T>::value;
-}
 
 struct default_formatter
 {
@@ -117,14 +119,6 @@ struct arg_info
     char const* name = nullptr;
 };
 
-template <class T>
-struct arg
-{
-    arg(char const* name, T const& v) : name{name}, value{v} {}
-    char const* name = nullptr;
-    T const& value = {};
-};
-
 template <class Formatter = default_formatter, class T>
 arg_info make_arg_info(T const& v)
 {
@@ -139,15 +133,17 @@ arg_info make_arg_info(arg<T> const& a)
 }
 
 void vformat_to(string_stream& ss, string_view fmt_str, span<arg_info> args);
-
-inline string vformat(string_view fmt_str, span<arg_info> args)
-{
-    string_stream ss;
-    vformat_to(ss, fmt_str, args);
-    return ss.to_string();
 }
 
-template <class Formatter = default_formatter, class... Args>
+template <class T>
+struct arg
+{
+    arg(char const* name, T const& v) : name{name}, value{v} {}
+    char const* name = nullptr;
+    T const& value = {};
+};
+
+template <class Formatter = detail::default_formatter, class... Args>
 void format_to(string_stream& ss, string_view fmt_str, Args const&... args)
 {
     if constexpr (sizeof...(args) == 0)
@@ -156,22 +152,16 @@ void format_to(string_stream& ss, string_view fmt_str, Args const&... args)
     }
     else
     {
-        arg_info vargs[] = {make_arg_info(args)...};
+        detail::arg_info vargs[] = {detail::make_arg_info(args)...};
         vformat_to(ss, fmt_str, vargs);
     }
 }
 
-template <class Formatter = default_formatter, class... Args>
+template <class Formatter = detail::default_formatter, class... Args>
 string format(char const* fmt_str, Args const&... args)
 {
-    if constexpr (sizeof...(args) == 0)
-    {
-        return vformat(fmt_str, {});
-    }
-    else
-    {
-        arg_info vargs[] = {make_arg_info(args)...};
-        return vformat(fmt_str, vargs);
-    }
+    string_stream ss;
+    format_to<Formatter>(ss, fmt_str, args...);
+    return ss.to_string();
 }
 }
