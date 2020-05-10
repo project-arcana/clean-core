@@ -1,10 +1,9 @@
 #include "format.hh"
 
-void cc::vformat_to(cc::string_stream& ss, cc::string_view fmt_str, cc::span<arg_info> args)
-{
-    auto const is_digit = [](unsigned char c) -> bool { return ('0' <= c) && (c <= '9'); };
-    auto const is_letter = [](unsigned char c) -> bool { return (('a' <= c) && (c <= 'z')) || (('A' <= c) && (c <= 'Z')); };
+#include <clean-core/char_predicates.hh>
 
+void cc::detail::vformat_to(cc::string_stream& ss, cc::string_view fmt_str, cc::span<arg_info> args)
+{
     ss.reserve(fmt_str.size());
 
     // index of the next argument
@@ -37,7 +36,7 @@ void cc::vformat_to(cc::string_stream& ss, cc::string_view fmt_str, cc::span<arg
         if (char_iter == fmt_str.end())
             return;
 
-        // it now points to '{'
+        // char_iter now points to '{'
         ++char_iter;
         CC_ASSERT(char_iter != fmt_str.end() && "Invalid format string: Missing closing }");
         if (*char_iter == '{') // escape second {
@@ -51,7 +50,7 @@ void cc::vformat_to(cc::string_stream& ss, cc::string_view fmt_str, cc::span<arg
         }
         else
         {
-            // either index or named argument or parse args
+            // optionally resolve index / name lookup
             size_t argument_index = -1;
             if (is_digit(*char_iter)) // number
             {
@@ -68,11 +67,11 @@ void cc::vformat_to(cc::string_stream& ss, cc::string_view fmt_str, cc::span<arg
                 argument_index = index;
                 arg_id = -1; // invalidate
             }
-            else if (*char_iter == '_' || is_letter(*char_iter)) // named
+            else if (*char_iter == '_' || is_lower(*char_iter) || is_upper(*char_iter)) // named
             {
                 auto const name_start = char_iter;
                 ++char_iter;
-                while (*char_iter == '_' || is_letter(*char_iter) || is_digit(*char_iter))
+                while (*char_iter == '_' || is_lower(*char_iter) || is_upper(*char_iter) || is_digit(*char_iter))
                 {
                     ++char_iter;
                     CC_ASSERT(char_iter != fmt_str.end() && "Invalid format string: Argument index too large");
@@ -91,15 +90,15 @@ void cc::vformat_to(cc::string_stream& ss, cc::string_view fmt_str, cc::span<arg
             }
             if (*char_iter == '}')
             {
-                // parse arg
+                // we can only reach this if either a named or indexed argument is parsed
                 args[argument_index].do_format(ss, args[argument_index].data, {});
             }
             else
             {
                 CC_ASSERT(*char_iter == ':' && "Invalid format string: Missing closing }");
                 ++char_iter;
-                auto args_start = char_iter;
-                while (*char_iter != '}' && char_iter != fmt_str.end())
+                auto const args_start = char_iter;
+                while (char_iter != fmt_str.end() && *char_iter != '}')
                     ++char_iter;
                 CC_ASSERT(char_iter != fmt_str.end() && "Invalid format string: Missing closing }");
                 // todo: handle arguments that themselves contain args
