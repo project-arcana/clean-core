@@ -96,7 +96,8 @@ cc::string cc::to_string(std::byte value)
     return s;
 }
 
-
+namespace
+{
 // to_string implementations for builtin types
 // format_spec ::=  [[fill]align][sign]["#"]["0"][width]["." precision][type]
 // fill        ::=  <a character other than '{' or '}'>
@@ -106,256 +107,282 @@ cc::string cc::to_string(std::byte value)
 // precision   ::=  integer | "{" arg_id "}"
 // type        ::=  int_type | "a" | "A" | "c" | "e" | "E" | "f" | "F" | "g" | "G" | "L" | "p" | "s"
 // int_type    ::=  "b" | "B" | "d" | "o" | "x" | "X"
-namespace
+struct parsed_fmt_args
 {
-struct int_fmt_args
-{
-    char fill = 0;                        // anything but '{' or '}', only valid if align valid
-    char align = 0;                       // '<': left | '>': right | '^': center
+    int width = -1;                       // width of the replacement, use fill to match width
+    int precision = -1;                   // for float/double: precision after comma / dot. For other types: max length
+    char fill = ' ';                      // anything but '{' or '}'
+    char align = '>';                     // '<': left | '>': right | '^': center
     char sign = '-';                      // '+': show both + and - | '-': show only - | ' ': show only -, but leave space if +
+    char type = 0;                        // type: individual for each type. Sometimes determines how type should be interpreted, eg char
     bool alternative_mode = false;        // alternative display mode
     bool sign_aware_zero_padding = false; // add leading zeros after the sign +0000123
-    int width = -1;                       //
-    char type = 'd';                      // types 'b': binary | 'B': Binary | 'd': decimal | 'o': octal | 'x':hex | 'X': heX [ | L: locale aware]
 };
 
-
-// todo: generic parse int
-void parse_int_args(int v, cc::string_view fmt_args)
+parsed_fmt_args parse_args(cc::string_view fmt_args)
 {
     auto const is_align = [](char c) { return c == '<' || c == '>' || c == '^'; };
     auto const is_sign = [](char c) { return c == '+' || c == '-' || c == ' '; };
     auto const is_digit = [](char c) { return '0' <= c && c <= '9'; };
+    auto const parse_unsigned_int = [&](char const* begin, char const* end, int& out) -> char const* {
+        out = *begin - '0';
+        ++begin;
+        while (begin != end && is_digit(*begin))
+        {
+            out *= 10;
+            out += *begin - '0';
+            ++begin;
+        }
+    };
 
-    auto it = fmt_args.begin();
+    auto current = fmt_args.begin();
     auto const end = fmt_args.end();
 
-    char fill;
-    char const* align = nullptr; // != nullptr if aligned
-    char sign = '-';             // default
-    bool alternative = false;
-    bool sign_aware_zero_padding = false;
-    int width = -1;
-    char type = 'd';
+    parsed_fmt_args result;
 
-    // fill and alignment
-    if (fmt_args.size() >= 2 && is_align(*(it + 1)))
+    if (current == end)
+        return result;
+
+    // fill
+    if (is_align(*current))
     {
-        fill = *it;
-        ++it;
-        align = it;
-        ++it;
+        result.align = *current;
+        ++current;
+    }
+    // alignment and fill
+    else if ((current + 1) != end && is_align(*(current + 1)))
+    {
+        result.fill = *current;
+        ++current;
+        result.align = *current;
+        ++current;
     }
     // sign
-    if (it != end && is_sign(*it))
+    if (current != end && is_sign(*current))
     {
-        sign = *it;
-        ++it;
+        result.sign = *current;
+        ++current;
     }
     // alternative mode
-    if (it != end && (*it == '#'))
+    if (current != end && (*current == '#'))
     {
-        alternative = true;
-        ++it;
+        result.alternative_mode = true;
+        ++current;
     }
     // zero padding and width
-    if (it != end && (*it == '0'))
+    if (current != end && (*current == '0'))
     {
-        sign_aware_zero_padding = true;
-        ++it;
-        CC_ASSERT(it != end && is_digit(*it) && "Invalid format string: zero padding must be followed by by width");
-        CC_ASSERT(*it != '0' && "Invalid format string: width can have at most one preceeding zero");
-        width = *it - '0';
-        ++it;
-        while (it != end && is_digit(*it))
-        {
-            width *= 10;
-            width += *it - '0';
-            ++it;
-        }
+        result.sign_aware_zero_padding = true;
+        ++current;
+        CC_ASSERT(current != end && is_digit(*current) && "Invalid format string: Zero padding must be followed by by width");
+        CC_ASSERT(*current != '0' && "Invalid format string: Width can have at most one preceeding zero");
     }
-    // no zero padding and with
-    if (it != end && is_digit(*it))
+    // width
+    if (current != end && is_digit(*current))
     {
-        width = *it - '0';
-        ++it;
-        while (it != end && is_digit(*it))
-        {
-            width *= 10;
-            width += *it - '0';
-            ++it;
-        }
+        current = parse_unsigned_int(current, end, result.width);
     }
-    // precision does not apply to integer and is therefore skipped
-    // integer types
-    if (it != end)
+    // precision
+    if (current != end && *current == '.')
     {
-        // todo: locale?
-        CC_ASSERT((*it == 'b' || *it == 'B' || *it == 'd' || *it == 'o' || *it == 'x' || *it == 'X') && "Invalid format string: unsupported type");
-        type = *it;
-        ++it;
+        ++current;
+        CC_ASSERT(current != end && is_digit(*current) && "Invalid format string: . must be followed by precision");
+        current = parse_unsigned_int(current, end, result.precision);
     }
-    CC_ASSERT(it == end && "Invalid format string: invalid integer options");
-
-    // todo: what do with settings?
-}
-
-void parse_float(float, cc::string_view fmt_args)
-{
-    auto const is_align = [](char c) { return c == '<' || c == '>' || c == '^'; };
-    auto const is_sign = [](char c) { return c == '+' || c == '-' || c == ' '; };
-    auto const is_digit = [](char c) { return '0' <= c && c <= '9'; };
-
-    auto it = fmt_args.begin();
-    auto const end = fmt_args.end();
-
-    char fill;
-    char const* align = nullptr; // != nullptr if aligned
-    char sign = '-';             // default
-    bool alternative = false;
-    bool sign_aware_zero_padding = false;
-    int width = -1;
-    char type = 'd';
-    int precision = -1;
-
-    // fill and alignment
-    if (fmt_args.size() >= 2 && is_align(*(it + 1)))
-    {
-        fill = *it;
-        ++it;
-        align = it;
-        ++it;
-    }
-    // sign
-    if (it != end && is_sign(*it))
-    {
-        sign = *it;
-        ++it;
-    }
-    // alternative mode
-    if (it != end && (*it == '#'))
-    {
-        alternative = true;
-        ++it;
-    }
-    // zero padding and width
-    if (it != end && (*it == '0'))
-    {
-        sign_aware_zero_padding = true;
-        ++it;
-        CC_ASSERT(it != end && is_digit(*it) && "Invalid format string: zero padding must be followed by by width");
-        CC_ASSERT(*it != '0' && "Invalid format string: width can have at most one preceeding zero");
-        width = *it - '0';
-        ++it;
-        while (it != end && is_digit(*it))
-        {
-            width *= 10;
-            width += *it - '0';
-            ++it;
-        }
-    }
-    // no zero padding and with
-    if (it != end && is_digit(*it))
-    {
-        width = *it - '0';
-        ++it;
-        while (it != end && is_digit(*it))
-        {
-            width *= 10;
-            width += *it - '0';
-            ++it;
-        }
-    }
-    if (it != end && *it == '.')
-    {
-        ++it;
-        CC_ASSERT(it != end && is_digit(*it) && "Invalid format string: . must be followed by the precision");
-        precision = *it - '0';
-        ++it;
-        while (it != end && is_digit(*it))
-        {
-            precision *= 10;
-            precision += *it - '0';
-            ++it;
-        }
-    }
-
     // type
-    if (it != end) // todo: locale?
+    if (current != end)
     {
-        CC_ASSERT((*it == 'a' || *it == 'A' || *it == 'e' || *it == 'E' || *it == 'f' || *it == 'F' || *it == 'g' || *it == 'G') && "Invalid format string: invalid type");
-        type = *it;
-        ++it;
+        result.type = *current;
+        ++current;
     }
-    CC_ASSERT(it == end && "Invalid format string: invalid integer options");
+    CC_ASSERT(current == end && "Invalid format string: Malformed argument");
+
+    return result;
 }
+
+constexpr bool is_int_type(char c) { return c == 'd' || c == 'b' || c == 'B' || c == 'o' || c == 'x' || c == 'X'; }
+constexpr bool is_float_type(char c) { return c == 'a' || c == 'A' || c == 'e' || c == 'E' || c == 'f' || c == 'F' || c == 'g' || c == 'G'; }
+
+template <class IntType>
+void to_string_int_impl(IntType value, parsed_fmt_args const& args)
+{
+    switch (args.type)
+    {
+    case 'd': // default, decimal
+        break;
+    case 'b': // binary, with # prefix 0b
+        break;
+    case 'B': // binary, with # prefix 0B
+        break;
+    case 'o': // octal
+        break;
+    case 'x': // hexadecimal, with # prefix 0x
+        break;
+    case 'X': // hexadecimal, with # prefix 0X
+        break;
+    default:
+        CC_ASSERT(false && "Invalid format string: Unsupported argument type for int type");
+    }
 }
 
-// void cc::to_string(cc::string_stream& ss, char value, cc::string_view fmt_str)
-//{
-//    // todo
-//}
-// void cc::to_string(cc::string_stream& ss, bool value, cc::string_view fmt_str)
-//{
-//    // todo
-//}
-// void cc::to_string(cc::string_stream& ss, char const* value, cc::string_view fmt_str)
-//{
-//    // todo
-//}
-// void cc::to_string(cc::string_stream& ss, cc::string_view value, cc::string_view fmt_str)
-//{
-//    // todo
-//}
-// void cc::to_string(cc::string_stream& ss, nullptr_t, cc::string_view fmt_str)
-//{
-//    // todo
-//}
+template <class FloatType>
+void to_string_float_impl(FloatType value, parsed_fmt_args const& args)
+{
+    switch (args.type)
+    {
+    case 0: // default, like g but always one digit after decimal point, when fixed point notation is used
+        break;
+    case 'a': // hexadecimal 0x prefix, 'p' exponent, lowercase letters
+        break;
+    case 'A': // hexadecimal 0x prefix, 'P' exponent, uppercase letters
+        break;
+    case 'e': // scientific exponent notation, 'e' exponent
+        break;
+    case 'E': // scientific exponent notation, 'E' exponent
+        break;
+    case 'f': // fixed-point
+        break;
+    case 'F': // fixed-point, but "nan" and "inf" become "NAN" and "INF"
+        break;
+    case 'g': // general form, precision significant digits and fixed-point or exponent notation depending on magnitute
+        break;
+    case 'G': // same as 'g' but uppercase version
+        break;
+    default:
+        CC_ASSERT(false && "Invalid format string: Unsupported argument type for float type");
+    }
+}
 
-// void cc::to_string(cc::string_stream& ss, void* value, cc::string_view fmt_str)
-//{
-//    // todo
-//}
+}
 
-// void cc::to_string(cc::string_stream& ss, std::byte value, cc::string_view fmt_str)
-//{
-//    // todo
-//}
+void cc::to_string(cc::string_stream& ss, char value, cc::string_view fmt_str)
+{
+    // todo: alignment
 
-// void cc::to_string(cc::string_stream& ss, int value, cc::string_view fmt_str)
-//{
-//    // todo
-//}
-// void cc::to_string(cc::string_stream& ss, long value, cc::string_view fmt_str)
-//{
-//    // todo
-//}
-// void cc::to_string(cc::string_stream& ss, long long value, cc::string_view fmt_str)
-//{
-//    // todo
-//}
-// void cc::to_string(cc::string_stream& ss, unsigned int value, cc::string_view fmt_str)
-//{
-//    // todo
-//}
-// void cc::to_string(cc::string_stream& ss, unsigned long value, cc::string_view fmt_str)
-//{
-//    // todo
-//}
-// void cc::to_string(cc::string_stream& ss, unsigned long long value, cc::string_view fmt_str)
-//{
-//    // todo
-//}
+    auto const args = parse_args(fmt_str);
+    if (args.type == 0 || args.type == 'c')
+    { // handle as character
 
-// void cc::to_string(cc::string_stream& ss, float value, cc::string_view fmt_str)
-//{
-//    // todo
-//}
-// void cc::to_string(cc::string_stream& ss, double value, cc::string_view fmt_str)
-//{
-//    // todo
-//}
-// void cc::to_string(cc::string_stream& ss, long double value, cc::string_view fmt_str)
-//{
-//    // todo
-//}
+        ss << string_view(&value, 1);
+    }
+    else
+    { // handle as int
+        CC_ASSERT(is_int_type(args.type) && "Invalid format string: wrong argument type for char");
+        // todo
+    }
+}
+void cc::to_string(cc::string_stream& ss, bool value, cc::string_view fmt_str)
+{
+    auto const args = parse_args(fmt_str);
+    if (args.type == 0) // default
+    {
+        ss << (value ? "true" : "false");
+    }
+    else
+    { // handle as int
+        CC_ASSERT(is_int_type(args.type) && "Invalid format string: wrong argument type for char");
+        // todo
+    }
+}
+void cc::to_string(cc::string_stream& ss, char const* value, cc::string_view fmt_str)
+{
+    if (fmt_str.empty())
+        ss << (value ? value : "[nullptr]");
+
+    auto const args = parse_args(fmt_str);
+    // todo
+}
+void cc::to_string(cc::string_stream& ss, cc::string_view value, cc::string_view fmt_str)
+{
+    if (fmt_str.empty())
+        ss << value;
+
+    auto const args = parse_args(fmt_str);
+    // todo
+}
+void cc::to_string(cc::string_stream& ss, nullptr_t, cc::string_view fmt_str)
+{
+    if (fmt_str.empty())
+        ss << "nullptr";
+    auto const args = parse_args(fmt_str);
+    // todo
+}
+
+void cc::to_string(cc::string_stream& ss, void* value, cc::string_view fmt_str)
+{
+    if (fmt_str.empty())
+        ss << to_string(value);
+    auto const args = parse_args(fmt_str);
+    // todo
+}
+
+void cc::to_string(cc::string_stream& ss, std::byte value, cc::string_view fmt_str)
+{
+    if (fmt_str.empty())
+        ss << to_string(value);
+    auto const args = parse_args(fmt_str);
+    // todo
+}
+
+void cc::to_string(cc::string_stream& ss, int value, cc::string_view fmt_str)
+{
+    if (fmt_str.empty())
+        ss << to_string(value);
+    auto const args = parse_args(fmt_str);
+    // todo
+}
+void cc::to_string(cc::string_stream& ss, long value, cc::string_view fmt_str)
+{
+    if (fmt_str.empty())
+        ss << to_string(value);
+    auto const args = parse_args(fmt_str);
+    // todo
+}
+void cc::to_string(cc::string_stream& ss, long long value, cc::string_view fmt_str)
+{
+    if (fmt_str.empty())
+        ss << to_string(value);
+    auto const args = parse_args(fmt_str);
+    // todo
+}
+void cc::to_string(cc::string_stream& ss, unsigned int value, cc::string_view fmt_str)
+{
+    if (fmt_str.empty())
+        ss << to_string(value);
+    auto const args = parse_args(fmt_str);
+    // todo
+}
+void cc::to_string(cc::string_stream& ss, unsigned long value, cc::string_view fmt_str)
+{
+    if (fmt_str.empty())
+        ss << to_string(value);
+    auto const args = parse_args(fmt_str);
+    // todo
+}
+void cc::to_string(cc::string_stream& ss, unsigned long long value, cc::string_view fmt_str)
+{
+    if (fmt_str.empty())
+        ss << to_string(value);
+    auto const args = parse_args(fmt_str);
+    // todo
+}
+void cc::to_string(cc::string_stream& ss, float value, cc::string_view fmt_str)
+{
+    if (fmt_str.empty())
+        ss << to_string(value);
+    // todo
+}
+void cc::to_string(cc::string_stream& ss, double value, cc::string_view fmt_str)
+{
+    if (fmt_str.empty())
+        ss << to_string(value);
+    auto const args = parse_args(fmt_str);
+    // todo
+}
+void cc::to_string(cc::string_stream& ss, long double value, cc::string_view fmt_str)
+{
+    if (fmt_str.empty())
+        ss << to_string(value);
+    auto const args = parse_args(fmt_str);
+    // todo
+}
