@@ -16,13 +16,13 @@ void cc::detail::vformat_to(cc::string_stream& ss, cc::string_view fmt_str, cc::
     {
         auto segment_start = char_iter;
         // find next occurence of '{', or end, and all occurrences of "}}"
-        while (*char_iter != '{' && char_iter != fmt_str.end())
+        while (char_iter != fmt_str.end() && *char_iter != '{')
         {
             if (*char_iter == '}')
             {
                 ss << cc::string_view(segment_start, char_iter);
                 ++char_iter;
-                CC_ASSERT(*char_iter == '}' && char_iter != fmt_str.end() && "Invalid format string: Unmatched }");
+                CC_ASSERT(char_iter != fmt_str.end() && *char_iter == '}' && "Invalid format string: Unmatched }");
                 segment_start = char_iter;
             }
             ++char_iter;
@@ -57,11 +57,13 @@ void cc::detail::vformat_to(cc::string_stream& ss, cc::string_view fmt_str, cc::
                 // todo: are leading zeros valid?
                 size_t index = *char_iter - '0';
                 ++char_iter;
+                CC_ASSERT(char_iter != fmt_str.end() && "Invalid format string: Missing closing }");
                 while (is_digit(*char_iter))
                 {
                     index *= 10;
                     index += *char_iter - '0';
                     ++char_iter;
+                    CC_ASSERT(char_iter != fmt_str.end() && "Invalid format string: Missing closing }");
                 }
                 CC_ASSERT(index < args.size() && "Invalid format string: Argument index too large");
                 argument_index = index;
@@ -71,10 +73,11 @@ void cc::detail::vformat_to(cc::string_stream& ss, cc::string_view fmt_str, cc::
             {
                 auto const name_start = char_iter;
                 ++char_iter;
+                CC_ASSERT(char_iter != fmt_str.end() && "Invalid format string: Missing closing }");
                 while (*char_iter == '_' || is_lower(*char_iter) || is_upper(*char_iter) || is_digit(*char_iter))
                 {
                     ++char_iter;
-                    CC_ASSERT(char_iter != fmt_str.end() && "Invalid format string: Argument index too large");
+                    CC_ASSERT(char_iter != fmt_str.end() && "Invalid format string: Missing closing }");
                 }
                 auto const name = cc::string_view(name_start, char_iter);
                 for (auto i = 0; i < args.size(); ++i)
@@ -88,6 +91,7 @@ void cc::detail::vformat_to(cc::string_stream& ss, cc::string_view fmt_str, cc::
                 arg_id = -1; // invalidate
                 CC_ASSERT(argument_index < args.size() && "Invalid format string: Argument name not found");
             }
+            CC_ASSERT(char_iter != fmt_str.end() && "Invalid format string: Missing closing }");
             if (*char_iter == '}')
             {
                 // we can only reach this if either a named or indexed argument is parsed
@@ -97,10 +101,13 @@ void cc::detail::vformat_to(cc::string_stream& ss, cc::string_view fmt_str, cc::
             {
                 CC_ASSERT(*char_iter == ':' && "Invalid format string: Missing closing }");
                 ++char_iter;
-                auto const args_start = char_iter;
-                while (char_iter != fmt_str.end() && *char_iter != '}')
-                    ++char_iter;
                 CC_ASSERT(char_iter != fmt_str.end() && "Invalid format string: Missing closing }");
+                auto const args_start = char_iter;
+                while (*char_iter != '}')
+                {
+                    ++char_iter;
+                    CC_ASSERT(char_iter != fmt_str.end() && "Invalid format string: Missing closing }");
+                }
                 // todo: handle arguments that themselves contain args
                 args[argument_index].do_format(ss, args[argument_index].data, cc::string_view(args_start, char_iter));
             }
