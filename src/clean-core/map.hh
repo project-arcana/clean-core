@@ -20,7 +20,7 @@ public:
     size_t size() const { return _size; }
     bool empty() const { return _size == 0; }
 
-    template <class T>
+    template <class T = KeyT>
     bool contains_key(T const& key) const
     {
         if (_size == 0)
@@ -40,7 +40,7 @@ public:
 
     // operators
 public:
-    template <class T>
+    template <class T = KeyT>
     ValueT& operator[](T const& key)
     {
         if (_size >= _entries.size())
@@ -58,7 +58,7 @@ public:
 
     /// looks up the given key and returns the element
     /// UB if key is not present
-    template <class T>
+    template <class T = KeyT>
     ValueT& get(T const& key)
     {
         auto idx = this->_get_location(key);
@@ -68,7 +68,7 @@ public:
 
         CC_UNREACHABLE("key not found");
     }
-    template <class T>
+    template <class T = KeyT>
     ValueT const& get(T const& key) const
     {
         auto idx = this->_get_location(key);
