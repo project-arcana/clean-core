@@ -26,7 +26,7 @@ public:
     constexpr span(T (&data)[N]) : _data(data), _size(N)
     {
     }
-    template <class Container, std::enable_if_t<is_contiguous_range<Container, T>, int> = 0>
+    template <class Container, cc::enable_if<is_contiguous_range<Container, T>> = true>
     constexpr span(Container& c) : _data(c.data()), _size(c.size())
     {
     }

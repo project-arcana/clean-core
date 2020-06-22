@@ -31,6 +31,8 @@ struct tuple;
 // containers and ranges
 template <class T>
 struct span;
+template <class T>
+struct strided_span;
 
 template <class T>
 struct vector;
