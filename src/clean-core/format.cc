@@ -91,6 +91,10 @@ void cc::detail::vformat_to(cc::string_stream& ss, cc::string_view fmt_str, cc::
                 arg_id = -1; // invalidate
                 CC_ASSERT(argument_index < args.size() && "Invalid format string: Argument name not found");
             }
+            else
+            {
+                argument_index = arg_id++;
+            }
             CC_ASSERT(char_iter != fmt_str.end() && "Invalid format string: Missing closing }");
             if (*char_iter == '}')
             {
