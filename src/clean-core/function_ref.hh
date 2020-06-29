@@ -21,7 +21,11 @@ template <class Result, class... Args>
 struct function_ref<Result(Args...)>
 {
 public:
-    constexpr Result operator()(Args... args) const { return _fun(_data, cc::forward<Args>(args)...); }
+    constexpr Result operator()(Args... args) const
+    {
+        CC_ASSERT(_fun != nullptr && "cannot call null function");
+        return _fun(_data, cc::forward<Args>(args)...);
+    }
 
     template <class F, enable_if<std::is_invocable_r_v<Result, F, Args...> && !std::is_same_v<std::decay_t<F>, function_ref>> = true>
     constexpr function_ref(F&& f)
