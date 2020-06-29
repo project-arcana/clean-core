@@ -15,9 +15,13 @@ string to_string(void* value);
 
 string to_string(std::byte value);
 
+string to_string(signed char value);
+string to_string(short value);
 string to_string(int value);
 string to_string(long value);
 string to_string(long long value);
+string to_string(unsigned char value);
+string to_string(unsigned short value);
 string to_string(unsigned int value);
 string to_string(unsigned long value);
 string to_string(unsigned long long value);
@@ -36,9 +40,13 @@ void to_string(string_stream& ss, void* value, string_view fmt_str);
 
 void to_string(string_stream& ss, std::byte value, string_view fmt_str);
 
+void to_string(string_stream& ss, signed char value, string_view fmt_str);
+void to_string(string_stream& ss, short value, string_view fmt_str);
 void to_string(string_stream& ss, int value, string_view fmt_str);
 void to_string(string_stream& ss, long value, string_view fmt_str);
 void to_string(string_stream& ss, long long value, string_view fmt_str);
+void to_string(string_stream& ss, unsigned char value, string_view fmt_str);
+void to_string(string_stream& ss, unsigned short value, string_view fmt_str);
 void to_string(string_stream& ss, unsigned int value, string_view fmt_str);
 void to_string(string_stream& ss, unsigned long value, string_view fmt_str);
 void to_string(string_stream& ss, unsigned long long value, string_view fmt_str);
