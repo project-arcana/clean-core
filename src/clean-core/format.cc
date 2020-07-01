@@ -80,9 +80,9 @@ void cc::detail::vformat_to(cc::string_stream& ss, cc::string_view fmt_str, cc::
                     CC_ASSERT(char_iter != fmt_str.end() && "Invalid format string: Missing closing }");
                 }
                 auto const name = cc::string_view(name_start, char_iter);
-                for (auto i = 0; i < args.size(); ++i)
+                for (auto i = 0u; i < args.size(); ++i)
                 {
-                    if (args[i].name != nullptr && cc::string_view(args[i].name) == name)
+                    if (!args[i].name.empty() && args[i].name == name)
                     {
                         argument_index = i;
                         break;

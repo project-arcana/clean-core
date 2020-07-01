@@ -11,7 +11,7 @@
 namespace cc
 {
 template <class T>
-struct arg;
+struct format_arg;
 
 namespace detail
 {
@@ -116,7 +116,7 @@ struct arg_info
 {
     function_ptr<void(string_stream&, void const*, string_view)> do_format;
     void const* data = nullptr;
-    char const* name = nullptr;
+    string_view name;
 };
 
 template <class Formatter = default_formatter, class T>
@@ -126,7 +126,7 @@ arg_info make_arg_info(T const& v)
 }
 
 template <class Formatter = default_formatter, class T>
-arg_info make_arg_info(arg<T> const& a)
+arg_info make_arg_info(format_arg<T> const& a)
 {
     return {[](string_stream& ss, void const* data, string_view options) -> void { Formatter::do_format(ss, *static_cast<T const*>(data), options); },
             &a.value, a.name};
@@ -136,11 +136,11 @@ void vformat_to(string_stream& ss, string_view fmt_str, span<arg_info> args);
 }
 
 template <class T>
-struct arg
+struct format_arg
 {
-    arg(char const* name, T const& v) : name{name}, value{v} {}
-    char const* name = nullptr;
-    T const& value = {};
+    format_arg(string_view name, T const& v) : name{name}, value{v} {}
+    string_view name;
+    T const& value;
 };
 
 template <class Formatter = detail::default_formatter, class... Args>
@@ -163,5 +163,22 @@ string format(char const* fmt_str, Args const&... args)
     string_stream ss;
     format_to<Formatter>(ss, fmt_str, args...);
     return ss.to_string();
+}
+
+namespace format_literals
+{
+namespace detail
+{
+struct arg_capture
+{
+    string_view name;
+    template <class T>
+    cc::format_arg<T> operator=(T const& rhs)
+    {
+        return cc::format_arg(name, rhs);
+    }
+};
+}
+inline detail::arg_capture operator"" _a(const char* name, std::size_t size) { return {{name, size}}; }
 }
 }
