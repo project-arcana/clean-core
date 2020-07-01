@@ -8,6 +8,12 @@
 #include <clean-core/assert.hh>
 #include <clean-core/char_predicates.hh>
 
+cc::string cc::to_string(char value) { return string::filled(1, value); }
+cc::string cc::to_string(bool value) { return value ? "true" : "false"; }
+cc::string cc::to_string(const char* value) { return value == nullptr ? "[nullptr]" : value; }
+cc::string cc::to_string(cc::string_view value) { return value; }
+cc::string cc::to_string(cc::nullptr_t) { return "nullptr"; }
+
 cc::string cc::to_string(void* value)
 {
     if (value == nullptr)

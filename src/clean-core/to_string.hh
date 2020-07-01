@@ -1,15 +1,14 @@
 #pragma once
 
-#include <clean-core/string.hh>
-#include <clean-core/string_stream.hh>
+#include <clean-core/fwd.hh>
 
 namespace cc
 {
-inline string to_string(char value) { return string::filled(1, value); }
-inline string to_string(bool value) { return value ? "true" : "false"; }
-inline string to_string(char const* value) { return value == nullptr ? "[nullptr]" : value; }
-inline string to_string(string_view value) { return value; }
-inline string to_string(nullptr_t) { return "nullptr"; }
+string to_string(char value);
+string to_string(bool value);
+string to_string(char const* value);
+string to_string(string_view value);
+string to_string(nullptr_t);
 
 string to_string(void* value);
 
