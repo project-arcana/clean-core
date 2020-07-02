@@ -132,7 +132,7 @@ arg_info make_arg_info(format_arg<T> const& a)
             &a.value, a.name};
 }
 
-void vformat_to(string_stream& ss, string_view fmt_str, span<arg_info> args);
+void vformat_to(string_stream& ss, string_view fmt_str, span<arg_info const> args);
 }
 
 template <class T>

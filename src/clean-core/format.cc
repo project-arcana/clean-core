@@ -2,7 +2,7 @@
 
 #include <clean-core/char_predicates.hh>
 
-void cc::detail::vformat_to(cc::string_stream& ss, cc::string_view fmt_str, cc::span<arg_info> args)
+void cc::detail::vformat_to(cc::string_stream& ss, cc::string_view fmt_str, cc::span<arg_info const> args)
 {
     ss.reserve(fmt_str.size());
 
