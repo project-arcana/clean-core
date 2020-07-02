@@ -753,38 +753,18 @@ void to_string_float_impl(cc::string_stream& ss, FloatType value, parsed_fmt_arg
         to_string(sprintf_args, args.precision, "");
     }
 
-    switch (args.type)
+    if (args.type == 0)
+    { // note: currently same as g due to limitation of sprintf
+        sprintf_args << "g";
+    }
+    else
     {
-    case 0: // default, like g but always one digit after decimal point, when fixed point notation is used
-            // note: currently same as g due to limitation of sprintf
-        sprintf_args << "g";
-        break;
-    case 'a': // hexadecimal 0x prefix, 'p' exponent, lowercase letters
-        sprintf_args << "a";
-        break;
-    case 'A': // hexadecimal 0x prefix, 'P' exponent, uppercase letters
-        sprintf_args << "A";
-        break;
-    case 'e': // scientific exponent notation, 'e' exponent
-        sprintf_args << "e";
-        break;
-    case 'E': // scientific exponent notation, 'E' exponent
-        sprintf_args << "E";
-        break;
-    case 'f': // fixed-point
-        sprintf_args << "f";
-        break;
-    case 'F': // fixed-point, but "nan" and "inf" become "NAN" and "INF"
-        sprintf_args << "F";
-        break;
-    case 'g': // general form, precision significant digits and fixed-point or exponent notation depending on magnitute
-        sprintf_args << "g";
-        break;
-    case 'G': // same as 'g' but uppercase version
-        sprintf_args << "G";
-        break;
-    default:
-        CC_ASSERT(cc::always_false<FloatType> && "Invalid format string: Unsupported argument type for float type");
+        CC_ASSERT((args.type == 'a' || args.type == 'A' || //
+                   args.type == 'e' || args.type == 'E' || //
+                   args.type == 'f' || args.type == 'F' || //
+                   args.type == 'g' || args.type == 'G')
+                  && "Invalid format string: Unsupported argument type for float type");
+        sprintf_args << cc::string_view(&args.type, 1);
     }
 
     // Note: We cannot explicitly convert float as long as we do not run our own float conversion, because sprintf will automatically convert float to double
