@@ -18,18 +18,26 @@ struct type_id_t
     explicit operator bool() const { return id != nullptr; }
 
 private:
-    using fun_t = type_id_t (*)();
-    fun_t id = nullptr;
-    type_id_t(fun_t id) : id(id) {}
+    void const* id = nullptr;
+    type_id_t(void const* id) : id(id) {}
 
     template <typename T>
     friend type_id_t type_id();
 };
 
+namespace detail
+{
+template <class T>
+struct type_id_impl
+{
+    static constexpr int id = 0;
+};
+}
+
 template <class T>
 type_id_t type_id()
 {
-    return &type_id<T>;
+    return &detail::type_id_impl<T>::id;
 }
 
 template <>
