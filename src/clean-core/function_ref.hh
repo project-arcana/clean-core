@@ -57,6 +57,10 @@ public:
         }
     }
 
+    /// NOTE: this function_ref is invalid and must not be called
+    ///       it may only be assigned to
+    constexpr function_ref() = default;
+
     constexpr function_ref(function_ref const&) = default;
     constexpr function_ref& operator=(function_ref const&) = default;
 

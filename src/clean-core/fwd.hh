@@ -70,6 +70,10 @@ struct sbo_string;
 using string = sbo_string<15>;
 struct string_stream;
 
+// streams
+template <class T>
+struct stream_ref;
+
 // functional
 template <class Signature>
 struct unique_function;
