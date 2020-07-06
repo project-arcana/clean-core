@@ -2,10 +2,8 @@
 
 #include <clean-core/char_predicates.hh>
 
-void cc::detail::vformat_to(cc::string_stream& ss, cc::string_view fmt_str, cc::span<arg_info const> args)
+void cc::detail::vformat_to(cc::stream_ref<char> ss, cc::string_view fmt_str, cc::span<arg_info const> args)
 {
-    ss.reserve(fmt_str.size());
-
     // index of the next argument
     // Cannot be used after a named or numbered arg was encountered: -1 == invalid
     int arg_id = 0;

@@ -54,53 +54,53 @@ string to_string(float value, string_view fmt_str);
 string to_string(double value, string_view fmt_str);
 string to_string(long double value, string_view fmt_str);
 
-void to_string(string_stream& ss, char value);
-void to_string(string_stream& ss, bool value);
-void to_string(string_stream& ss, char const* value);
-void to_string(string_stream& ss, string_view value);
-void to_string(string_stream& ss, nullptr_t);
+void to_string(stream_ref<char> ss, char value);
+void to_string(stream_ref<char> ss, bool value);
+void to_string(stream_ref<char> ss, char const* value);
+void to_string(stream_ref<char> ss, string_view value);
+void to_string(stream_ref<char> ss, nullptr_t);
 
-void to_string(string_stream& ss, void* value);
+void to_string(stream_ref<char> ss, void* value);
 
-void to_string(string_stream& ss, std::byte value);
+void to_string(stream_ref<char> ss, std::byte value);
 
-void to_string(string_stream& ss, signed char value);
-void to_string(string_stream& ss, short value);
-void to_string(string_stream& ss, int value);
-void to_string(string_stream& ss, long value);
-void to_string(string_stream& ss, long long value);
-void to_string(string_stream& ss, unsigned char value);
-void to_string(string_stream& ss, unsigned short value);
-void to_string(string_stream& ss, unsigned int value);
-void to_string(string_stream& ss, unsigned long value);
-void to_string(string_stream& ss, unsigned long long value);
+void to_string(stream_ref<char> ss, signed char value);
+void to_string(stream_ref<char> ss, short value);
+void to_string(stream_ref<char> ss, int value);
+void to_string(stream_ref<char> ss, long value);
+void to_string(stream_ref<char> ss, long long value);
+void to_string(stream_ref<char> ss, unsigned char value);
+void to_string(stream_ref<char> ss, unsigned short value);
+void to_string(stream_ref<char> ss, unsigned int value);
+void to_string(stream_ref<char> ss, unsigned long value);
+void to_string(stream_ref<char> ss, unsigned long long value);
 
-void to_string(string_stream& ss, float value);
-void to_string(string_stream& ss, double value);
-void to_string(string_stream& ss, long double value);
+void to_string(stream_ref<char> ss, float value);
+void to_string(stream_ref<char> ss, double value);
+void to_string(stream_ref<char> ss, long double value);
 
-void to_string(string_stream& ss, char value, string_view fmt_str);
-void to_string(string_stream& ss, bool value, string_view fmt_str);
-void to_string(string_stream& ss, char const* value, string_view fmt_str);
-void to_string(string_stream& ss, string_view value, string_view fmt_str);
-void to_string(string_stream& ss, nullptr_t, string_view fmt_str);
+void to_string(stream_ref<char> ss, char value, string_view fmt_str);
+void to_string(stream_ref<char> ss, bool value, string_view fmt_str);
+void to_string(stream_ref<char> ss, char const* value, string_view fmt_str);
+void to_string(stream_ref<char> ss, string_view value, string_view fmt_str);
+void to_string(stream_ref<char> ss, nullptr_t, string_view fmt_str);
 
-void to_string(string_stream& ss, void* value, string_view fmt_str);
+void to_string(stream_ref<char> ss, void* value, string_view fmt_str);
 
-void to_string(string_stream& ss, std::byte value, string_view fmt_str);
+void to_string(stream_ref<char> ss, std::byte value, string_view fmt_str);
 
-void to_string(string_stream& ss, signed char value, string_view fmt_str);
-void to_string(string_stream& ss, short value, string_view fmt_str);
-void to_string(string_stream& ss, int value, string_view fmt_str);
-void to_string(string_stream& ss, long value, string_view fmt_str);
-void to_string(string_stream& ss, long long value, string_view fmt_str);
-void to_string(string_stream& ss, unsigned char value, string_view fmt_str);
-void to_string(string_stream& ss, unsigned short value, string_view fmt_str);
-void to_string(string_stream& ss, unsigned int value, string_view fmt_str);
-void to_string(string_stream& ss, unsigned long value, string_view fmt_str);
-void to_string(string_stream& ss, unsigned long long value, string_view fmt_str);
+void to_string(stream_ref<char> ss, signed char value, string_view fmt_str);
+void to_string(stream_ref<char> ss, short value, string_view fmt_str);
+void to_string(stream_ref<char> ss, int value, string_view fmt_str);
+void to_string(stream_ref<char> ss, long value, string_view fmt_str);
+void to_string(stream_ref<char> ss, long long value, string_view fmt_str);
+void to_string(stream_ref<char> ss, unsigned char value, string_view fmt_str);
+void to_string(stream_ref<char> ss, unsigned short value, string_view fmt_str);
+void to_string(stream_ref<char> ss, unsigned int value, string_view fmt_str);
+void to_string(stream_ref<char> ss, unsigned long value, string_view fmt_str);
+void to_string(stream_ref<char> ss, unsigned long long value, string_view fmt_str);
 
-void to_string(string_stream& ss, float value, string_view fmt_str);
-void to_string(string_stream& ss, double value, string_view fmt_str);
-void to_string(string_stream& ss, long double value, string_view fmt_str);
+void to_string(stream_ref<char> ss, float value, string_view fmt_str);
+void to_string(stream_ref<char> ss, double value, string_view fmt_str);
+void to_string(stream_ref<char> ss, long double value, string_view fmt_str);
 }
