@@ -1,5 +1,7 @@
 #include <clean-core/assert.hh>
 
+#include <clean-core/breakpoint.hh>
+
 #include <cstdio>
 #include <cstdlib>
 
@@ -18,12 +20,21 @@ void default_assertion_handler(cc::detail::assertion_info const& info)
     fflush(stdout);
 
     fprintf(stderr, "assertion `%s' failed.\n", info.expr);
+
+    if (info.msg != nullptr)
+    {
+        fprintf(stderr, "  ---\n%s\n  ---\n", info.msg);
+    }
+
     fprintf(stderr, "  in %s\n", info.func);
     fprintf(stderr, "  file %s:%d\n", info.file, info.line);
     fflush(stderr);
 
     // TODO: stacktrace
 
+#ifndef CC_RELEASE
+    cc::breakpoint();
+#endif
     std::abort();
 }
 } // namespace

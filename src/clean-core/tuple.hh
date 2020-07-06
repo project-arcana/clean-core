@@ -2,6 +2,7 @@
 
 #include <utility> // for tuple_size
 
+#include <clean-core/always_false.hh>
 #include <clean-core/forward.hh>
 #include <clean-core/fwd.hh>
 #include <clean-core/hash_combine.hh>

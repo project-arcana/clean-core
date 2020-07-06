@@ -82,7 +82,7 @@ struct hash<float>
 
         // make sure NaN is consistently hashed
         if (value != value)
-            return 0x9bb94aa0665e413auLL;
+            return 0xFFFF'FFFF'FFFF'1234uLL;
 
         // otherwise take the bits
         hash_t h = 0;
@@ -102,7 +102,7 @@ struct hash<double>
 
         // make sure NaN is consistently hashed
         if (value != value)
-            return 0x4200e8637b17bb37uLL;
+            return 0xFFFF'FFFF'FFFF'5678uLL;
 
         // otherwise take the bits
         hash_t h = 0;

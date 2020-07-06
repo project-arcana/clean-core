@@ -61,6 +61,7 @@
 #define CC_HOT_FUNC
 
 #define CC_BUILTIN_UNREACHABLE __assume(0)
+#define CC_PRINTF_FUNC(_fmt_index_, _args_index_)
 
 #elif defined(CC_COMPILER_POSIX)
 
@@ -75,6 +76,7 @@
 #define CC_HOT_FUNC __attribute__((hot))
 
 #define CC_BUILTIN_UNREACHABLE __builtin_unreachable()
+#define CC_PRINTF_FUNC(_fmt_index_, _args_index_) __attribute__((format(printf, _fmt_index_, _args_index_)))
 
 #else
 #error "Unknown compiler"

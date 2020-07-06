@@ -18,6 +18,14 @@ public: // methods
         return *this;
     }
 
+    string_stream& operator<<(char c)
+    {
+        reserve(1);
+        *m_curr = c;
+        ++m_curr;
+        return *this;
+    }
+
     [[nodiscard]] string to_string() const
     {
         if (empty())

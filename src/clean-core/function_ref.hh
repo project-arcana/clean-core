@@ -21,7 +21,11 @@ template <class Result, class... Args>
 struct function_ref<Result(Args...)>
 {
 public:
-    constexpr Result operator()(Args... args) const { return _fun(_data, cc::forward<Args>(args)...); }
+    constexpr Result operator()(Args... args) const
+    {
+        CC_ASSERT(_fun != nullptr && "cannot call null function");
+        return _fun(_data, cc::forward<Args>(args)...);
+    }
 
     template <class F, enable_if<std::is_invocable_r_v<Result, F, Args...> && !std::is_same_v<std::decay_t<F>, function_ref>> = true>
     constexpr function_ref(F&& f)
@@ -52,6 +56,10 @@ public:
             static_assert(cc::always_false<F>, "argument cannot be converted to cc::function_ref");
         }
     }
+
+    /// NOTE: this function_ref is invalid and must not be called
+    ///       it may only be assigned to
+    constexpr function_ref() = default;
 
     constexpr function_ref(function_ref const&) = default;
     constexpr function_ref& operator=(function_ref const&) = default;

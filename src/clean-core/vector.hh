@@ -24,6 +24,7 @@ struct vector
     // properties
 public:
     size_t size() const { return _size; }
+    size_t size_bytes() const { return _size * sizeof(T); }
     size_t capacity() const { return _capacity; }
     bool empty() const { return _size == 0; }
     T* data() { return _data; }
