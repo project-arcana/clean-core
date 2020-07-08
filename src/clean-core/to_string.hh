@@ -8,7 +8,7 @@ string to_string(char value);
 string to_string(bool value);
 string to_string(char const* value);
 string to_string(string_view value);
-string to_string(nullptr_t);
+string to_string(std::nullptr_t);
 
 string to_string(void* value);
 
@@ -33,7 +33,7 @@ string to_string(char value, string_view fmt_str);
 string to_string(bool value, string_view fmt_str);
 string to_string(char const* value, string_view fmt_str);
 string to_string(string_view value, string_view fmt_str);
-string to_string(nullptr_t, string_view fmt_str);
+string to_string(std::nullptr_t, string_view fmt_str);
 
 string to_string(void* value, string_view fmt_str);
 
@@ -58,7 +58,7 @@ void to_string(stream_ref<char> ss, char value);
 void to_string(stream_ref<char> ss, bool value);
 void to_string(stream_ref<char> ss, char const* value);
 void to_string(stream_ref<char> ss, string_view value);
-void to_string(stream_ref<char> ss, nullptr_t);
+void to_string(stream_ref<char> ss, std::nullptr_t);
 
 void to_string(stream_ref<char> ss, void* value);
 
@@ -83,7 +83,7 @@ void to_string(stream_ref<char> ss, char value, string_view fmt_str);
 void to_string(stream_ref<char> ss, bool value, string_view fmt_str);
 void to_string(stream_ref<char> ss, char const* value, string_view fmt_str);
 void to_string(stream_ref<char> ss, string_view value, string_view fmt_str);
-void to_string(stream_ref<char> ss, nullptr_t, string_view fmt_str);
+void to_string(stream_ref<char> ss, std::nullptr_t, string_view fmt_str);
 
 void to_string(stream_ref<char> ss, void* value, string_view fmt_str);
 

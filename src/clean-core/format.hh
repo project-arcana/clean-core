@@ -149,12 +149,12 @@ void format_to(stream_ref<char> s, string_view fmt_str, Args const&... args)
 {
     if constexpr (sizeof...(args) == 0)
     {
-        vformat_to(s, fmt_str, {});
+        detail::vformat_to(s, fmt_str, {});
     }
     else
     {
         detail::arg_info vargs[] = {detail::make_arg_info(args)...};
-        vformat_to(s, fmt_str, vargs);
+        detail::vformat_to(s, fmt_str, vargs);
     }
 }
 
