@@ -123,7 +123,7 @@ auto as_byte_span(T&& value)
         static_assert(std::is_trivially_copyable_v<ElementT>, "cannot convert range of non-trivially copyable elements to byte span");
         return span<byte const>{reinterpret_cast<byte const*>(value.data()), sizeof(ElementT) * value.size()};
     }
-    else if constexpr (std::is_const_v<T>)
+    else if constexpr (std::is_const_v<std::remove_reference_t<T>>)
     {
         // single POD type
         static_assert(std::is_trivially_copyable_v<std::remove_reference_t<T>>, "cannot convert non-trivially copyable element to byte span");
