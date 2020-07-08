@@ -26,8 +26,11 @@ public:
     constexpr span(T (&data)[N]) : _data(data), _size(N)
     {
     }
+
+    /// generic span constructor from contiguous_range
+    /// CAUTION: container MUST outlive the span!
     template <class Container, cc::enable_if<is_contiguous_range<Container, T>> = true>
-    constexpr span(Container& c) : _data(c.data()), _size(c.size())
+    constexpr span(Container&& c) : _data(c.data()), _size(c.size())
     {
     }
 
