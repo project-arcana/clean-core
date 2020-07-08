@@ -167,10 +167,10 @@ cc::string to_string(cc::string_view value, cc::string_view fmt_str)
     to_string([&s](cc::span<char const> ss) { s += cc::string_view(ss); }, value, fmt_str);
     return s;
 }
-cc::string to_string(nullptr_t, cc::string_view fmt_str)
+cc::string to_string(std::nullptr_t, cc::string_view fmt_str)
 {
     cc::string s;
-    to_string([&s](cc::span<char const> ss) { s += cc::string_view(ss); }, nullptr_t{}, fmt_str);
+    to_string([&s](cc::span<char const> ss) { s += cc::string_view(ss); }, std::nullptr_t{}, fmt_str);
     return s;
 }
 
@@ -272,7 +272,7 @@ void to_string(cc::stream_ref<char> ss, char value) { to_string(ss, value, ""); 
 void to_string(cc::stream_ref<char> ss, bool value) { to_string(ss, value, ""); }
 void to_string(cc::stream_ref<char> ss, char const* value) { to_string(ss, value, ""); }
 void to_string(cc::stream_ref<char> ss, cc::string_view value) { to_string(ss, value, ""); }
-void to_string(cc::stream_ref<char> ss, nullptr_t) { to_string(ss, nullptr_t{}, ""); }
+void to_string(cc::stream_ref<char> ss, std::nullptr_t) { to_string(ss, std::nullptr_t{}, ""); }
 
 void to_string(cc::stream_ref<char> ss, void* value) { to_string(ss, value, ""); }
 
@@ -470,14 +470,15 @@ void unsigned_to_string_impl(cc::stream_ref<char> ss, IntType value, parsed_fmt_
         if constexpr (sizeof(IntType) == 4)
         {
             char buffer[10 + 1 + 1];
-            // the cast prevents a warning on MSVC where 32 bit integer are unsigned long
+            // the cast prevents a warning when unsigned long is 32bit
             auto const length = std::snprintf(buffer, sizeof(buffer), "%u", static_cast<unsigned int>(value));
             ss << cc::string_view(buffer, length);
         }
         if constexpr (sizeof(IntType) == 8)
         {
             char buffer[19 + 1 + 1];
-            auto const length = std::snprintf(buffer, sizeof(buffer), "%llu", value);
+            // the cast prevents a warning when unsigned long is 64bit
+            auto const length = std::snprintf(buffer, sizeof(buffer), "%llu", static_cast<unsigned long long>(value));
             ss << cc::string_view(buffer, length);
         }
     }
@@ -572,14 +573,15 @@ void unsigned_to_string_impl(cc::stream_ref<char> ss, IntType value, parsed_fmt_
         if constexpr (sizeof(IntType) == 4)
         {
             char buffer[10 + 1 + 1];
-            // the cast prevents a warning on MSVC where 32 bit integer are unsigned long
+            // the cast prevents a warning when unsigned long is 32bit
             auto const length = std::snprintf(buffer, sizeof(buffer), "%o", static_cast<unsigned int>(value));
             ss << cc::string_view(buffer, length);
         }
         if constexpr (sizeof(IntType) == 8)
         {
             char buffer[19 + 1 + 1];
-            auto const length = std::snprintf(buffer, sizeof(buffer), "%llo", value);
+            // the cast prevents a warning when unsigned long is 64bit
+            auto const length = std::snprintf(buffer, sizeof(buffer), "%llo", static_cast<unsigned long long>(value));
             ss << cc::string_view(buffer, length);
         }
     }
@@ -603,14 +605,15 @@ void unsigned_to_string_impl(cc::stream_ref<char> ss, IntType value, parsed_fmt_
             if constexpr (sizeof(IntType) == 4)
             {
                 char buffer[10 + 1 + 1];
-                // the cast prevents a warning on MSVC where 32 bit integer are unsigned long
+                // the cast prevents a warning when unsigned long is 32bit
                 auto const length = std::snprintf(buffer, sizeof(buffer), "%#x", static_cast<unsigned int>(value));
                 ss << cc::string_view(buffer, length);
             }
             if constexpr (sizeof(IntType) == 8)
             {
                 char buffer[19 + 1 + 1];
-                auto const length = std::snprintf(buffer, sizeof(buffer), "%#llx", value);
+                // the cast prevents a warning when unsigned long is 64bit
+                auto const length = std::snprintf(buffer, sizeof(buffer), "%#llx", static_cast<unsigned long long>(value));
                 ss << cc::string_view(buffer, length);
             }
         }
@@ -631,14 +634,15 @@ void unsigned_to_string_impl(cc::stream_ref<char> ss, IntType value, parsed_fmt_
             if constexpr (sizeof(IntType) == 4)
             {
                 char buffer[10 + 1 + 1];
-                // the cast prevents a warning on MSVC where 32 bit integer are unsigned long
+                // the cast prevents a warning when unsigned long is 32bit
                 auto const length = std::snprintf(buffer, sizeof(buffer), "%x", static_cast<unsigned int>(value));
                 ss << cc::string_view(buffer, length);
             }
             if constexpr (sizeof(IntType) == 8)
             {
                 char buffer[19 + 1 + 1];
-                auto const length = std::snprintf(buffer, sizeof(buffer), "%llx", value);
+                // the cast prevents a warning when unsigned long is 64bit
+                auto const length = std::snprintf(buffer, sizeof(buffer), "%llx", static_cast<unsigned long long>(value));
                 ss << cc::string_view(buffer, length);
             }
         }
@@ -663,14 +667,15 @@ void unsigned_to_string_impl(cc::stream_ref<char> ss, IntType value, parsed_fmt_
             if constexpr (sizeof(IntType) == 4)
             {
                 char buffer[10 + 1 + 1];
-                // the cast prevents a warning on MSVC where 32 bit integer are unsigned long
+                // the cast prevents a warning when unsigned long is 32bit
                 auto const length = std::snprintf(buffer, sizeof(buffer), "%#X", static_cast<unsigned int>(value));
                 ss << cc::string_view(buffer, length);
             }
             if constexpr (sizeof(IntType) == 8)
             {
                 char buffer[19 + 1 + 1];
-                auto const length = std::snprintf(buffer, sizeof(buffer), "%#llX", value);
+                // the cast prevents a warning when unsigned long is 64bit
+                auto const length = std::snprintf(buffer, sizeof(buffer), "%#llX", static_cast<unsigned long long>(value));
                 ss << cc::string_view(buffer, length);
             }
         }
@@ -691,14 +696,15 @@ void unsigned_to_string_impl(cc::stream_ref<char> ss, IntType value, parsed_fmt_
             if constexpr (sizeof(IntType) == 4)
             {
                 char buffer[10 + 1 + 1];
-                // the cast prevents a warning on MSVC where 32 bit integer are unsigned long
+                // the cast prevents a warning when unsigned long is 32bit
                 auto const length = std::snprintf(buffer, sizeof(buffer), "%X", static_cast<unsigned int>(value));
                 ss << cc::string_view(buffer, length);
             }
             if constexpr (sizeof(IntType) == 8)
             {
                 char buffer[19 + 1 + 1];
-                auto const length = std::snprintf(buffer, sizeof(buffer), "%llX", value);
+                // the cast prevents a warning when unsigned long is 64bit
+                auto const length = std::snprintf(buffer, sizeof(buffer), "%llX", static_cast<unsigned long long>(value));
                 ss << cc::string_view(buffer, length);
             }
         }
@@ -747,11 +753,11 @@ void to_string_float_impl(cc::stream_ref<char> ss, FloatType value, parsed_fmt_a
     if (args.sign_aware_zero_padding)
         sprintf_args << "0";
     if (args.width >= 0)
-        to_string(cc::make_stream_ref<char>(sprintf_args), args.width, "");
+        cc::to_string(cc::make_stream_ref<char>(sprintf_args), args.width, "");
     if (args.precision >= 0)
     {
         sprintf_args << ".";
-        to_string(cc::make_stream_ref<char>(sprintf_args), args.precision, "");
+        cc::to_string(cc::make_stream_ref<char>(sprintf_args), args.precision, "");
     }
 
     if (args.type == 0)
@@ -760,11 +766,7 @@ void to_string_float_impl(cc::stream_ref<char> ss, FloatType value, parsed_fmt_a
     }
     else
     {
-        CC_ASSERT((args.type == 'a' || args.type == 'A' || //
-                   args.type == 'e' || args.type == 'E' || //
-                   args.type == 'f' || args.type == 'F' || //
-                   args.type == 'g' || args.type == 'G')
-                  && "Invalid format string: Unsupported argument type for float type");
+        CC_ASSERT(is_float_type(args.type) && "Invalid format string: Unsupported argument type for float type");
         sprintf_args << cc::string_view(&args.type, 1);
     }
 
