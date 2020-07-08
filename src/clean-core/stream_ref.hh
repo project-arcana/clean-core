@@ -30,7 +30,7 @@ struct stream_ref
         _append_fun = [](span<T const>) {};
     }
 
-    /// any function taking a span of Ts can be used to create a stream (generic version)
+    /// any function taking a span of Ts can be used to create a stream
     template <class F, cc::enable_if<std::is_invocable_r_v<void, F, span<T const>>> = true>
     stream_ref(F&& fun)
     {
@@ -58,8 +58,6 @@ private:
     cc::function_ref<void(span<T const>)> _append_fun;
 };
 
-/// special case: adding string_views to a char stream is fine
-inline stream_ref<char>& operator<<(stream_ref<char>& stream, string_view value) { return stream << span<char const>(value.data(), value.size()); }
 /// special case: avoid ambiguous overload by explicitly caring for string literals
 inline stream_ref<char>& operator<<(stream_ref<char>& stream, char const* value) { return stream << string_view(value); }
 
