@@ -36,6 +36,10 @@ public:
 
     explicit constexpr span(T& val) : _data(&val), _size(1) {}
 
+    /// CAUTION: value MUST outlive the span!
+    /// NOTE: this ctor is for spans constructed inside an expression
+    explicit constexpr span(T&& val) : _data(&val), _size(1) {}
+
     constexpr operator span<T const>() const noexcept { return {_data, _size}; }
 
     // container
@@ -101,9 +105,10 @@ private:
 };
 
 // deduction guide for containers
-template <class Container, cc::enable_if<is_contiguous_range<Container, void>> = true>
+template <class Container, cc::enable_if<is_any_contiguous_range<Container>> = true>
 span(Container& c)->span<std::remove_reference_t<decltype(*c.data())>>;
-span(string_view const&)->span<char const>;
+template <class Container, cc::enable_if<is_any_contiguous_range<Container>> = true>
+span(Container&& c)->span<std::remove_reference_t<decltype(*c.data())>>;
 
 /// converts a triv. copyable value, or a container with triv. copyable elements to a cc::span<std::byte>
 template <class T>

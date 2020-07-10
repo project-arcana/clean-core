@@ -60,6 +60,12 @@ private:
 
 /// special case: avoid ambiguous overload by explicitly caring for string literals
 inline stream_ref<char>& operator<<(stream_ref<char>& stream, char const* value) { return stream << string_view(value); }
+/// special case: explicit char arrays need not be null-terminated
+template <size_t N>
+inline stream_ref<char>& operator<<(stream_ref<char>& stream, char const (&value)[N])
+{
+    return stream << string_view(value, N);
+}
 
 /// creates a stream_ref from a given stream
 /// CAUTION: stream must outlive the stream_ref!
