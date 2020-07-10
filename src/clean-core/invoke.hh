@@ -2,7 +2,7 @@
 
 #include <type_traits>
 
-#include <clean-core/detail/reference_wrapper.hh>
+#include <clean-core/detail/is_reference_wrapper.hh>
 #include <clean-core/forward.hh>
 
 namespace cc
