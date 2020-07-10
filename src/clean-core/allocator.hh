@@ -2,12 +2,13 @@
 
 #include <clean-core/forward.hh>
 #include <clean-core/new.hh>
+#include <clean-core/polymorphic.hh>
 #include <clean-core/span.hh>
 #include <clean-core/typedefs.hh>
 
 namespace cc
 {
-struct allocator
+struct allocator : public cc::polymorphic
 {
     /// allocate a buffer with specified size and alignment
     [[nodiscard]] virtual cc::byte* alloc(size_t size, size_t align = alignof(std::max_align_t)) = 0;
@@ -30,8 +31,6 @@ struct allocator
     /// destruct and deallocate an array previously created with new_array
     template <class T>
     void delete_array(T* ptr);
-
-    virtual ~allocator() = default;
 };
 
 struct linear_allocator final : public allocator
@@ -49,11 +48,6 @@ public:
 
     linear_allocator() = default;
     linear_allocator(cc::span<cc::byte> buffer) : _buffer(buffer.data()), _head(buffer.data()), _buffer_end(buffer.data() + buffer.size()) {}
-
-    linear_allocator(linear_allocator&&) noexcept = default;
-    linear_allocator& operator=(linear_allocator&&) noexcept = default;
-    linear_allocator(linear_allocator const&) = delete;
-    linear_allocator& operator=(linear_allocator const&) = delete;
 
 private:
     cc::byte* _buffer = nullptr;
@@ -76,11 +70,6 @@ public:
 
     stack_allocator() = default;
     stack_allocator(cc::span<cc::byte> buffer) : _buffer(buffer.data()), _head(buffer.data()), _buffer_end(buffer.data() + buffer.size()) {}
-
-    stack_allocator(stack_allocator&&) noexcept = default;
-    stack_allocator& operator=(stack_allocator&&) noexcept = default;
-    stack_allocator(stack_allocator const&) = delete;
-    stack_allocator& operator=(stack_allocator const&) = delete;
 
 private:
     cc::byte* _buffer = nullptr;
