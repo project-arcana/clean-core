@@ -7,6 +7,9 @@
 // NOTE: This header might cause conflicts if using Microsoft SAL code analysis tools
 // See https://docs.microsoft.com/en-us/cpp/c-runtime-library/sal-annotations?redirectedfrom=MSDN&view=vs-2019
 
+typedef int BOOL;
+typedef unsigned char BYTE;
+typedef unsigned short WORD;
 typedef unsigned long DWORD;
 typedef const wchar_t* LPCWSTR;
 typedef void* HANDLE;
@@ -14,6 +17,8 @@ typedef struct HINSTANCE__* HINSTANCE;
 typedef struct HWND__* HWND;
 typedef struct HMONITOR__* HMONITOR;
 typedef struct _SECURITY_ATTRIBUTES SECURITY_ATTRIBUTES;
+typedef struct _OVERLAPPED OVERLAPPED, *LPOVERLAPPED;
+typedef struct _OVERLAPPED_ENTRY OVERLAPPED_ENTRY, *LPOVERLAPPED_ENTRY;
 typedef long HRESULT;
 typedef unsigned int UINT;
 
