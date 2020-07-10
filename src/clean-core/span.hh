@@ -26,12 +26,19 @@ public:
     constexpr span(T (&data)[N]) : _data(data), _size(N)
     {
     }
-    template <class Container, std::enable_if_t<is_contiguous_range<Container, T>, int> = 0>
-    constexpr span(Container& c) : _data(c.data()), _size(c.size())
+
+    /// generic span constructor from contiguous_range
+    /// CAUTION: container MUST outlive the span!
+    template <class Container, cc::enable_if<is_contiguous_range<Container, T>> = true>
+    constexpr span(Container&& c) : _data(c.data()), _size(c.size())
     {
     }
 
     explicit constexpr span(T& val) : _data(&val), _size(1) {}
+
+    /// CAUTION: value MUST outlive the span!
+    /// NOTE: this ctor is for spans constructed inside an expression
+    explicit constexpr span(T&& val) : _data(&val), _size(1) {}
 
     constexpr operator span<T const>() const noexcept { return {_data, _size}; }
 
@@ -98,13 +105,14 @@ private:
 };
 
 // deduction guide for containers
-template <class Container, cc::enable_if<is_contiguous_range<Container, void>> = true>
+template <class Container, cc::enable_if<is_any_contiguous_range<Container>> = true>
 span(Container& c)->span<std::remove_reference_t<decltype(*c.data())>>;
-span(string_view const&)->span<char const>;
+template <class Container, cc::enable_if<is_any_contiguous_range<Container>> = true>
+span(Container&& c)->span<std::remove_reference_t<decltype(*c.data())>>;
 
 /// converts a triv. copyable value, or a container with triv. copyable elements to a cc::span<std::byte>
 template <class T>
-span<byte> as_byte_span(T& value)
+auto as_byte_span(T&& value)
 {
     if constexpr (is_contiguous_range<T, void>)
     {
@@ -113,30 +121,24 @@ span<byte> as_byte_span(T& value)
         static_assert(std::is_trivially_copyable_v<ElementT>, "cannot convert range of non-trivially copyable elements to byte span");
         return span<byte>{reinterpret_cast<byte*>(value.data()), sizeof(ElementT) * value.size()};
     }
-    else
-    {
-        // single POD type
-        static_assert(std::is_trivially_copyable_v<T>, "cannot convert non-trivially copyable element to byte span");
-        return span<byte>{reinterpret_cast<byte*>(&value), sizeof(T)};
-    }
-}
-
-/// converts a constant triv. copyable value, or a constant container with triv. copyable elements to a cc::span<std::byte const>
-template <class T>
-span<byte const> as_byte_span(T const& value)
-{
-    if constexpr (is_contiguous_range<T const, void const>)
+    else if constexpr (is_contiguous_range<T, void const>)
     {
         // container of some type
         using ElementT = std::remove_reference_t<decltype(value.data()[0])>;
         static_assert(std::is_trivially_copyable_v<ElementT>, "cannot convert range of non-trivially copyable elements to byte span");
         return span<byte const>{reinterpret_cast<byte const*>(value.data()), sizeof(ElementT) * value.size()};
     }
+    else if constexpr (std::is_const_v<std::remove_reference_t<T>>)
+    {
+        // single POD type
+        static_assert(std::is_trivially_copyable_v<std::remove_reference_t<T>>, "cannot convert non-trivially copyable element to byte span");
+        return span<byte const>{reinterpret_cast<byte const*>(&value), sizeof(T)};
+    }
     else
     {
         // single POD type
-        static_assert(std::is_trivially_copyable_v<T>, "cannot convert non-trivially copyable element to byte span");
-        return span<byte const>{reinterpret_cast<byte const*>(&value), sizeof(T)};
+        static_assert(std::is_trivially_copyable_v<std::remove_reference_t<T>>, "cannot convert non-trivially copyable element to byte span");
+        return span<byte>{reinterpret_cast<byte*>(&value), sizeof(T)};
     }
 }
 }

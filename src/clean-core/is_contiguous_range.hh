@@ -1,5 +1,7 @@
 #pragma once
 
+#include <type_traits>
+
 namespace cc
 {
 namespace detail
@@ -11,5 +13,7 @@ char contiguous_range_test(...);
 }
 
 template <class Container, class ElementT>
-static constexpr bool is_contiguous_range = sizeof(detail::contiguous_range_test<Container, ElementT>(nullptr)) == sizeof(int);
+static constexpr bool is_contiguous_range = sizeof(detail::contiguous_range_test<std::remove_reference_t<Container>, ElementT>(nullptr)) == sizeof(int);
+template <class Container>
+static constexpr bool is_any_contiguous_range = is_contiguous_range<Container, void const>;
 }
