@@ -13,6 +13,8 @@ namespace cc
 template <class KeyT, class ValueT, class HashT, class EqualT>
 struct map
 {
+    using key_t = KeyT;
+    using value_t = ValueT;
     static_assert(!std::is_reference_v<KeyT>, "keys cannot be references");
 
     // container
@@ -77,6 +79,47 @@ public:
                 return e.value;
 
         CC_UNREACHABLE("key not found");
+    }
+
+    /// removes a key from the map
+    /// returns true iff something was removed
+    /// supports heterogeneous lookup
+    template <class U = KeyT>
+    bool remove_key(U const& key)
+    {
+        if (_size == 0)
+            return false;
+
+        auto idx = this->_get_location(key);
+        auto& list = _entries[idx];
+        auto it = list.begin();
+        auto end = list.end();
+
+        if (!(it != end))
+            return false;
+
+        if (EqualT{}((*it).key, key))
+        {
+            list.pop_front();
+            --_size;
+            return true;
+        }
+
+        auto prev = it;
+        while (it != end)
+        {
+            if (EqualT{}((*it).key, key))
+            {
+                list.erase_after(prev);
+                --_size;
+                return true;
+            }
+
+            prev = it;
+            ++it;
+        }
+
+        return false;
     }
 
     /// reserves internal resources to hold at least n elements without forcing a rehash
