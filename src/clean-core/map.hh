@@ -6,6 +6,7 @@
 #include <clean-core/forward_list.hh>
 #include <clean-core/fwd.hh>
 #include <clean-core/hash.hh>
+#include <clean-core/pair.hh>
 #include <clean-core/sentinel.hh>
 
 namespace cc
@@ -39,6 +40,14 @@ public:
     // ctors
 public:
     map() = default;
+
+    /// creates a map and adds all key-value pairs
+    map(std::initializer_list<pair<KeyT const, ValueT>> entries)
+    {
+        reserve(entries.size());
+        for (auto&& kvp : entries)
+            operator[](kvp.first) = kvp.second;
+    }
 
     // operators
 public:
@@ -131,6 +140,28 @@ public:
         for (auto& l : _entries)
             l.clear();
     }
+
+    // operators
+public:
+    bool operator==(map const& rhs) const
+    {
+        if (_size != rhs._size)
+            return false;
+
+        for (auto const& kvp : *this)
+        {
+            // TODO: can be slightly improved by only computing the rhs entry once
+
+            if (!rhs.contains_key(kvp.key))
+                return false;
+
+            if (rhs.get(kvp.key) != kvp.value)
+                return false;
+        }
+
+        return true;
+    }
+    bool operator!=(map const& rhs) const { return !operator==(rhs); }
 
     // iteration
 private:
