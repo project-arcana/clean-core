@@ -41,7 +41,8 @@ public:
 
     // container
 public:
-    constexpr byte_t* data() const { return _data; }
+    /// NOTE: this is puposely not data() so it's not confused with a contiguous range
+    constexpr byte_t* data_ptr() const { return _data; }
     constexpr size_t size() const { return _size; }
     constexpr size_t size_bytes() const { return _size * sizeof(T); }
     constexpr size_t stride() const { return _stride; }
