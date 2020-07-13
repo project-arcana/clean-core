@@ -6,6 +6,7 @@
 #include <clean-core/forward_list.hh>
 #include <clean-core/fwd.hh>
 #include <clean-core/hash.hh>
+#include <clean-core/pair.hh>
 #include <clean-core/sentinel.hh>
 
 namespace cc
@@ -13,6 +14,8 @@ namespace cc
 template <class KeyT, class ValueT, class HashT, class EqualT>
 struct map
 {
+    using key_t = KeyT;
+    using value_t = ValueT;
     static_assert(!std::is_reference_v<KeyT>, "keys cannot be references");
 
     // container
@@ -37,6 +40,14 @@ public:
     // ctors
 public:
     map() = default;
+
+    /// creates a map and adds all key-value pairs
+    map(std::initializer_list<pair<KeyT const, ValueT>> entries)
+    {
+        reserve(entries.size());
+        for (auto&& kvp : entries)
+            operator[](kvp.first) = kvp.second;
+    }
 
     // operators
 public:
@@ -79,6 +90,47 @@ public:
         CC_UNREACHABLE("key not found");
     }
 
+    /// removes a key from the map
+    /// returns true iff something was removed
+    /// supports heterogeneous lookup
+    template <class U = KeyT>
+    bool remove_key(U const& key)
+    {
+        if (_size == 0)
+            return false;
+
+        auto idx = this->_get_location(key);
+        auto& list = _entries[idx];
+        auto it = list.begin();
+        auto end = list.end();
+
+        if (!(it != end))
+            return false;
+
+        if (EqualT{}((*it).key, key))
+        {
+            list.pop_front();
+            --_size;
+            return true;
+        }
+
+        auto prev = it;
+        while (it != end)
+        {
+            if (EqualT{}((*it).key, key))
+            {
+                list.erase_after(prev);
+                --_size;
+                return true;
+            }
+
+            prev = it;
+            ++it;
+        }
+
+        return false;
+    }
+
     /// reserves internal resources to hold at least n elements without forcing a rehash
     void reserve(size_t n) { _reserve(n); }
 
@@ -88,6 +140,28 @@ public:
         for (auto& l : _entries)
             l.clear();
     }
+
+    // operators
+public:
+    bool operator==(map const& rhs) const
+    {
+        if (_size != rhs._size)
+            return false;
+
+        for (auto const& kvp : *this)
+        {
+            // TODO: can be slightly improved by only computing the rhs entry once
+
+            if (!rhs.contains_key(kvp.key))
+                return false;
+
+            if (rhs.get(kvp.key) != kvp.value)
+                return false;
+        }
+
+        return true;
+    }
+    bool operator!=(map const& rhs) const { return !operator==(rhs); }
 
     // iteration
 private:

@@ -92,6 +92,10 @@ public:
         auto idx = this->_get_location(value);
         auto& list = _entries[idx];
         auto it = list.begin();
+        auto end = list.end();
+
+        if (!(it != end))
+            return false;
 
         if (EqualT{}(*it, value))
         {
@@ -101,7 +105,6 @@ public:
         }
 
         auto prev = it;
-        auto end = list.end();
         while (it != end)
         {
             if (EqualT{}(*it, value))
