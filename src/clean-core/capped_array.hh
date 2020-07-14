@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstring>
+#include <initializer_list>
 #include <type_traits>
 
 #include <clean-core/algorithms.hh>
@@ -54,6 +55,14 @@ public:
     {
         CC_CONTRACT(size <= N);
         new (&_u.value[0]) T[size]();
+    }
+
+    constexpr capped_array(std::initializer_list<T> data)
+    {
+        CC_CONTRACT(data.size() <= N);
+        _size = data.size();
+        for (compact_size_t i = 0; i < _size; ++i)
+            new (placement_new, &_u.value[i]) T(data.begin()[i]);
     }
 
     [[nodiscard]] static capped_array defaulted(size_t size) { return capped_array(size); }
