@@ -43,31 +43,14 @@ struct allocator : public cc::polymorphic
     // specific interfaces which can be overriden by allocators to be more efficients
 public:
     /// reallocate a buffer, behaves like std::realloc
-    virtual cc::byte* realloc(void* ptr, size_t new_size, size_t align = alignof(std::max_align_t))
-    {
-        this->free(ptr);
-
-        if (new_size > 0)
-            return this->alloc(new_size, align);
-        else
-            return nullptr;
-    }
+    virtual cc::byte* realloc(void* ptr, size_t old_size, size_t new_size, size_t align = alignof(std::max_align_t));
 
     /// allocate a buffer with specified minimum size, will span up to request_size if possible
-    [[nodiscard]] virtual cc::byte* alloc_request(size_t min_size, size_t request_size, size_t& out_received_size, size_t align = alignof(std::max_align_t))
-    {
-        CC_UNUSED(request_size);
-        out_received_size = min_size;
-        return this->alloc(min_size, align);
-    }
+    [[nodiscard]] virtual cc::byte* alloc_request(size_t min_size, size_t request_size, size_t& out_received_size, size_t align = alignof(std::max_align_t));
 
     /// reallocate a buffer with specified minimum size, will span up to request_size if possible
-    [[nodiscard]] virtual cc::byte* realloc_request(void* ptr, size_t new_min_size, size_t request_size, size_t& out_received_size, size_t align = alignof(std::max_align_t))
-    {
-        CC_UNUSED(request_size);
-        out_received_size = new_min_size;
-        return this->realloc(ptr, new_min_size, align);
-    }
+    [[nodiscard]] virtual cc::byte* realloc_request(
+        void* ptr, size_t old_size, size_t new_min_size, size_t request_size, size_t& out_received_size, size_t align = alignof(std::max_align_t));
 };
 
 
@@ -100,6 +83,8 @@ public:
 
     void free(void* ptr) override;
 
+    cc::byte* realloc(void* ptr, size_t old_size, size_t new_size, size_t align = alignof(std::max_align_t)) override;
+
     void reset()
     {
         _head = _buffer;
@@ -122,6 +107,8 @@ public:
     cc::byte* alloc(size_t size, size_t align = alignof(std::max_align_t)) override;
 
     void free(void* ptr) override;
+
+    cc::byte* realloc(void* ptr, size_t old_size, size_t new_size, size_t align = alignof(std::max_align_t)) override;
 
     system_allocator_t() = default;
 };

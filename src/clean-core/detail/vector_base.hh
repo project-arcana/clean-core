@@ -16,6 +16,7 @@
 #include <clean-core/move.hh>
 #include <clean-core/new.hh>
 #include <clean-core/span.hh>
+#include <clean-core/utility.hh>
 
 namespace cc::detail
 {
@@ -24,6 +25,11 @@ struct vector_internals_with_allocator
 {
     T* _alloc(size_t size) { return reinterpret_cast<T*>(_allocator->alloc(size * sizeof(T), alignof(T))); }
     void _free(T* p) { _allocator->free(p); }
+    T* _realloc(T* p, size_t old_size, size_t size)
+    {
+        static_assert(std::is_trivially_copyable_v<T> && std::is_trivially_destructible_v<T>, "realloc not permitted for this type");
+        return reinterpret_cast<T*>(_allocator->realloc(p, old_size * sizeof(T), size * sizeof(T), alignof(T)));
+    }
     cc::allocator* _allocator = nullptr;
     constexpr explicit vector_internals_with_allocator(cc::allocator* alloc) : _allocator(alloc) {}
 };
@@ -32,6 +38,24 @@ struct vector_internals
 {
     T* _alloc(size_t size) { return reinterpret_cast<T*>(new std::byte[size * sizeof(T)]); }
     void _free(T* p) { delete[] reinterpret_cast<std::byte*>(p); }
+    T* _realloc(T* p, size_t old_size, size_t size)
+    {
+        static_assert(std::is_trivially_copyable_v<T> && std::is_trivially_destructible_v<T>, "realloc not permitted for this type");
+        T* res = nullptr;
+
+        if (size > 0)
+        {
+            res = this->_alloc(size);
+
+            if (p != nullptr)
+            {
+                std::memcpy(res, p, cc::min(old_size, size) * sizeof(T));
+            }
+        }
+
+        this->_free(p);
+        return res;
+    }
 };
 
 
@@ -92,15 +116,29 @@ public:
         if (_size == _capacity)
         {
             auto const new_cap = _capacity == 0 ? 1 : _capacity << 1;
-            T* new_data = _alloc(new_cap);
-            T* new_element = new (placement_new, &new_data[_size]) T(cc::forward<Args>(args)...);
-            detail::container_move_range<T>(_data, _size, new_data);
-            detail::container_destroy_reverse<T>(_data, _size);
-            _free(_data);
-            _data = new_data;
-            _capacity = new_cap;
-            _size++;
-            return *new_element;
+
+            if constexpr (std::is_trivially_copyable_v<T> && std::is_trivially_destructible_v<T>)
+            {
+                // we can use realloc
+                _data = this->_realloc(_data, _capacity, new_cap);
+                T* new_element = new (placement_new, &_data[_size]) T(cc::forward<Args>(args)...);
+                _capacity = new_cap;
+                _size++;
+                return *new_element;
+            }
+            else
+            {
+                // we can't
+                T* new_data = this->_alloc(new_cap);
+                T* new_element = new (placement_new, &new_data[_size]) T(cc::forward<Args>(args)...);
+                detail::container_move_range<T>(_data, _size, new_data);
+                detail::container_destroy_reverse<T>(_data, _size);
+                this->_free(_data);
+                _data = new_data;
+                _capacity = new_cap;
+                _size++;
+                return *new_element;
+            }
         }
 
         return *(new (placement_new, &_data[_size++]) T(cc::forward<Args>(args)...));
@@ -164,11 +202,21 @@ public:
     {
         if (_size != _capacity)
         {
-            T* new_data = _alloc(_size);
-            detail::container_move_range<T>(_data, _size, new_data);
-            _free(_data);
-            _data = new_data;
-            _capacity = _size;
+            if constexpr (std::is_trivially_copyable_v<T> && std::is_trivially_destructible_v<T>)
+            {
+                // we can use realloc
+                _data = this->_realloc(_data, _capacity, _size);
+                _capacity = _size;
+            }
+            else
+            {
+                // we can't
+                T* new_data = _alloc(_size);
+                detail::container_move_range<T>(_data, _size, new_data);
+                _free(_data);
+                _data = new_data;
+                _capacity = _size;
+            }
         }
     }
 
