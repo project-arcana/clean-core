@@ -161,12 +161,23 @@ public:
     {
         if (size <= _capacity)
             return;
-        T* new_data = _alloc(size);
-        detail::container_move_range<T>(_data, _size, new_data);
-        detail::container_destroy_reverse<T>(_data, _size);
-        _free(_data);
-        _data = new_data;
-        _capacity = size;
+
+        if constexpr (std::is_trivially_copyable_v<T> && std::is_trivially_destructible_v<T>)
+        {
+            // we can use realloc
+            _data = this->_realloc(_data, _capacity, size);
+            _capacity = size;
+        }
+        else
+        {
+            // we can't
+            T* new_data = _alloc(size);
+            detail::container_move_range<T>(_data, _size, new_data);
+            detail::container_destroy_reverse<T>(_data, _size);
+            _free(_data);
+            _data = new_data;
+            _capacity = size;
+        }
     }
 
     void resize(size_t new_size)
