@@ -31,7 +31,45 @@ struct allocator : public cc::polymorphic
     /// destruct and deallocate an array previously created with new_array
     template <class T>
     void delete_array(T* ptr);
+
+    /// allocate and default-construct an array without keeping track of the amount of elements
+    template <class T>
+    [[nodiscard]] T* new_array_sized(size_t num_elems);
+
+    /// destruct and deallocate an array previously created with new_array_sized
+    template <class T>
+    void delete_array_sized(T* ptr, size_t num_elems);
+
+    // specific interfaces which can be overriden by allocators to be more efficients
+public:
+    /// reallocate a buffer, behaves like std::realloc
+    virtual cc::byte* realloc(void* ptr, size_t new_size, size_t align = alignof(std::max_align_t))
+    {
+        this->free(ptr);
+
+        if (new_size > 0)
+            return this->alloc(new_size, align);
+        else
+            return nullptr;
+    }
+
+    /// allocate a buffer with specified minimum size, will span up to request_size if possible
+    [[nodiscard]] virtual cc::byte* alloc_request(size_t min_size, size_t request_size, size_t& out_received_size, size_t align = alignof(std::max_align_t))
+    {
+        CC_UNUSED(request_size);
+        out_received_size = min_size;
+        return this->alloc(min_size, align);
+    }
+
+    /// reallocate a buffer with specified minimum size, will span up to request_size if possible
+    [[nodiscard]] virtual cc::byte* realloc_request(void* ptr, size_t new_min_size, size_t request_size, size_t& out_received_size, size_t align = alignof(std::max_align_t))
+    {
+        CC_UNUSED(request_size);
+        out_received_size = new_min_size;
+        return this->realloc(ptr, new_min_size, align);
+    }
 };
+
 
 struct linear_allocator final : public allocator
 {
@@ -112,7 +150,8 @@ T* allocator::new_t(Args&&... args)
 template <class T>
 void allocator::delete_t(T* ptr)
 {
-    CC_CONTRACT(ptr != nullptr);
+    if (ptr == nullptr)
+        return;
 
     if constexpr (!std::is_trivially_destructible_v<T>)
         ptr->~T();
@@ -140,7 +179,9 @@ T* allocator::new_array(size_t num_elems)
 template <class T>
 void allocator::delete_array(T* ptr)
 {
-    CC_CONTRACT(ptr != nullptr);
+    if (ptr == nullptr)
+        return;
+
     constexpr size_t padding = detail::get_array_padding(sizeof(T));
 
     cc::byte* const original_buf = reinterpret_cast<cc::byte*>(ptr) - padding;
@@ -151,5 +192,28 @@ void allocator::delete_array(T* ptr)
             (ptr + i)->~T();
 
     this->free(original_buf);
+}
+
+
+template <class T>
+T* allocator::new_array_sized(size_t num_elems)
+{
+    T* const res_array_ptr = reinterpret_cast<T*>(this->alloc(sizeof(T) * num_elems, alignof(T)));
+    for (auto i = 0u; i < num_elems; ++i)
+        new (placement_new, res_array_ptr + i) T();
+    return res_array_ptr;
+}
+
+
+template <class T>
+void allocator::delete_array_sized(T* ptr, cc::size_t num_elems)
+{
+    if (ptr == nullptr)
+        return;
+
+    if constexpr (!std::is_trivially_destructible_v<T>)
+        for (auto i = 0u; i < num_elems; ++i)
+            (ptr + i)->~T();
+    this->free(ptr);
 }
 }
