@@ -86,7 +86,9 @@ cc::byte* cc::stack_allocator::alloc(cc::size_t size, cc::size_t align)
 
 void cc::stack_allocator::free(void* ptr)
 {
-    CC_CONTRACT(ptr != nullptr);
+    if (ptr == nullptr)
+        return;
+
     CC_ASSERT(ptr == _last_alloc && "argument to stack_allocator::free was not the most recent allocation");
 
     std::byte* const byte_ptr = static_cast<std::byte*>(ptr);
@@ -94,7 +96,7 @@ void cc::stack_allocator::free(void* ptr)
     _head = byte_ptr - alloc_header->padding;
 }
 
-cc::byte* cc::system_allocator::alloc(cc::size_t size, cc::size_t align)
+cc::byte* cc::system_allocator_t::alloc(cc::size_t size, cc::size_t align)
 {
 #ifdef CC_OS_WINDOWS
     return static_cast<cc::byte*>(::_aligned_malloc(size, align));
@@ -103,7 +105,7 @@ cc::byte* cc::system_allocator::alloc(cc::size_t size, cc::size_t align)
 #endif
 }
 
-void cc::system_allocator::free(void* ptr)
+void cc::system_allocator_t::free(void* ptr)
 {
 #ifdef CC_OS_WINDOWS
     ::_aligned_free(ptr);

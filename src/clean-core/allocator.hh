@@ -78,15 +78,18 @@ private:
     cc::byte* _last_alloc = nullptr;
 };
 
-struct system_allocator final : public allocator
+struct system_allocator_t final : public allocator
 {
 public:
     cc::byte* alloc(size_t size, size_t align = alignof(std::max_align_t)) override;
 
     void free(void* ptr) override;
 
-    system_allocator() = default;
+    system_allocator_t() = default;
 };
+
+static cc::system_allocator_t system_allocator_instance = {};
+static cc::allocator* const system_allocator = &system_allocator_instance;
 
 //
 // implementation below
