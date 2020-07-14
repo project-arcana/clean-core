@@ -40,7 +40,7 @@ struct allocator : public cc::polymorphic
     template <class T>
     void delete_array_sized(T* ptr, size_t num_elems);
 
-    // specific interfaces which can be overriden by allocators to be more efficients
+    // specific interfaces which can be overriden by allocators to be more efficient, with fallback otherwise
 public:
     /// reallocate a buffer, behaves like std::realloc
     virtual cc::byte* realloc(void* ptr, size_t old_size, size_t new_size, size_t align = alignof(std::max_align_t));
