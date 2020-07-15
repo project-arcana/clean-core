@@ -137,7 +137,7 @@ cc::byte* cc::system_allocator_t::realloc(void* ptr, cc::size_t old_size, cc::si
 #else
     if (align == alignof(std::max_align_t))
     {
-        return std::realloc(ptr, new_size);
+        return static_cast<cc::byte*>(std::realloc(ptr, new_size));
     }
     else
     {

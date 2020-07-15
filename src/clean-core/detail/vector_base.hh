@@ -171,10 +171,10 @@ public:
         else
         {
             // we can't
-            T* new_data = _alloc(size);
+            T* new_data = this->_alloc(size);
             detail::container_move_range<T>(_data, _size, new_data);
             detail::container_destroy_reverse<T>(_data, _size);
-            _free(_data);
+            this->_free(_data);
             _data = new_data;
             _capacity = size;
         }
