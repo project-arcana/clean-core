@@ -222,9 +222,9 @@ public:
             else
             {
                 // we can't
-                T* new_data = _alloc(_size);
+                T* new_data = this->_alloc(_size);
                 detail::container_move_range<T>(_data, _size, new_data);
-                _free(_data);
+                this->_free(_data);
                 _data = new_data;
                 _capacity = _size;
             }
