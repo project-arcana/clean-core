@@ -335,12 +335,15 @@ public:
 protected:
     vector_base() = default;
     // non-alloc
-    explicit constexpr vector_base(T* data, size_t size, size_t cap) : _data(data), _size(size), _capacity(cap)
+    explicit constexpr vector_base(T* data, size_t size, size_t cap) noexcept : _data(data), _size(size), _capacity(cap)
     {
         static_assert(!HasAllocator, "wrong ctor");
     }
     // alloc
-    explicit constexpr vector_base(cc::allocator* alloc) : vector_internals_with_allocator<T>(alloc) { static_assert(HasAllocator, "wrong ctor"); }
+    explicit constexpr vector_base(cc::allocator* alloc) noexcept : vector_internals_with_allocator<T>(alloc)
+    {
+        static_assert(HasAllocator, "wrong ctor");
+    }
     T* _data = nullptr;
     size_t _size = 0;
     size_t _capacity = 0;
