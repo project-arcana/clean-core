@@ -67,6 +67,11 @@ public:
 
     void reset() { _head = _buffer; }
 
+    size_t allocated_size() const { return _head - _buffer; }
+    size_t remaining_size() const { return _buffer_end - _head; }
+    size_t max_size() const { return _buffer_end - _buffer; }
+    float allocated_ratio() const { return allocated_size() / float(max_size()); }
+
     linear_allocator() = default;
     linear_allocator(cc::span<cc::byte> buffer) : _buffer(buffer.data()), _head(buffer.data()), _buffer_end(buffer.data() + buffer.size()) {}
 
