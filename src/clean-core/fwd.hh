@@ -38,6 +38,8 @@ template <class T>
 struct vector;
 template <class T, size_t N>
 struct capped_vector;
+template <class T>
+struct alloc_vector;
 
 template <class T, size_t N = dynamic_size>
 struct array;
@@ -45,6 +47,8 @@ template <class T>
 struct fwd_array;
 template <class T, size_t N>
 struct capped_array;
+template <class T>
+struct alloc_array;
 
 template <class KeyT, class ValueT, class HashT = cc::hash<KeyT>, class EqualT = cc::equal_to<void>>
 struct map;
@@ -85,4 +89,7 @@ template <class T>
 struct unique_ptr;
 template <class T>
 struct poly_unique_ptr;
+
+// allocators
+struct allocator;
 }
