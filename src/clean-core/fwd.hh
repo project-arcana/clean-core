@@ -83,6 +83,8 @@ template <class Signature>
 struct unique_function;
 template <class Signature>
 struct function_ref;
+template<class Signature>
+struct alloc_function;
 
 // smart pointer
 template <class T>

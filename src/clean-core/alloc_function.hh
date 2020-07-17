@@ -1,28 +1,26 @@
 #pragma once
 
 #include <clean-core/allocator.hh>
+#include <clean-core/always_false.hh>
 #include <clean-core/forward.hh>
 
 namespace cc
 {
-// std::function replacement, not copyable
-
-template <typename T>
-class function
-{
-    static_assert(sizeof(T*) == 0, "cc::function expects a function signature type");
-};
-
+// std::function replacement, not copyable, with allocator support
+// slightly faster than unique_function, same codegen as STL (minus exceptions):
+// https://godbolt.org/z/8fY3a5
+// https://quick-bench.com/q/sCMOpZNIacJcwOPcCYt0_95Efoc
+template<class Signature>
+struct alloc_function;
 template <class Result, class... Args>
-class function<Result(Args...)>
+struct alloc_function<Result(Args...)>
 {
 public:
-    function() = default;
-    function(decltype(nullptr)) {}
+    alloc_function() = default;
+    alloc_function(decltype(nullptr)) {}
 
-    /// constructs a function from a callable
     template <class T>
-    function(T&& callable, cc::allocator* alloc = cc::system_allocator)
+    alloc_function(T&& callable, cc::allocator* alloc = cc::system_allocator)
     {
         static_assert(std::is_invocable_r_v<Result, T, Args...>, "argument to cc::function is not callable or has the wrong signature");
         _func = [](void* ctx, Args&&... args) -> Result { return (*static_cast<T*>(ctx))(cc::forward<Args>(args)...); };
@@ -31,23 +29,23 @@ public:
         _context = alloc->new_t<T>(cc::forward<T>(callable));
     }
 
-    /// invokes the contained callable
     Result operator()(Args... args) const
     {
-        CC_ASSERT(is_valid() && "invoked a null cc::function");
+        CC_ASSERT(_context && "invoked a null cc::function");
         return (*_func)(_context, cc::forward<Args>(args)...);
     }
 
     bool is_valid() const { return _context != nullptr; }
+    explicit operator bool() const { return _context != nullptr; }
 
-    ~function() { _destroy(); }
+    ~alloc_function() { _destroy(); }
 
-    function(function&& rhs) noexcept : _func(rhs._func), _deleter(rhs._deleter), _context(rhs._context), _alloc(rhs._alloc)
+    alloc_function(alloc_function&& rhs) noexcept : _func(rhs._func), _deleter(rhs._deleter), _context(rhs._context), _alloc(rhs._alloc)
     {
         rhs._context = nullptr;
     }
 
-    function& operator=(function&& rhs) noexcept
+    alloc_function& operator=(alloc_function&& rhs) noexcept
     {
         if (this != &rhs)
         {
@@ -75,7 +73,13 @@ private:
         }
     }
 
-    function(function const&) = delete;
-    function& operator=(function const&) = delete;
+    alloc_function(alloc_function const&) = delete;
+    alloc_function& operator=(alloc_function const&) = delete;
+};
+
+template <class T>
+struct alloc_function
+{
+    static_assert(always_false<T>, "cc::function expects a function signature type");
 };
 }
