@@ -724,14 +724,14 @@ void int_to_string_impl(cc::stream_ref<char> ss, IntType value, parsed_fmt_args 
     switch (args.sign)
     {
     case ' ':
-        ss << (is_neg ? "-" : " ");
+        ss << (is_neg ? '-' : ' ');
         break;
     case '-':
         if (is_neg)
             ss << "-";
         break;
     case '+':
-        ss << (is_neg ? "-" : "+");
+        ss << (is_neg ? '-' : '+');
         break;
     }
     unsigned_to_string_impl(ss, unsigned_value, args);
@@ -798,7 +798,10 @@ void cc::to_string(cc::stream_ref<char> ss, bool value, cc::string_view fmt_str)
     auto const args = parse_args(fmt_str);
     if (args.type == 0) // default
     {
-        ss << (value ? "true" : "false");
+        if (value)
+            ss << "true";
+        else
+            ss << "false";
     }
     else
     { // handle as int

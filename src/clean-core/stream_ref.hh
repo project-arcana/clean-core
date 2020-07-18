@@ -58,13 +58,16 @@ private:
     cc::function_ref<void(span<T const>)> _append_fun;
 };
 
-/// special case: avoid ambiguous overload by explicitly caring for string literals
-inline stream_ref<char>& operator<<(stream_ref<char>& stream, char const* value) { return stream << string_view(value); }
-/// special case: explicit char arrays need not be null-terminated
+/// special case: allow passing string_literals
+/// NOTE: we do not allow "char const*" because that would bind stronger, even for genuine char arrays
 template <size_t N>
-inline stream_ref<char>& operator<<(stream_ref<char>& stream, char const (&value)[N])
+stream_ref<char>& operator<<(stream_ref<char>& stream, char const (&value)[N])
 {
-    return stream << string_view(value, N);
+    // the special case is to fix the following:
+    // char v[] = {'a', 'b'};
+    // s << v;    // should add "ab"
+    // s << "cd"; // should add "cd" (NOTE: contains a null char at the end)
+    return stream << (N > 0 && value[N - 1] == '\0' ? string_view(value, N - 1) : string_view(value, N));
 }
 
 /// creates a stream_ref from a given stream
