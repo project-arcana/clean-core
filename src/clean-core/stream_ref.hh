@@ -20,6 +20,11 @@ namespace cc
  * NOTES:
  *   - a stream_ref is copyable and cheap but must not outlive the wrapped stream
  *   - make_stream_ref<T>(...) is a helper to create commonly used streams
+ *
+ * CAUTION:
+ *   - stream_ref<char> behaves consistent with stream_ref<T>, which is inconsistent with a string stream
+ *     (e.g. s << "string" adds a null char at the end because "string" is char const[7] with a null char)
+ *     use cc::string_stream_ref if string-consistent behavior is desired
  */
 template <class T>
 struct stream_ref
@@ -56,16 +61,39 @@ public:
 
 private:
     cc::function_ref<void(span<T const>)> _append_fun;
+
+    friend struct string_stream_ref;
 };
 
-/// special case: avoid ambiguous overload by explicitly caring for string literals
-inline stream_ref<char>& operator<<(stream_ref<char>& stream, char const* value) { return stream << string_view(value); }
-/// special case: explicit char arrays need not be null-terminated
-template <size_t N>
-inline stream_ref<char>& operator<<(stream_ref<char>& stream, char const (&value)[N])
+/**
+ * a special version of stream_ref<char> that is specialized for (null-terminated) strings
+ *
+ * char buf[256];
+ * snprintf(buf, ...);
+ * s << buf; // works, searches first null char in buf
+ *
+ * char v[] = {'a', 'c'};
+ * s << v; // reads out of memory, must add '\0' to v
+ *
+ * NOTE:
+ *   - can still be created via cc::make_stream_ref<char> (or cc::make_string_stream_ref)
+ */
+struct string_stream_ref : stream_ref<char>
 {
-    return stream << string_view(value, N);
-}
+    using stream_ref<char>::stream_ref;
+    string_stream_ref(stream_ref<char> s) { _append_fun = s._append_fun; }
+
+    string_stream_ref& operator<<(char c)
+    {
+        stream_ref<char>::operator<<(c);
+        return *this;
+    }
+    string_stream_ref& operator<<(cc::string_view s)
+    {
+        stream_ref<char>::operator<<(cc::span<char const>(s));
+        return *this;
+    }
+};
 
 /// creates a stream_ref from a given stream
 /// CAUTION: stream must outlive the stream_ref!
@@ -105,5 +133,12 @@ auto make_stream_ref(Stream&& stream)
 
     else
         static_assert(cc::always_false<T, Stream>, "no idea how to make stream of given type.");
+}
+
+/// shortcut for cc::make_stream_ref<char>
+template <class Stream>
+auto make_string_stream_ref(Stream&& stream)
+{
+    return cc::make_stream_ref<char>(cc::forward<Stream>(stream));
 }
 }
