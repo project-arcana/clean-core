@@ -107,6 +107,12 @@ cc::byte* cc::stack_allocator::realloc(void* ptr, cc::size_t old_size, cc::size_
     (void)align;
     // no need to memcpy, the memory remains the same
     std::byte* const byte_ptr = static_cast<std::byte*>(ptr);
+
+    if (CC_UNLIKELY(byte_ptr + new_size > _buffer_end))
+    {
+        CC_ASSERT(false && "stack_allocator overcommited");
+        return nullptr;
+    }
     _head = byte_ptr + new_size;
     return byte_ptr;
 }
