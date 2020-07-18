@@ -73,6 +73,7 @@ template <size_t sbo_capacity>
 struct sbo_string;
 using string = sbo_string<15>;
 struct string_stream;
+struct string_stream_ref;
 
 // streams
 template <class T>
