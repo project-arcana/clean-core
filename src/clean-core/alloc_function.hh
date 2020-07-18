@@ -10,7 +10,7 @@ namespace cc
 // slightly faster than unique_function, same codegen as STL (minus exceptions):
 // https://godbolt.org/z/8fY3a5
 // https://quick-bench.com/q/sCMOpZNIacJcwOPcCYt0_95Efoc
-template<class Signature>
+template <class Signature>
 struct alloc_function;
 template <class Result, class... Args>
 struct alloc_function<Result(Args...)>
