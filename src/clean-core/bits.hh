@@ -76,6 +76,15 @@ inline uint64 bit_log2(uint64 v) { return uint64(8 * sizeof(uint64) - count_lead
 inline uint32 ceil_pow2(uint32 v) { return uint32(1) << (bit_log2(v - uint32(1)) + 1); }
 inline uint64 ceil_pow2(uint64 v) { return uint64(1) << (bit_log2(v - uint64(1)) + 1); }
 
-inline bool is_pow2(uint32 v) { return ((v & (v - uint32(1))) == 0); }
-inline bool is_pow2(uint64 v) { return ((v & (v - uint64(1))) == 0); }
+constexpr bool is_pow2(uint32 v) { return ((v & (v - uint32(1))) == 0); }
+constexpr bool is_pow2(uint64 v) { return ((v & (v - uint64(1))) == 0); }
+
+constexpr void set_bit(uint32& val, uint32 bit_idx) { val |= (uint32(1) << bit_idx); }
+constexpr void set_bit(uint64& val, uint32 bit_idx) { val |= (uint64(1) << bit_idx); }
+
+constexpr void unset_bit(uint32& val, uint32 bit_idx) { val &= ~(uint32(1) << bit_idx); }
+constexpr void unset_bit(uint64& val, uint32 bit_idx) { val &= ~(uint64(1) << bit_idx); }
+
+constexpr void flip_bit(uint32& val, uint32 bit_idx) { val ^= (uint32(1) << bit_idx); }
+constexpr void flip_bit(uint64& val, uint32 bit_idx) { val ^= (uint64(1) << bit_idx); }
 }

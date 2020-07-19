@@ -10,7 +10,7 @@
 namespace cc::detail
 {
 template <class T, class SizeT = std::size_t>
-void container_move_range(T* src, SizeT num, T* dest)
+void container_move_range(T* __restrict src, SizeT num, T* __restrict dest)
 {
     if constexpr (std::is_trivially_move_constructible_v<T> && std::is_trivially_copyable_v<T>)
     {
@@ -25,7 +25,7 @@ void container_move_range(T* src, SizeT num, T* dest)
 }
 
 template <class T, class SizeT = std::size_t>
-void container_copy_range(T const* src, SizeT num, T* dest)
+void container_copy_range(T const* __restrict src, SizeT num, T* __restrict dest)
 {
     if constexpr (std::is_trivially_copyable_v<T>)
     {

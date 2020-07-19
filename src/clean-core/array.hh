@@ -59,8 +59,25 @@ struct array
         return _values[I];
     }
 
-    constexpr bool operator==(array const& rhs) const { return cc::are_ranges_equal(*this, rhs); }
-    constexpr bool operator!=(array const& rhs) const { return cc::are_ranges_unequal(*this, rhs); }
+    bool operator==(cc::span<T const> rhs) const noexcept
+    {
+        if (N != rhs.size())
+            return false;
+        for (size_t i = 0; i < N; ++i)
+            if (!(_values[i] == rhs[i]))
+                return false;
+        return true;
+    }
+
+    bool operator!=(cc::span<T const> rhs) const noexcept
+    {
+        if (N != rhs.size())
+            return true;
+        for (size_t i = 0; i < N; ++i)
+            if (_values[i] != rhs[i])
+                return true;
+        return false;
+    }
 };
 
 // heap-allocated (runtime) fixed-size array
@@ -175,8 +192,25 @@ struct array<T, dynamic_size>
         return _data[i];
     }
 
-    constexpr bool operator==(array const& rhs) const { return cc::are_ranges_equal(*this, rhs); }
-    constexpr bool operator!=(array const& rhs) const { return cc::are_ranges_unequal(*this, rhs); }
+    bool operator==(cc::span<T const> rhs) const noexcept
+    {
+        if (_size != rhs.size())
+            return false;
+        for (size_t i = 0; i < _size; ++i)
+            if (!(_data[i] == rhs[i]))
+                return false;
+        return true;
+    }
+
+    bool operator!=(cc::span<T const> rhs) const noexcept
+    {
+        if (_size != rhs.size())
+            return true;
+        for (size_t i = 0; i < _size; ++i)
+            if (_data[i] != rhs[i])
+                return true;
+        return false;
+    }
 
 private:
     T* _data = nullptr;
