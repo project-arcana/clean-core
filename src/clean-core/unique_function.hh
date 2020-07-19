@@ -1,85 +1,95 @@
 #pragma once
 
+#include <clean-core/allocator.hh>
 #include <clean-core/always_false.hh>
-#include <clean-core/assert.hh>
 #include <clean-core/forward.hh>
-#include <clean-core/fwd.hh>
-#include <clean-core/move.hh>
-
-#include <type_traits>
+#include <clean-core/function_ptr.hh>
 
 namespace cc
 {
 /**
- * A move-only type-erased owning function wrapper
+ * std::function replacement, not copyable, with allocator support
  *
  * NOTE: empty unique_functions can be created but not called!
+ *
+ * same codegen at execute as STL (minus exceptions):
+ * https://godbolt.org/z/8fY3a5
+ * https://quick-bench.com/q/sCMOpZNIacJcwOPcCYt0_95Efoc
  *
  * TODO: sbo_ and capped_ versions
  * TODO: deduction guides
  * TODO: member functions
  */
+template <class Signature>
+struct unique_function;
 template <class Result, class... Args>
 struct unique_function<Result(Args...)>
 {
-private:
-    struct holder_base
-    {
-        virtual Result operator()(Args... args) const = 0;
-        virtual ~holder_base() = default;
-    };
-    template <class F>
-    struct holder : holder_base
-    {
-        F _fun;
-        holder(F&& f) : _fun(cc::move(f)) {}
-        Result operator()(Args... args) const override { return _fun(cc::forward<Args>(args)...); }
-    };
-
-    // operations
-public:
-    Result operator()(Args... args) const
-    {
-        CC_CONTRACT(_fun);
-        return (*_fun)(cc::forward<Args>(args)...);
-    }
-
-    explicit operator bool() const { return _fun != nullptr; }
-
-    template <class F, class = std::enable_if_t<!std::is_same_v<std::decay_t<F>, unique_function>>>
-    unique_function(F&& f)
-    {
-        static_assert(std::is_invocable_r_v<Result, F, Args...>);
-        _fun = new holder<F>(cc::move(f));
-    }
-
-    // move-only type
 public:
     unique_function() = default;
-    unique_function(unique_function&& rhs) noexcept
+    unique_function(decltype(nullptr)) {}
+
+    template <class T>
+    unique_function(T&& callable, cc::allocator* alloc = cc::system_allocator)
     {
-        _fun = rhs._fun;
-        rhs._fun = nullptr;
+        using CallableT = std::decay_t<T>;
+        static_assert(std::is_invocable_r_v<Result, CallableT, Args...>, "argument to cc::unique_function is not callable or has the wrong "
+                                                                         "signature");
+
+        _func = [](void* ctx, Args&&... args) -> Result { return (*static_cast<CallableT*>(ctx))(cc::forward<Args>(args)...); };
+        _deleter = [](void* ctx, cc::allocator* alloc) { alloc->delete_t<CallableT>(static_cast<CallableT*>(ctx)); };
+        _alloc = alloc;
+        _context = alloc->new_t<CallableT>(cc::forward<CallableT>(callable));
     }
+
+    Result operator()(Args... args) const
+    {
+        CC_ASSERT(_context && "invoked a null cc::unique_function");
+        return (*_func)(_context, cc::forward<Args>(args)...);
+    }
+
+    bool is_valid() const { return _context != nullptr; }
+    explicit operator bool() const { return _context != nullptr; }
+
+    ~unique_function() { _destroy(); }
+
+    unique_function(unique_function&& rhs) noexcept : _func(rhs._func), _deleter(rhs._deleter), _context(rhs._context), _alloc(rhs._alloc)
+    {
+        rhs._context = nullptr;
+    }
+
     unique_function& operator=(unique_function&& rhs) noexcept
     {
-        delete _fun;
-        _fun = rhs._fun;
-        rhs._fun = nullptr;
+        _destroy();
+        _func = rhs._func;
+        _deleter = rhs._deleter;
+        _alloc = rhs._alloc;
+        _context = rhs._context;
+        rhs._context = nullptr;
         return *this;
     }
+
+private:
+    cc::function_ptr<Result(void*, Args&&...)> _func = nullptr;
+    cc::function_ptr<void(void*, cc::allocator*)> _deleter = nullptr;
+    cc::allocator* _alloc = nullptr;
+    void* _context = nullptr;
+
+    void _destroy()
+    {
+        if (_context != nullptr)
+        {
+            (*_deleter)(_context, _alloc);
+        }
+    }
+
     unique_function(unique_function const&) = delete;
     unique_function& operator=(unique_function const&) = delete;
-    ~unique_function() { delete _fun; }
-
-    // members
-private:
-    holder_base* _fun = nullptr;
 };
 
 template <class T>
 struct unique_function
 {
-    static_assert(always_false<T>, "template arg is not a function signature");
+    static_assert(always_false<T>, "cc::unique_function expects a function signature type");
 };
 }
