@@ -10,7 +10,9 @@ struct alloc_vector : public detail::vector_base<T, true>
 {
     // ctors
 public:
-    explicit alloc_vector(cc::allocator* allocator = cc::system_allocator) noexcept : detail::vector_base<T, true>(allocator)
+    alloc_vector() noexcept : detail::vector_base<T, true>(cc::system_allocator) {}
+
+    explicit alloc_vector(cc::allocator* allocator) noexcept : detail::vector_base<T, true>(allocator)
     {
         CC_CONTRACT(allocator != nullptr);
     }

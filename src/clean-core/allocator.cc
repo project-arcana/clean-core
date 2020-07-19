@@ -55,11 +55,7 @@ cc::byte* cc::linear_allocator::alloc(cc::size_t size, cc::size_t align)
 
     auto* const padded_res = align_up(_head, align);
 
-    if (CC_UNLIKELY(padded_res + size > _buffer_end))
-    {
-        CC_UNREACHABLE("linear_allocator overcommitted");
-        return nullptr;
-    }
+    CC_ASSERT(padded_res + size <= _buffer_end && "linear_allocator overcommitted");
 
     _head = padded_res + size;
     return padded_res;
@@ -71,11 +67,7 @@ cc::byte* cc::stack_allocator::alloc(cc::size_t size, cc::size_t align)
 
     auto* const padded_res = align_up_with_header(_head, align, sizeof(stack_alloc_header));
 
-    if (CC_UNLIKELY(padded_res + size > _buffer_end))
-    {
-        CC_UNREACHABLE("stack_allocator overcommitted");
-        return nullptr;
-    }
+    CC_ASSERT(padded_res + size <= _buffer_end && "stack_allocator overcommitted");
 
     stack_alloc_header const header{size_t(padded_res - _head)};
     std::memcpy(padded_res - sizeof(header), &header, sizeof(header));
@@ -108,11 +100,8 @@ cc::byte* cc::stack_allocator::realloc(void* ptr, cc::size_t old_size, cc::size_
     // no need to memcpy, the memory remains the same
     std::byte* const byte_ptr = static_cast<std::byte*>(ptr);
 
-    if (CC_UNLIKELY(byte_ptr + new_size > _buffer_end))
-    {
-        CC_UNREACHABLE("stack_allocator overcommitted");
-        return nullptr;
-    }
+    CC_ASSERT(byte_ptr + new_size <= _buffer_end && "stack_allocator overcommitted");
+
     _head = byte_ptr + new_size;
     return byte_ptr;
 }

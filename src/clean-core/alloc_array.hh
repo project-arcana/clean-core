@@ -18,7 +18,9 @@ struct alloc_array
 {
     static_assert(sizeof(T) > 0, "cannot make alloc_array of incomplete object");
 
-    explicit alloc_array(cc::allocator* allocator = cc::system_allocator) : _allocator(allocator) { CC_CONTRACT(allocator != nullptr); }
+    alloc_array() : _allocator(cc::system_allocator) {}
+
+    explicit alloc_array(cc::allocator* allocator) : _allocator(allocator) { CC_CONTRACT(allocator != nullptr); }
 
     explicit alloc_array(size_t size, cc::allocator* allocator = cc::system_allocator) : alloc_array(allocator)
     {
@@ -94,14 +96,6 @@ struct alloc_array
         _data = _alloc(new_size);
         for (size_t i = 0; i < new_size; ++i)
             new (placement_new, &_data[i]) T(value);
-    }
-
-    void destroy()
-    {
-        _destroy();
-        _size = 0;
-        _data = nullptr;
-        _allocator = cc::system_allocator;
     }
 
     constexpr T* begin() { return _data; }
