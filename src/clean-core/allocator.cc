@@ -25,7 +25,7 @@ template <class T>
     return align_up_masked(value, alignment - 1);
 }
 
-inline std::byte* align_up_with_header(std::byte* head, size_t align, size_t header_size)
+std::byte* align_up_with_header(std::byte* head, size_t align, size_t header_size)
 {
     std::byte* padded_res = align_up(head, align);
     size_t const padding = size_t(padded_res - head);
@@ -57,7 +57,7 @@ cc::byte* cc::linear_allocator::alloc(cc::size_t size, cc::size_t align)
 
     if (CC_UNLIKELY(padded_res + size > _buffer_end))
     {
-        CC_ASSERT(false && "linear_allocator overcommited");
+        CC_UNREACHABLE("linear_allocator overcommitted");
         return nullptr;
     }
 
@@ -73,7 +73,7 @@ cc::byte* cc::stack_allocator::alloc(cc::size_t size, cc::size_t align)
 
     if (CC_UNLIKELY(padded_res + size > _buffer_end))
     {
-        CC_ASSERT(false && "stack_allocator overcommited");
+        CC_UNREACHABLE("stack_allocator overcommitted");
         return nullptr;
     }
 
@@ -110,7 +110,7 @@ cc::byte* cc::stack_allocator::realloc(void* ptr, cc::size_t old_size, cc::size_
 
     if (CC_UNLIKELY(byte_ptr + new_size > _buffer_end))
     {
-        CC_ASSERT(false && "stack_allocator overcommited");
+        CC_UNREACHABLE("stack_allocator overcommitted");
         return nullptr;
     }
     _head = byte_ptr + new_size;

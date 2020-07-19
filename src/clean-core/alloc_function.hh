@@ -3,6 +3,7 @@
 #include <clean-core/allocator.hh>
 #include <clean-core/always_false.hh>
 #include <clean-core/forward.hh>
+#include <clean-core/function_ptr.hh>
 
 namespace cc
 {
@@ -47,21 +48,18 @@ public:
 
     alloc_function& operator=(alloc_function&& rhs) noexcept
     {
-        if (this != &rhs)
-        {
-            _destroy();
-            _func = rhs._func;
-            _deleter = rhs._deleter;
-            _alloc = rhs._alloc;
-            _context = rhs._context;
-            rhs._context = nullptr;
-        }
+        _destroy();
+        _func = rhs._func;
+        _deleter = rhs._deleter;
+        _alloc = rhs._alloc;
+        _context = rhs._context;
+        rhs._context = nullptr;
         return *this;
     }
 
 private:
-    Result (*_func)(void*, Args&&...) = nullptr;
-    void (*_deleter)(void*, cc::allocator*) = nullptr;
+    cc::function_ptr<Result(void*, Args&&...)> _func = nullptr;
+    cc::function_ptr<void(void*, cc::allocator*)> _deleter = nullptr;
     cc::allocator* _alloc = nullptr;
     void* _context = nullptr;
 

@@ -8,7 +8,7 @@
 
 namespace cc
 {
-struct allocator : public cc::polymorphic
+struct allocator : cc::polymorphic
 {
     /// allocate a buffer with specified size and alignment
     [[nodiscard]] virtual cc::byte* alloc(size_t size, size_t align = alignof(std::max_align_t)) = 0;
@@ -118,8 +118,8 @@ public:
     system_allocator_t() = default;
 };
 
-static cc::system_allocator_t system_allocator_instance = {};
-static cc::allocator* const system_allocator = &system_allocator_instance;
+inline cc::system_allocator_t system_allocator_instance;
+inline constexpr cc::allocator* const system_allocator = &system_allocator_instance;
 
 //
 // implementation below
