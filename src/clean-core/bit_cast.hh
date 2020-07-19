@@ -10,7 +10,6 @@ template <class To, class From>
 {
     static_assert(std::is_trivially_copyable_v<To>, "only supported for trivially copyable types");
     static_assert(std::is_trivially_copyable_v<From>, "only supported for trivially copyable types");
-    static_assert(!std::is_same_v<To, From>, "identity bitcast");
     static_assert(sizeof(To) == sizeof(From), "only supported if types have the same size");
     To dst;
     std::memcpy(&dst, &src, sizeof(To));
