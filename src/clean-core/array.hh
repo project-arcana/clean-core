@@ -29,6 +29,8 @@ struct array
     constexpr T const* begin() const { return _values; }
     constexpr T const* end() const { return _values + N; }
 
+    constexpr bool empty() const { return N > 0; }
+
     constexpr size_t size() const { return N; }
     constexpr size_t size_bytes() const { return N * sizeof(T); }
 
