@@ -72,6 +72,8 @@ public:
     template <class T = KeyT>
     ValueT& get(T const& key)
     {
+        CC_ASSERT(_size > 0 && "cannot get from an empty map");
+
         auto idx = this->_get_location(key);
         for (auto& e : _entries[idx])
             if (EqualT{}(e.key, key))
@@ -82,12 +84,30 @@ public:
     template <class T = KeyT>
     ValueT const& get(T const& key) const
     {
+        CC_ASSERT(_size > 0 && "cannot get from an empty map");
+
         auto idx = this->_get_location(key);
         for (auto& e : _entries[idx])
             if (EqualT{}(e.key, key))
                 return e.value;
 
         CC_UNREACHABLE("key not found");
+    }
+
+    /// looks up the given key and returns the element
+    /// returns default_val if key not found
+    template <class T = KeyT>
+    ValueT const& get_or(T const& key, ValueT const& default_val) const
+    {
+        if (_size == 0)
+            return default_val;
+
+        auto idx = this->_get_location(key);
+        for (auto& e : _entries[idx])
+            if (EqualT{}(e.key, key))
+                return e.value;
+
+        return default_val;
     }
 
     /// removes a key from the map
@@ -247,6 +267,7 @@ public:
 
     // helper
 private:
+    /// NOTE: only works for non-empty maps
     template <class T>
     size_t _get_location(T const& key) const
     {
