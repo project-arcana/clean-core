@@ -53,7 +53,7 @@ public:
 
     ~unique_function() { _destroy(); }
 
-    unique_function(unique_function&& rhs) noexcept : _func(rhs._func), _deleter(rhs._deleter), _context(rhs._context), _alloc(rhs._alloc)
+    unique_function(unique_function&& rhs) noexcept : _func(rhs._func), _deleter(rhs._deleter), _alloc(rhs._alloc), _context(rhs._context)
     {
         rhs._context = nullptr;
     }
