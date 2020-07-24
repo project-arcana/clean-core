@@ -3,8 +3,6 @@
 #include <clean-core/macros.hh>
 #include <clean-core/typedefs.hh>
 
-#include <immintrin.h>
-
 #ifdef CC_COMPILER_MSVC
 #include <intrin.h>
 #else
@@ -22,10 +20,21 @@ inline int popcount(uint16 v) { return int(__popcnt16(v)); }
 inline int popcount(uint32 v) { return int(__popcnt(v)); }
 inline int popcount(uint64 v) { return int(__popcnt64(v)); }
 
-// NOTE: TZCNT is de-facto always supported if LZCNT is, but it's nominally part of BMI1
-#ifdef __BMI__
+// NOTE: the _lzcnt_u32/_tzcnt_u32 intrinsics don't care about compilation target arch, they always output T/LZCNT
+// however LZCNT, on an assembly level, falls back to plain BSR if LZCNT isn't supported
+// if unsupported, we work around this using (explicit) BSR, XOR, SUB and a branch on 0
+// LZCNT support: Intel: Haswell (4th gen Core-i, 2013), AMD: Piledriver (ABM, 2012)
+// TZCNT is de-facto always supported if LZCNT is, but it's nominally part of BMI1
+// MSVC has no macro for LZCNT/BMI1 specifically, but AVX2 always includes it
+// only a few AMD CPUs after piledriver (pre-Zen) are incorrectly excluded by this approximation
+#ifdef __AVX2__
 inline int count_trailing_zeros(uint32 v) { return int(_tzcnt_u32(v)); }
 inline int count_trailing_zeros(uint64 v) { return int(_tzcnt_u64(v)); }
+
+inline int count_leading_zeros(uint8 v) { return int(_lzcnt_u32(v) - 24); }
+inline int count_leading_zeros(uint16 v) { return int(_lzcnt_u32(v) - 16); }
+inline int count_leading_zeros(uint32 v) { return int(_lzcnt_u32(v)); }
+inline int count_leading_zeros(uint64 v) { return int(_lzcnt_u64(v)); }
 #else
 inline int count_trailing_zeros(uint32 v)
 {
@@ -43,20 +52,7 @@ inline int count_trailing_zeros(uint64 v)
     _BitScanForward64(&idx, v);
     return int(idx);
 }
-#endif
 
-
-// NOTE: the __lzcnt intrinsic doesn't care about compilation target arch, it always outputs LZCNT
-// however LZCNT, on an assembly level, falls back to plain BSR if LZCNT isn't supported
-// __LZCNT__ is defined if compiling with a target arch that supports LZCNT (like AVX2)
-// if not, we work around this using (explicit) BSR, XOR, SUB and a branch on 0
-// LZCNT support: Intel: Haswell (4th gen Core-i, 2013), AMD: Piledriver (ABM, 2012)
-#ifdef __LZCNT__
-inline int count_leading_zeros(uint8 v) { return int(__lzcnt16(v) - 8); }
-inline int count_leading_zeros(uint16 v) { return int(__lzcnt16(v)); }
-inline int count_leading_zeros(uint32 v) { return int(__lzcnt(v)); }
-inline int count_leading_zeros(uint64 v) { return int(__lzcnt64(v)); }
-#else
 inline int count_leading_zeros(uint8 v)
 {
     if (v == 0)
