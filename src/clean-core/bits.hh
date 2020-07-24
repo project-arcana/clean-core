@@ -3,6 +3,8 @@
 #include <clean-core/macros.hh>
 #include <clean-core/typedefs.hh>
 
+#include <immintrin.h>
+
 #ifdef CC_COMPILER_MSVC
 #include <intrin.h>
 #else
@@ -20,30 +22,29 @@ inline int popcount(uint16 v) { return int(__popcnt16(v)); }
 inline int popcount(uint32 v) { return int(__popcnt(v)); }
 inline int popcount(uint64 v) { return int(__popcnt64(v)); }
 
-inline int count_trailing_zeros(uint8 v)
-{
-    unsigned long idx;
-    _BitScanForward(&idx, v);
-    return int(idx);
-}
-inline int count_trailing_zeros(uint16 v)
-{
-    unsigned long idx;
-    _BitScanForward(&idx, v);
-    return int(idx);
-}
+// NOTE: TZCNT is de-facto always supported if LZCNT is, but it's nominally part of BMI1
+#ifdef __BMI__
+inline int count_trailing_zeros(uint32 v) { return int(_tzcnt_u32(v)); }
+inline int count_trailing_zeros(uint64 v) { return int(_tzcnt_u64(v)); }
+#else
 inline int count_trailing_zeros(uint32 v)
 {
+    if (v == 0)
+        return 32;
     unsigned long idx;
     _BitScanForward(&idx, v);
     return int(idx);
 }
 inline int count_trailing_zeros(uint64 v)
 {
+    if (v == 0)
+        return 64;
     unsigned long idx;
     _BitScanForward64(&idx, v);
     return int(idx);
 }
+#endif
+
 
 // NOTE: the __lzcnt intrinsic doesn't care about compilation target arch, it always outputs LZCNT
 // however LZCNT, on an assembly level, falls back to plain BSR if LZCNT isn't supported
@@ -90,11 +91,11 @@ inline int count_leading_zeros(uint64 v)
 }
 #endif
 
-inline int get_cpuid_register(int level, int register_index)
+inline bool test_cpuid_register(int level, int register_index, int bit_index)
 {
     int info[4];
     __cpuid(info, level);
-    return info[register_index];
+    return (info[register_index] >> bit_index) != 0;
 }
 
 #else
@@ -104,10 +105,13 @@ inline int popcount(uint16 v) { return __builtin_popcount(v); }
 inline int popcount(uint32 v) { return __builtin_popcount(v); }
 inline int popcount(uint64 v) { return __builtin_popcountll(v); }
 
-inline int count_trailing_zeros(uint8 v) { return __builtin_ctz(v); }
-inline int count_trailing_zeros(uint16 v) { return __builtin_ctz(v); }
-inline int count_trailing_zeros(uint32 v) { return __builtin_ctz(v); }
-inline int count_trailing_zeros(uint64 v) { return __builtin_ctzll(v); }
+#ifdef __BMI__
+inline int count_trailing_zeros(uint32 v) { return int(_tzcnt_u32(v)); }
+inline int count_trailing_zeros(uint64 v) { return int(_tzcnt_u64(v)); }
+#else
+inline int count_trailing_zeros(uint32 v) { return v ? __builtin_ctz(v) : 32; }
+inline int count_trailing_zeros(uint64 v) { return v ? __builtin_ctzll(v) : 64; }
+#endif
 
 // NOTE: __builtin_clz by default compiles to "BSR <ret>, <val>; XOR <ret>, 31"
 // Only with -mlzcnt (or -march=...) does it compile to LZCNT proper.
@@ -126,21 +130,19 @@ inline int count_leading_zeros(uint32 v) { return v ? __builtin_clz(v) : 32; }
 inline int count_leading_zeros(uint64 v) { return v ? __builtin_clzll(v) : 64; }
 #endif
 
-inline int get_cpuid_register(int level, int register_index)
+inline bool test_cpuid_register(int level, int register_index, int bit_index)
 {
     unsigned info[4];
     __get_cpuid(level, &info[0], &info[1], &info[2], &info[3]);
-    return info[register_index];
+    return (info[register_index] >> bit_index) != 0;
 }
 #endif
 
 // returns true if the executing CPU has support for LZCNT
 // Intel: Haswell (4th gen Core-i, 2013), AMD: Piledriver (ABM, 2012)
-inline bool test_cpu_support_lzcnt()
-{
-    // bit 5 of ECX, see https://docs.microsoft.com/en-us/cpp/intrinsics/lzcnt16-lzcnt-lzcnt64?view=vs-2019
-    return (get_cpuid_register(0x80000001, 2) & 0b10000) != 0;
-}
+inline bool test_cpu_support_lzcnt() { return test_cpuid_register(0x80000001, 2, 5); }
+// returns true if the executing CPU has support for POPCNT
+inline bool test_cpu_support_popcount() { return test_cpuid_register(0x00000001, 2, 23); }
 
 // returns rounded down logarithm to base 2
 inline uint32 bit_log2(uint32 v) { return uint32(8 * sizeof(uint32) - count_leading_zeros(v) - 1); }
