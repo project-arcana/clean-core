@@ -162,21 +162,26 @@ public:
         if (size <= _capacity)
             return;
 
+        // at least double cap
+        auto new_cap = _capacity << 1;
+        if (new_cap < size)
+            new_cap = size;
+
         if constexpr (std::is_trivially_copyable_v<T> && std::is_trivially_destructible_v<T>)
         {
             // we can use realloc
-            _data = this->_realloc(_data, _capacity, size);
-            _capacity = size;
+            _data = this->_realloc(_data, _capacity, new_cap);
+            _capacity = new_cap;
         }
         else
         {
             // we can't
-            T* new_data = this->_alloc(size);
+            T* new_data = this->_alloc(new_cap);
             detail::container_move_range<T>(_data, _size, new_data);
             detail::container_destroy_reverse<T>(_data, _size);
             this->_free(_data);
             _data = new_data;
-            _capacity = size;
+            _capacity = new_cap;
         }
     }
 
