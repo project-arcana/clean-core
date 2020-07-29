@@ -29,6 +29,7 @@ struct unwrap_reference_wrapper<std::reference_wrapper<T>>
 
 } // namespace detail
 
+// currently only used in invoke.hh
 template <class T>
 constexpr bool is_reference_wrapper = detail::test_reference_wrapper<T>::value;
 
