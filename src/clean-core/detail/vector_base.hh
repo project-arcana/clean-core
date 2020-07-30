@@ -7,6 +7,7 @@
 
 #include <clean-core/allocator.hh>
 #include <clean-core/assert.hh>
+#include <clean-core/collection_traits.hh>
 #include <clean-core/detail/container_impl_util.hh>
 #include <clean-core/forward.hh>
 #include <clean-core/fwd.hh>
@@ -148,6 +149,18 @@ public:
     T& push_back(T const& value) { return emplace_back(value); }
     /// adds an element at the end
     T& push_back(T&& value) { return emplace_back(cc::move(value)); }
+
+    /// adds all elements of the range
+    template <class Range>
+    void push_back_range(Range&& range)
+    {
+        // TODO: a few optimizations are possible here (like moving or in-place construction)
+        static_assert(cc::is_any_range<Range>);
+        if constexpr (collection_traits<Range>::has_size)
+            this->reserve(_size + cc::collection_size(range));
+        for (auto&& v : range)
+            this->push_back(v);
+    }
 
     /// removes the last element
     void pop_back()
