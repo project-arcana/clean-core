@@ -119,7 +119,7 @@ public:
 };
 
 inline cc::system_allocator_t system_allocator_instance;
-inline constexpr cc::allocator* const system_allocator = &system_allocator_instance;
+inline cc::allocator* const system_allocator = &system_allocator_instance;
 
 //
 // implementation below

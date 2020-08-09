@@ -93,4 +93,5 @@ struct poly_unique_ptr;
 
 // allocators
 struct allocator;
+extern allocator* const system_allocator;
 }
