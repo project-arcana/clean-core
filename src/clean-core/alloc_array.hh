@@ -16,9 +16,7 @@ namespace cc
 template <class T>
 struct alloc_array
 {
-    static_assert(sizeof(T) > 0, "cannot make alloc_array of incomplete object");
-
-    alloc_array() : _allocator(cc::system_allocator) {}
+    alloc_array() : _allocator(cc::system_allocator) { static_assert(sizeof(T) > 0, "cannot make alloc_array of incomplete object"); }
 
     explicit alloc_array(cc::allocator* allocator) : _allocator(allocator) { CC_CONTRACT(allocator != nullptr); }
 
@@ -87,7 +85,11 @@ struct alloc_array
     alloc_array(alloc_array const& a) = delete;
     alloc_array& operator=(alloc_array const& a) = delete;
 
-    ~alloc_array() { _destroy(); }
+    ~alloc_array()
+    {
+        static_assert(sizeof(T) > 0, "alloc_array destructor requires complete type");
+        _destroy();
+    }
 
     void resize(size_t new_size, T const& value = {})
     {
