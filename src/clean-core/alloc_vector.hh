@@ -95,6 +95,26 @@ public:
 
     alloc_vector(alloc_vector const& rhs) = delete;
     alloc_vector& operator=(alloc_vector const& rhs) = delete;
+
+    /// destroy contents, reset to a new allocator and reserve
+    void reset_reserve(cc::allocator* new_allocator, size_t reserve_size)
+    {
+        // destroy
+        if (this->_data)
+        {
+            detail::container_destroy_reverse<T>(this->_data, this->_size);
+            this->_free(this->_data);
+            this->_data = nullptr;
+            this->_size = 0;
+            this->_capacity = 0;
+        }
+        // now in moved-from state
+
+        // reset allocator and reserve
+        CC_CONTRACT(new_allocator != nullptr);
+        this->_allocator = new_allocator;
+        this->reserve(reserve_size);
+    }
 };
 
 // hash

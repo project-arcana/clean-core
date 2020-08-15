@@ -151,12 +151,18 @@ inline uint64 ceil_pow2(uint64 v) { return uint64(1) << (bit_log2(v - uint64(1))
 constexpr bool is_pow2(uint32 v) { return ((v & (v - uint32(1))) == 0); }
 constexpr bool is_pow2(uint64 v) { return ((v & (v - uint64(1))) == 0); }
 
+constexpr void set_bit(uint8& val, uint32 bit_idx) { val |= (uint8(1) << bit_idx); }
+constexpr void set_bit(uint16& val, uint32 bit_idx) { val |= (uint16(1) << bit_idx); }
 constexpr void set_bit(uint32& val, uint32 bit_idx) { val |= (uint32(1) << bit_idx); }
 constexpr void set_bit(uint64& val, uint32 bit_idx) { val |= (uint64(1) << bit_idx); }
 
+constexpr void unset_bit(uint8& val, uint32 bit_idx) { val &= ~(uint8(1) << bit_idx); }
+constexpr void unset_bit(uint16& val, uint32 bit_idx) { val &= ~(uint16(1) << bit_idx); }
 constexpr void unset_bit(uint32& val, uint32 bit_idx) { val &= ~(uint32(1) << bit_idx); }
 constexpr void unset_bit(uint64& val, uint32 bit_idx) { val &= ~(uint64(1) << bit_idx); }
 
+constexpr void flip_bit(uint8& val, uint32 bit_idx) { val ^= (uint8(1) << bit_idx); }
+constexpr void flip_bit(uint16& val, uint32 bit_idx) { val ^= (uint16(1) << bit_idx); }
 constexpr void flip_bit(uint32& val, uint32 bit_idx) { val ^= (uint32(1) << bit_idx); }
 constexpr void flip_bit(uint64& val, uint32 bit_idx) { val ^= (uint64(1) << bit_idx); }
 }
