@@ -118,8 +118,8 @@ public:
     system_allocator_t() = default;
 };
 
-inline cc::system_allocator_t system_allocator_instance;
-inline cc::allocator* const system_allocator = &system_allocator_instance;
+extern cc::system_allocator_t system_allocator_instance;
+extern allocator* const system_allocator;
 
 //
 // implementation below

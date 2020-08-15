@@ -155,6 +155,9 @@ cc::byte* cc::system_allocator_t::realloc(void* ptr, cc::size_t old_size, cc::si
 #endif
 }
 
+cc::system_allocator_t cc::system_allocator_instance = {};
+cc::allocator* const cc::system_allocator = &cc::system_allocator_instance;
+
 cc::byte* cc::allocator::realloc(void* ptr, cc::size_t old_size, cc::size_t new_size, cc::size_t align)
 {
     cc::byte* res = nullptr;
