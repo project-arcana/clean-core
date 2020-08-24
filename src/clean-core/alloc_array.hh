@@ -91,6 +91,26 @@ struct alloc_array
         _destroy();
     }
 
+    void reset(cc::allocator* new_allocator, size_t new_size = 0, T const& new_value = {})
+    {
+        _destroy();
+
+        CC_CONTRACT(new_allocator != nullptr);
+        _allocator = new_allocator;
+        _size = new_size;
+
+        if (new_size > 0)
+        {
+            _data = _alloc(new_size);
+            for (size_t i = 0; i < new_size; ++i)
+                new (placement_new, &_data[i]) T(new_value);
+        }
+        else
+        {
+            _data = nullptr;
+        }
+    }
+
     void resize(size_t new_size, T const& value = {})
     {
         _destroy();
