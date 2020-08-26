@@ -17,6 +17,9 @@ namespace cc
  * - hash function and comparison are customizable
  * - provides heterogeneous key lookup by default
  *
+ * NOTE:
+ * - currently guarantees pointer stability for values (TODO: should we keep this?)
+ *
  * TODO:
  * - emplace functions
  */
