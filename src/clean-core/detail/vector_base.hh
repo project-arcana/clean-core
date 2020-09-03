@@ -149,6 +149,24 @@ public:
     /// adds an element at the end
     T& push_back(T&& value) { return emplace_back(cc::move(value)); }
 
+    /// adds multiple elements at the end
+    void push_back_span(cc::span<T const> value_range)
+    {
+        this->reserve(_size + value_range.size());
+        if constexpr (std::is_trivially_copyable_v<T> && std::is_trivially_destructible_v<T>)
+        {
+            std::memcpy(&_data[_size], value_range.data(), value_range.size_bytes());
+            _size += value_range.size();
+        }
+        else
+        {
+            for (T const& val : value_range)
+            {
+                emplace_back(val);
+            }
+        }
+    }
+
     /// removes the last element
     void pop_back()
     {
