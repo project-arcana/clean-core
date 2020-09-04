@@ -47,78 +47,8 @@ bool cc::win32_get_version(unsigned& out_major, unsigned& out_minor, unsigned& o
     return true;
 }
 
-bool cc::win32_enable_schedular_granular()
-{
-    // Barely documented behavior of timeBeginPeriod,
-    // sets the OS scheduler timeslice to the given value in milliseconds
-    // in practice an argument of 1 ends up at ~.7ms
-    // see:
-    //   https://docs.microsoft.com/en-us/windows/win32/api/timeapi/nf-timeapi-timebeginperiod
-    //   https://hero.handmade.network/episode/code/day018/#3200
-
-    // This change is global and should be undone at shutdown
-    // It should not be called often (ideally just once)
-
-    HMODULE hModWinmm = LoadLibrary("Winmm.dll");
-
-    if (hModWinmm == NULL)
-        return false;
-
-    CC_DEFER { ::FreeLibrary(hModWinmm); };
-
-    typedef UINT(WINAPI * timeBeginPeriodPtr)(_In_ UINT);
-    auto const f_timeBeginPeriod = (timeBeginPeriodPtr)::GetProcAddress(hModWinmm, "timeBeginPeriod");
-
-    if (f_timeBeginPeriod == nullptr)
-        return false;
-
-    return f_timeBeginPeriod(1) == 0 /*TIMERR_NOERROR*/;
-}
-
-bool cc::win32_disable_scheduler_granular()
-{
-    // Undos the change to the OS scheduler, the "period" specified must
-    // be the same as in the first call
-
-    HMODULE hModWinmm = LoadLibrary("Winmm.dll");
-
-    if (hModWinmm == NULL)
-        return false;
-
-    CC_DEFER { ::FreeLibrary(hModWinmm); };
-
-    typedef UINT(WINAPI * timeEndPeriodPtr)(_In_ UINT);
-    auto const f_timeEndPeriod = (timeEndPeriodPtr)::GetProcAddress(hModWinmm, "timeEndPeriod");
-
-    if (f_timeEndPeriod == nullptr)
-        return false;
-
-    return f_timeEndPeriod(1) == 0 /*TIMERR_NOERROR*/;
-}
-
-
-bool cc::win32_enable_console_colors()
-{
-    ::HANDLE const console_handle = ::GetStdHandle(STD_OUTPUT_HANDLE);
-    if (console_handle == INVALID_HANDLE_VALUE)
-        return false;
-
-    ::DWORD prev_mode;
-    if (!::GetConsoleMode(console_handle, &prev_mode))
-        return false;
-
-    prev_mode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
-    if (!::SetConsoleMode(console_handle, prev_mode))
-        return false;
-
-    return true;
-}
-
 #else
 
 bool cc::win32_get_version(unsigned&, unsigned&, unsigned&) { return false; }
-bool cc::win32_enable_schedular_granular() { return false; }
-bool cc::win32_disable_scheduler_granular() { return false; }
-bool cc::win32_enable_console_colors() { return false; }
 
 #endif
