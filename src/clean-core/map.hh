@@ -6,11 +6,23 @@
 #include <clean-core/forward_list.hh>
 #include <clean-core/fwd.hh>
 #include <clean-core/hash.hh>
+#include <clean-core/is_range.hh>
 #include <clean-core/pair.hh>
 #include <clean-core/sentinel.hh>
 
 namespace cc
 {
+/**
+ * A general-purpose hash-based map
+ * - hash function and comparison are customizable
+ * - provides heterogeneous key lookup by default
+ *
+ * NOTE:
+ * - currently guarantees pointer stability for values (TODO: should we keep this?)
+ *
+ * TODO:
+ * - emplace functions
+ */
 template <class KeyT, class ValueT, class HashT, class EqualT>
 struct map
 {
@@ -40,6 +52,10 @@ public:
     // ctors
 public:
     map() = default;
+    map(map const&) = default;
+    map(map&&) = default;
+    map& operator=(map const&) = default;
+    map& operator=(map&&) = default;
 
     /// creates a map and adds all key-value pairs
     map(std::initializer_list<pair<KeyT const, ValueT>> entries)
@@ -47,6 +63,17 @@ public:
         reserve(entries.size());
         for (auto&& kvp : entries)
             operator[](kvp.first) = kvp.second;
+    }
+
+    /// creates a map from a range with pair-like entries
+    /// TODO: more specific SFINAE?
+    /// TODO: make sure it doesn't interfere with copy ctor?
+    /// TODO: use emplace and move if range is rvalue ref
+    template <class Range, cc::enable_if<cc::is_any_range<Range>> = true>
+    explicit map(Range&& range)
+    {
+        for (auto&& [key, value] : range)
+            operator[](key) = value;
     }
 
     // operators
@@ -72,6 +99,8 @@ public:
     template <class T = KeyT>
     ValueT& get(T const& key)
     {
+        CC_ASSERT(_size > 0 && "cannot get from an empty map");
+
         auto idx = this->_get_location(key);
         for (auto& e : _entries[idx])
             if (EqualT{}(e.key, key))
@@ -82,12 +111,68 @@ public:
     template <class T = KeyT>
     ValueT const& get(T const& key) const
     {
+        CC_ASSERT(_size > 0 && "cannot get from an empty map");
+
         auto idx = this->_get_location(key);
         for (auto& e : _entries[idx])
             if (EqualT{}(e.key, key))
                 return e.value;
 
         CC_UNREACHABLE("key not found");
+    }
+
+    /// looks up the given key and (if found) returns a pointer to the value
+    /// returns nullptr if not found
+    template <class T = KeyT>
+    ValueT* get_ptr(T const& key)
+    {
+        if (_size == 0)
+            return nullptr;
+
+        auto idx = this->_get_location(key);
+        for (auto& e : _entries[idx])
+            if (EqualT{}(e.key, key))
+                return &e.value;
+
+        return nullptr;
+    }
+    template <class T = KeyT>
+    ValueT const* get_ptr(T const& key) const
+    {
+        if (_size == 0)
+            return nullptr;
+
+        auto idx = this->_get_location(key);
+        for (auto& e : _entries[idx])
+            if (EqualT{}(e.key, key))
+                return &e.value;
+
+        return nullptr;
+    }
+
+    /// looks up the given key and returns the element
+    /// returns default_val if key not found
+    template <class T = KeyT>
+    ValueT const& get_or(T const& key, ValueT const& default_val) const
+    {
+        if (auto v = this->get_ptr(key))
+            return *v;
+        else
+            return default_val;
+    }
+
+    /// looks up the given key and (if found) writes the value to 'out_val'
+    /// returns true if key was found
+    template <class T = KeyT>
+    bool get_to(T const& key, ValueT& out_val) const
+    {
+        if (auto v = this->get_ptr(key))
+        {
+            out_val = *v;
+            return true;
+        }
+        else
+            return false;
     }
 
     /// removes a key from the map
@@ -247,6 +332,7 @@ public:
 
     // helper
 private:
+    /// NOTE: only works for non-empty maps
     template <class T>
     size_t _get_location(T const& key) const
     {

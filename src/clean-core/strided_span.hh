@@ -30,12 +30,18 @@ public:
     constexpr strided_span(T (&data)[N]) : strided_span(data, N)
     {
     }
+
+    /// generic span constructor from contiguous_range
+    /// CAUTION: container MUST outlive the span!
     template <class Container, cc::enable_if<is_contiguous_range<Container, T>> = true>
-    constexpr strided_span(Container& c) : strided_span(c.data(), c.size())
+    constexpr strided_span(Container&& c) : strided_span(c.data(), c.size())
     {
     }
 
     explicit constexpr strided_span(T& val) : strided_span(&val, 1) {}
+    /// CAUTION: value MUST outlive the span!
+    /// NOTE: this ctor is for spans constructed inside an expression
+    explicit constexpr strided_span(T&& val) : strided_span(&val, 1) {}
 
     constexpr operator strided_span<T const>() const noexcept { return {_data, _size, _stride}; }
 
@@ -123,7 +129,8 @@ private:
 };
 
 // deduction guide for containers
-template <class Container, cc::enable_if<is_contiguous_range<Container, void>> = true>
+template <class Container, cc::enable_if<is_any_contiguous_range<Container>> = true>
 strided_span(Container& c)->strided_span<std::remove_reference_t<decltype(*c.data())>>;
-strided_span(string_view const&)->strided_span<char const>;
+template <class Container, cc::enable_if<is_any_contiguous_range<Container>> = true>
+strided_span(Container&& c)->strided_span<std::remove_reference_t<decltype(*c.data())>>;
 }
