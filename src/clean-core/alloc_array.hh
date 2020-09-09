@@ -53,7 +53,7 @@ struct alloc_array
     {
         _size = data.size();
         _data = _alloc(_size);
-        detail::container_copy_range<T>(data.data(), _size, _data);
+        detail::container_copy_construct_range<T>(data.data(), _size, _data);
     }
 
     alloc_array(std::initializer_list<T> data, cc::allocator* allocator = cc::system_allocator)

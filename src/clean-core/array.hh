@@ -3,7 +3,6 @@
 #include <initializer_list>
 #include <utility> // for tuple_size
 
-#include <clean-core/algorithms.hh>
 #include <clean-core/always_false.hh>
 #include <clean-core/assert.hh>
 #include <clean-core/detail/container_impl_util.hh>
@@ -112,7 +111,7 @@ struct array<T, dynamic_size>
         array a;
         a._size = size;
         a._data = new T[size];
-        cc::fill(a, value);
+        detail::container_copy_construct_fill(value, size, a._data);
         return a;
     }
 
@@ -121,28 +120,28 @@ struct array<T, dynamic_size>
         delete[] _data;
         _size = new_size;
         _data = new T[new_size];
-        cc::fill(*this, value);
+        detail::container_copy_construct_fill(value, _size, _data);
     }
 
     array(std::initializer_list<T> data)
     {
         _size = data.size();
         _data = new T[_size];
-        detail::container_copy_range<T>(data.begin(), _size, _data);
+        detail::container_copy_construct_range<T>(data.begin(), _size, _data);
     }
 
     array(span<T> data)
     {
         _size = data.size();
         _data = new T[_size];
-        detail::container_copy_range<T>(data.data(), _size, _data);
+        detail::container_copy_construct_range<T>(data.data(), _size, _data);
     }
 
     array(array const& a)
     {
         _size = a._size;
         _data = new T[a._size];
-        detail::container_copy_range<T>(a.data(), _size, _data);
+        detail::container_copy_construct_range<T>(a.data(), _size, _data);
     }
     array(array&& a) noexcept
     {
@@ -158,7 +157,7 @@ struct array<T, dynamic_size>
             delete[] _data;
             _size = a._size;
             _data = new T[a._size];
-            detail::container_copy_range<T>(a.data(), _size, _data);
+            detail::container_copy_construct_range<T>(a.data(), _size, _data);
         }
         return *this;
     }

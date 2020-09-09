@@ -101,11 +101,11 @@ public:
 
     capped_array(capped_array const& rhs) : _size(rhs._size)
     {
-        detail::container_copy_range<T, compact_size_t>(&rhs._u.value[0], _size, &_u.value[0]);
+        detail::container_copy_construct_range<T, compact_size_t>(&rhs._u.value[0], _size, &_u.value[0]);
     }
     capped_array(capped_array&& rhs) noexcept : _size(rhs._size)
     {
-        detail::container_move_range<T, compact_size_t>(&rhs._u.value[0], _size, &_u.value[0]);
+        detail::container_move_construct_range<T, compact_size_t>(&rhs._u.value[0], _size, &_u.value[0]);
         rhs._size = 0;
     }
 
