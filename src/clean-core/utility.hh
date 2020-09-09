@@ -56,7 +56,7 @@ template <class T>
     return pos == 0 ? max - 1 : pos - 1;
 }
 
-struct
+[[maybe_unused]] struct
 {
     template <class T>
     constexpr void operator()(T& a, T& b) const
