@@ -47,7 +47,7 @@ public:
     alloc_vector(T const* begin, size_t num_elements, cc::allocator* allocator = cc::system_allocator) : alloc_vector(allocator)
     {
         this->reserve(num_elements);
-        detail::container_copy_range<T>(begin, num_elements, this->_data);
+        detail::container_copy_construct_range<T>(begin, num_elements, this->_data);
         this->_size = num_elements;
     }
     alloc_vector(std::initializer_list<T> data, cc::allocator* allocator = cc::system_allocator) : alloc_vector(data.begin(), data.size(), allocator)

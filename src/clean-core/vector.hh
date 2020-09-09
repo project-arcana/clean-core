@@ -38,7 +38,7 @@ public:
     vector(T const* begin, size_t num_elements)
     {
         this->reserve(num_elements);
-        detail::container_copy_range<T>(begin, num_elements, this->_data);
+        detail::container_copy_construct_range<T>(begin, num_elements, this->_data);
         this->_size = num_elements;
     }
     vector(std::initializer_list<T> data) : vector(data.begin(), data.size()) {}
@@ -78,7 +78,7 @@ public:
                 this->_data = this->_alloc(rhs._size);
                 this->_capacity = rhs._size;
             }
-            detail::container_copy_range<T>(rhs._data, rhs._size, this->_data);
+            detail::container_copy_construct_range<T>(rhs._data, rhs._size, this->_data);
             this->_size = rhs._size;
         }
         return *this;

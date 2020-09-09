@@ -2,6 +2,22 @@
 
 #include <clean-core/assert.hh>
 
+namespace _external_cc_detail
+{
+template <class T>
+constexpr void do_swap(T& a, T& b, char) // priority 0
+{
+    T tmp = static_cast<T&&>(a);
+    a = static_cast<T&&>(b);
+    b = static_cast<T&&>(tmp);
+}
+template <class T>
+constexpr auto do_swap(T& a, T& b, int) -> decltype(swap(a, b)) // priority 1
+{
+    swap(a, b);
+}
+}
+
 namespace cc
 {
 template <class T>
@@ -40,28 +56,12 @@ template <class T>
     return pos == 0 ? max - 1 : pos - 1;
 }
 
-namespace detail
-{
-template <class T>
-constexpr void do_swap(T& a, T& b, char) // priority 0
-{
-    T tmp = static_cast<T&&>(a);
-    a = static_cast<T&&>(b);
-    b = static_cast<T&&>(tmp);
-}
-template <class T>
-constexpr auto do_swap(T& a, T& b, int) -> decltype(swap(a, b)) // priority 1
-{
-    swap(a, b);
-}
-}
-
 struct
 {
     template <class T>
     constexpr void operator()(T& a, T& b) const
     {
-        cc::detail::do_swap(a, b, 0);
+        _external_cc_detail::do_swap(a, b, 0);
     }
 } constexpr swap; // implemented as functor so it cannot be found by ADL
 

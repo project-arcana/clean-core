@@ -53,7 +53,7 @@ struct fwd_array
         _op.init();
         _size = data.size();
         _data = new T[_size];
-        detail::container_copy_range<T>(data.begin(), _size, _data);
+        detail::container_copy_construct_range<T>(data.begin(), _size, _data);
     }
 
     fwd_array(span<T> data)
@@ -61,7 +61,7 @@ struct fwd_array
         _op.init();
         _size = data.size();
         _data = new T[_size];
-        detail::container_copy_range<T>(data.data(), _size, _data);
+        detail::container_copy_construct_range<T>(data.data(), _size, _data);
     }
 
     fwd_array(fwd_array&& a) noexcept

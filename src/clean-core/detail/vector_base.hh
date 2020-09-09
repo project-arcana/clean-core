@@ -133,7 +133,7 @@ public:
                 // we can't
                 T* new_data = this->_alloc(new_cap);
                 T* new_element = new (placement_new, &new_data[_size]) T(cc::forward<Args>(args)...);
-                detail::container_move_range<T>(_data, _size, new_data);
+                detail::container_move_construct_range<T>(_data, _size, new_data);
                 detail::container_destroy_reverse<T>(_data, _size);
                 this->_free(_data);
                 _data = new_data;
@@ -201,7 +201,7 @@ public:
         {
             // we can't
             T* new_data = this->_alloc(new_cap);
-            detail::container_move_range<T>(_data, _size, new_data);
+            detail::container_move_construct_range<T>(_data, _size, new_data);
             detail::container_destroy_reverse<T>(_data, _size);
             this->_free(_data);
             _data = new_data;
@@ -252,7 +252,7 @@ public:
             {
                 // we can't
                 T* new_data = this->_alloc(_size);
-                detail::container_move_range<T>(_data, _size, new_data);
+                detail::container_move_construct_range<T>(_data, _size, new_data);
                 this->_free(_data);
                 _data = new_data;
                 _capacity = _size;
