@@ -148,8 +148,13 @@ inline uint64 bit_log2(uint64 v) { return uint64(8 * sizeof(uint64) - count_lead
 inline uint32 ceil_pow2(uint32 v) { return uint32(1) << (bit_log2(v - uint32(1)) + 1); }
 inline uint64 ceil_pow2(uint64 v) { return uint64(1) << (bit_log2(v - uint64(1)) + 1); }
 
+// returns true if v is a power of 2
 constexpr bool is_pow2(uint32 v) { return ((v & (v - uint32(1))) == 0); }
 constexpr bool is_pow2(uint64 v) { return ((v & (v - uint64(1))) == 0); }
+
+// computes v % divisor, divisor must be a power of 2
+constexpr uint32 mod_pow2(uint32 v, uint32 divisor) { return v & (divisor - 1); }
+constexpr uint64 mod_pow2(uint64 v, uint64 divisor) { return v & (divisor - 1); }
 
 constexpr void set_bit(uint8& val, uint32 bit_idx) { val |= (uint8(1) << bit_idx); }
 constexpr void set_bit(uint16& val, uint32 bit_idx) { val |= (uint16(1) << bit_idx); }
