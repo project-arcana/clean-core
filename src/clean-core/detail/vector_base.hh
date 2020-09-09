@@ -7,11 +7,13 @@
 
 #include <clean-core/allocator.hh>
 #include <clean-core/assert.hh>
+#include <clean-core/collection_traits.hh>
 #include <clean-core/detail/container_impl_util.hh>
 #include <clean-core/forward.hh>
 #include <clean-core/fwd.hh>
 #include <clean-core/hash_combine.hh>
 #include <clean-core/invoke.hh>
+#include <clean-core/is_contiguous_range.hh>
 #include <clean-core/is_range.hh>
 #include <clean-core/move.hh>
 #include <clean-core/new.hh>
@@ -149,21 +151,25 @@ public:
     /// adds an element at the end
     T& push_back(T&& value) { return emplace_back(cc::move(value)); }
 
-    /// adds multiple elements at the end
-    void push_back_span(cc::span<T const> value_range)
+    /// adds all elements of the range
+    template <class Range>
+    void push_back_range(Range&& range)
     {
-        this->reserve(_size + value_range.size());
-        if constexpr (std::is_trivially_copyable_v<T> && std::is_trivially_destructible_v<T>)
+        static_assert(cc::is_any_range<Range>);
+
+        if constexpr (collection_traits<Range>::has_size)
+            this->reserve(_size + cc::collection_size(range));
+
+        if constexpr (cc::is_contiguous_range<Range, T> && std::is_trivially_copyable_v<T> && std::is_trivially_destructible_v<T>)
         {
-            std::memcpy(&_data[_size], value_range.data(), value_range.size_bytes());
-            _size += value_range.size();
+            std::memcpy(&_data[_size], range.data(), range.size() * sizeof(T));
+            _size += range.size();
         }
         else
         {
-            for (T const& val : value_range)
-            {
-                emplace_back(val);
-            }
+            // TODO: a few optimizations are possible here (like moving or in-place construction)
+            for (auto&& v : range)
+                this->push_back(v);
         }
     }
 
@@ -180,21 +186,26 @@ public:
         if (size <= _capacity)
             return;
 
+        // at least double cap
+        auto new_cap = _capacity << 1;
+        if (new_cap < size)
+            new_cap = size;
+
         if constexpr (std::is_trivially_copyable_v<T> && std::is_trivially_destructible_v<T>)
         {
             // we can use realloc
-            _data = this->_realloc(_data, _capacity, size);
-            _capacity = size;
+            _data = this->_realloc(_data, _capacity, new_cap);
+            _capacity = new_cap;
         }
         else
         {
             // we can't
-            T* new_data = this->_alloc(size);
+            T* new_data = this->_alloc(new_cap);
             detail::container_move_range<T>(_data, _size, new_data);
             detail::container_destroy_reverse<T>(_data, _size);
             this->_free(_data);
             _data = new_data;
-            _capacity = size;
+            _capacity = new_cap;
         }
     }
 
