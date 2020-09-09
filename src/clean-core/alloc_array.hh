@@ -140,13 +140,6 @@ struct alloc_array
             new (placement_new, &_data[i]) T(value);
     }
 
-    void write_bytes(cc::span<std::byte const> src_data, size_t offset_bytes = 0)
-    {
-        static_assert(std::is_trivially_copyable_v<T> && std::is_trivially_destructible_v<T>, "write_bytes requires trivial copy and dtor");
-        CC_ASSERT(offset_bytes + src_data.size_bytes() <= _size * sizeof(T) && "write out of bounds");
-        std::memcpy(reinterpret_cast<std::byte*>(_data) + offset_bytes, src_data.data(), src_data.size_bytes());
-    }
-
     constexpr T* begin() { return _data; }
     constexpr T* end() { return _data + _size; }
     constexpr T const* begin() const { return _data; }
