@@ -135,6 +135,7 @@ constexpr size_t get_array_padding(size_t elem_size)
 template <class T, class... Args>
 T* allocator::new_t(Args&&... args)
 {
+    static_assert(sizeof(T) > 0, "cannot construct incomplete type");
     auto* const buf = this->alloc(sizeof(T), alignof(T));
     return new (placement_new, buf) T(cc::forward<Args>(args)...);
 }
@@ -142,6 +143,7 @@ T* allocator::new_t(Args&&... args)
 template <class T>
 void allocator::delete_t(T* ptr)
 {
+    static_assert(sizeof(T) > 0, "cannot destruct incomplete type");
     if (ptr == nullptr)
         return;
 
@@ -154,6 +156,7 @@ void allocator::delete_t(T* ptr)
 template <class T>
 T* allocator::new_array(size_t num_elems)
 {
+    static_assert(sizeof(T) > 0, "cannot construct incomplete type");
     constexpr size_t padding = detail::get_array_padding(sizeof(T));
     size_t size = sizeof(T) * num_elems + padding;
 
@@ -171,6 +174,7 @@ T* allocator::new_array(size_t num_elems)
 template <class T>
 void allocator::delete_array(T* ptr)
 {
+    static_assert(sizeof(T) > 0, "cannot destruct incomplete type");
     if (ptr == nullptr)
         return;
 
@@ -190,6 +194,7 @@ void allocator::delete_array(T* ptr)
 template <class T>
 T* allocator::new_array_sized(size_t num_elems)
 {
+    static_assert(sizeof(T) > 0, "cannot construct incomplete type");
     T* const res_array_ptr = reinterpret_cast<T*>(this->alloc(sizeof(T) * num_elems, alignof(T)));
     for (auto i = 0u; i < num_elems; ++i)
         new (placement_new, res_array_ptr + i) T();
@@ -200,6 +205,7 @@ T* allocator::new_array_sized(size_t num_elems)
 template <class T>
 void allocator::delete_array_sized(T* ptr, cc::size_t num_elems)
 {
+    static_assert(sizeof(T) > 0, "cannot destruct incomplete type");
     if (ptr == nullptr)
         return;
 
