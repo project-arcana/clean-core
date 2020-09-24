@@ -25,8 +25,9 @@ struct hash
         hash_t words[wcnt] = {}; // zero-init
         std::memcpy(words, &value, sizeof(value));
         auto h = words[0];
-        for (size_t i = 1; i < wcnt; ++i)
-            h = cc::hash_combine(h, words[i]);
+        if constexpr (wcnt > 1)
+            for (size_t i = 1; i < wcnt; ++i)
+                h = cc::hash_combine(h, words[i]);
         return h;
     }
 };
