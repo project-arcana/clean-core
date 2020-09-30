@@ -170,4 +170,9 @@ constexpr void flip_bit(uint8& val, uint32 bit_idx) { val ^= (uint8(1) << bit_id
 constexpr void flip_bit(uint16& val, uint32 bit_idx) { val ^= (uint16(1) << bit_idx); }
 constexpr void flip_bit(uint32& val, uint32 bit_idx) { val ^= (uint32(1) << bit_idx); }
 constexpr void flip_bit(uint64& val, uint32 bit_idx) { val ^= (uint64(1) << bit_idx); }
+
+constexpr bool has_bit(uint8 val, uint32 bit_idx) { return (val & (uint8(1) << bit_idx)) != 0; }
+constexpr bool has_bit(uint16 val, uint32 bit_idx) { return (val & (uint16(1) << bit_idx)) != 0; }
+constexpr bool has_bit(uint32 val, uint32 bit_idx) { return (val & (uint32(1) << bit_idx)) != 0; }
+constexpr bool has_bit(uint64 val, uint32 bit_idx) { return (val & (uint64(1) << bit_idx)) != 0; }
 }
