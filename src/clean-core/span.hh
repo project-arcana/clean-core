@@ -20,27 +20,33 @@ struct span
     // ctors
 public:
     constexpr span() = default;
-    constexpr span(T* data, size_t size) : _data(data), _size(size) {}
-    constexpr span(T* d_begin, T* d_end) : _data(d_begin), _size(d_end - d_begin) {}
+
+    // prevent the templated constructor to hijack copy
+    constexpr span(span const& rhs) noexcept = default;
+
+    CC_FORCE_INLINE constexpr span(T* data, size_t size) : _data(data), _size(size) {}
+
+    CC_FORCE_INLINE constexpr span(T* d_begin, T* d_end) : _data(d_begin), _size(d_end - d_begin) {}
+
     template <size_t N>
-    constexpr span(T (&data)[N]) : _data(data), _size(N)
+    CC_FORCE_INLINE constexpr span(T (&data)[N]) : _data(data), _size(N)
     {
     }
 
     /// generic span constructor from contiguous_range
     /// CAUTION: container MUST outlive the span!
     template <class Container, cc::enable_if<is_contiguous_range<Container, T>> = true>
-    constexpr span(Container&& c) : _data(c.data()), _size(c.size())
+    CC_FORCE_INLINE constexpr span(Container&& c) : _data(c.data()), _size(c.size())
     {
     }
 
-    explicit constexpr span(T& val) : _data(&val), _size(1) {}
+    CC_FORCE_INLINE explicit constexpr span(T& val) : _data(&val), _size(1) {}
 
     /// CAUTION: value MUST outlive the span!
     /// NOTE: this ctor is for spans constructed inside an expression
-    explicit constexpr span(T&& val) : _data(&val), _size(1) {}
+    CC_FORCE_INLINE explicit constexpr span(T&& val) : _data(&val), _size(1) {}
 
-    constexpr operator span<T const>() const noexcept { return {_data, _size}; }
+    CC_FORCE_INLINE constexpr operator span<T const>() const noexcept { return {_data, _size}; }
 
     // container
 public:
