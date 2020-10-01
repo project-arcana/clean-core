@@ -18,6 +18,18 @@ enum class split_options
     skip_empty
 };
 
+namespace detail
+{
+struct equals_case_sensitive_t
+{
+    constexpr bool operator()(char a, char b) const { return a == b; }
+};
+struct equals_case_insensitive_t
+{
+    constexpr bool operator()(char a, char b) const { return a == b || cc::to_lower(a) == cc::to_lower(b); }
+};
+}
+
 // a view on an utf-8 string
 // is NON-OWNING
 // is a view and CANNOT modify the content of the string
@@ -181,6 +193,19 @@ public:
 
     [[nodiscard]] constexpr string_view first(size_t n) const { return {_data, n < _size ? n : _size}; }
     [[nodiscard]] constexpr string_view last(size_t n) const { return n <= _size ? string_view(_data + _size - n, n) : *this; }
+
+    /// returns true iff this and rhs are the same string using a custom compare function
+    template <class CompF = detail::equals_case_sensitive_t>
+    [[nodiscard]] constexpr bool equals(string_view rhs, CompF&& compare = {}) const
+    {
+        if (_size != rhs._size)
+            return false;
+        for (size_t i = 0; i != _size; ++i)
+            if (!compare(_data[i], rhs._data[i]))
+                return false;
+        return true;
+    }
+    [[nodiscard]] constexpr bool equals_ignore_case(string_view rhs) const { return equals<detail::equals_case_insensitive_t>(rhs); }
 
     // operators
 public:

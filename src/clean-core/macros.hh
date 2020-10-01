@@ -67,7 +67,7 @@
 
 #define CC_PRETTY_FUNC __PRETTY_FUNCTION__
 
-#define CC_FORCE_INLINE __attribute__((always_inline))
+#define CC_FORCE_INLINE __attribute__((always_inline)) inline
 #define CC_DONT_INLINE __attribute__((noinline))
 
 #define CC_LIKELY(x) __builtin_expect((x), 1)

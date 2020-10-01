@@ -130,7 +130,7 @@ struct array<T, dynamic_size>
         detail::container_copy_construct_range<T>(data.begin(), _size, _data);
     }
 
-    array(span<T> data)
+    array(span<T const> data)
     {
         _size = data.size();
         _data = new T[_size];

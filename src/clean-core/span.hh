@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstring> // memcpy
 #include <type_traits>
 
 #include <clean-core/assert.hh>
@@ -105,6 +106,40 @@ public:
         return {reinterpret_cast<byte*>(_data), _size * sizeof(T)};
     }
 
+    // operations
+public:
+    /// copies all elements from this span to a target
+    /// NOTE: sizes must match
+    /// NOTE: target and this must not overlap!
+    /// NOTE: uses std::memcpy for trivially copyable types
+    /// TODO: versions with offset + count?
+    template <class U = std::remove_const_t<T>, enable_if<std::is_assignable_v<U&, T>> = true>
+    constexpr void copy_to(span<U> target) const
+    {
+        CC_CONTRACT(target.size() == _size);
+        if constexpr (std::is_same_v<std::decay_t<T>, std::decay_t<U>> && std::is_trivially_copyable_v<T>)
+            std::memcpy(target.data(), _data, size_bytes());
+        else
+            for (size_t i = 0; i < _size; ++i)
+                target._data[i] = _data[i];
+    }
+
+    /// copies all elements from the source to this span
+    /// NOTE: sizes must match
+    /// NOTE: target and this must not overlap!
+    /// NOTE: uses std::memcpy for trivially copyable types
+    /// TODO: versions with offset + count?
+    template <class U = T const, enable_if<std::is_assignable_v<T&, U>> = true>
+    constexpr void copy_from(span<U> source) const
+    {
+        CC_CONTRACT(source.size() == _size);
+        if constexpr (std::is_same_v<std::decay_t<T>, std::decay_t<U>> && std::is_trivially_copyable_v<T>)
+            std::memcpy(_data, source._data, size_bytes());
+        else
+            for (size_t i = 0; i < _size; ++i)
+                _data[i] = source._data[i];
+    }
+
 private:
     T* _data = nullptr;
     size_t _size = 0;
@@ -146,5 +181,12 @@ auto as_byte_span(T&& value)
         static_assert(std::is_trivially_copyable_v<std::remove_reference_t<T>>, "cannot convert non-trivially copyable element to byte span");
         return span<byte>{reinterpret_cast<byte*>(&value), sizeof(T)};
     }
+}
+
+/// same as as_byte_span(value).subspan(offset, count)
+template <class T>
+auto as_byte_span(T&& value, size_t offset, size_t count)
+{
+    return cc::as_byte_span(value).subspan(offset, count);
 }
 }
