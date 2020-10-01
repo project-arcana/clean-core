@@ -32,9 +32,11 @@ void default_assertion_handler(cc::detail::assertion_info const& info)
 
     // TODO: stacktrace
 
-#ifndef CC_RELEASE
+#if !defined(CC_RELEASE) && !defined(CC_OS_WINDOWS)
+    // on win32, this suppresses the CRT abort/retry debugger attach message
     cc::breakpoint();
 #endif
+
     std::abort();
 }
 } // namespace
