@@ -13,6 +13,7 @@
 #include <clean-core/fwd.hh>
 #include <clean-core/hash_combine.hh>
 #include <clean-core/invoke.hh>
+#include <clean-core/is_contiguous_range.hh>
 #include <clean-core/is_range.hh>
 #include <clean-core/move.hh>
 #include <clean-core/new.hh>
@@ -154,12 +155,22 @@ public:
     template <class Range>
     void push_back_range(Range&& range)
     {
-        // TODO: a few optimizations are possible here (like moving or in-place construction)
         static_assert(cc::is_any_range<Range>);
+
         if constexpr (collection_traits<Range>::has_size)
             this->reserve(_size + cc::collection_size(range));
-        for (auto&& v : range)
-            this->push_back(v);
+
+        if constexpr (cc::is_contiguous_range<Range, T> && std::is_trivially_copyable_v<T> && std::is_trivially_destructible_v<T>)
+        {
+            std::memcpy(&_data[_size], range.data(), range.size() * sizeof(T));
+            _size += range.size();
+        }
+        else
+        {
+            // TODO: a few optimizations are possible here (like moving or in-place construction)
+            for (auto&& v : range)
+                this->push_back(v);
+        }
     }
 
     /// removes the last element
