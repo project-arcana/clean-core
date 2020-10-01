@@ -5,7 +5,6 @@
 
 #include <clean-core/assert.hh>
 #include <clean-core/enable_if.hh>
-#include <clean-core/fwd.hh>
 #include <clean-core/is_contiguous_range.hh>
 #include <clean-core/typedefs.hh>
 
@@ -22,11 +21,7 @@ struct span
 public:
     constexpr span() = default;
 
-    // prevent the templated constructor to hijack copy
-    constexpr span(span const& rhs) noexcept = default;
-
     CC_FORCE_INLINE constexpr span(T* data, size_t size) : _data(data), _size(size) {}
-
     CC_FORCE_INLINE constexpr span(T* d_begin, T* d_end) : _data(d_begin), _size(d_end - d_begin) {}
 
     template <size_t N>
@@ -144,6 +139,7 @@ private:
     T* _data = nullptr;
     size_t _size = 0;
 };
+
 
 // deduction guide for containers
 template <class Container, cc::enable_if<is_any_contiguous_range<Container>> = true>
