@@ -2,11 +2,14 @@
 
 #include <cinttypes>
 #include <cstdio>
+#include <cwchar>
 #include <type_traits>
+
 
 #include <clean-core/always_false.hh>
 #include <clean-core/assert.hh>
 #include <clean-core/char_predicates.hh>
+#include <clean-core/native/wchar_conversion.hh>
 #include <clean-core/stream_ref.hh>
 #include <clean-core/string.hh>
 #include <clean-core/string_stream.hh>
@@ -16,6 +19,15 @@ cc::string cc::to_string(char value) { return string::filled(1, value); }
 cc::string cc::to_string(bool value) { return value ? "true" : "false"; }
 cc::string cc::to_string(const char* value) { return value == nullptr ? "[nullptr]" : value; }
 cc::string cc::to_string(cc::string_view value) { return value; }
+
+cc::string cc::to_string(const wchar_t* value)
+{
+    cc::string res;
+    res.resize(std::wcslen(value));
+    widechar_to_char(res, value);
+    return res;
+}
+
 cc::string cc::to_string(cc::nullptr_t) { return "nullptr"; }
 
 cc::string cc::to_string(void* value)
