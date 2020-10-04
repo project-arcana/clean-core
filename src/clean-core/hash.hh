@@ -23,9 +23,10 @@ struct hash
         auto constexpr wcnt = (sizeof(value) + sizeof(hash_t) - 1) / sizeof(hash_t);
 
         hash_t words[wcnt] = {}; // zero-init
+        static_assert(sizeof(words) >= sizeof(value));
         std::memcpy(words, &value, sizeof(value));
-        auto h = words[0];
-        for (size_t i = 1; i < wcnt; ++i)
+        hash_t h = 0xda746dcf28ba9287; // random
+        for (size_t i = 0; i < wcnt; ++i)
             h = cc::hash_combine(h, words[i]);
         return h;
     }
