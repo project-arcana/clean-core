@@ -54,7 +54,7 @@ public:
     constexpr capped_array(size_t size) : _size(compact_size_t(size))
     {
         CC_CONTRACT(size <= N);
-        new (&_u.value[0]) T[size]();
+        new (placement_new, &_u.value[0]) T[size]();
     }
 
     constexpr capped_array(std::initializer_list<T> data)
