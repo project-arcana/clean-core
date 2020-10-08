@@ -8,6 +8,7 @@ string to_string(char value);
 string to_string(bool value);
 string to_string(char const* value);
 string to_string(string_view value);
+string to_string(wchar_t const* value);
 string to_string(std::nullptr_t);
 
 string to_string(void* value);
