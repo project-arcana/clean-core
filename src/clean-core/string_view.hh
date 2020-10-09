@@ -128,7 +128,8 @@ public:
     /// returns the index of the start of the first occurrence of the character sequence (or -1 if not found)
     constexpr int64 index_of(string_view s) const
     {
-        if (s.size() > _size || s.empty())
+        CC_CONTRACT(!s.empty() && "search string must not be empty!");
+        if (s.size() > _size)
             return -1;
         for (size_t i = 0; i < _size - s.size() + 1; ++i)
         {
@@ -155,7 +156,8 @@ public:
     /// returns the index of the start of the last occurrence of the character sequence (or -1 if not found)
     constexpr int64 last_index_of(string_view s) const
     {
-        if (s.size() > _size || s.empty())
+        CC_CONTRACT(!s.empty() && "search string must not be empty!");
+        if (s.size() > _size)
             return -1;
         for (size_t i = 0; i < _size - s.size() + 1; ++i)
         {
@@ -171,7 +173,11 @@ public:
     }
 
     /// returns a range of all indices that mark the start of the search string s
-    constexpr string_indices_of_range all_indices_of(string_view s) const { return string_indices_of_range(_data, _size, s.data(), s.size()); }
+    constexpr string_indices_of_range all_indices_of(string_view s) const
+    {
+        CC_CONTRACT(!s.empty() && "search string must not be empty!");
+        return string_indices_of_range(_data, _size, s.data(), s.size());
+    }
 
     constexpr bool starts_with(char c) const { return _size > 0 && front() == c; }
     constexpr bool starts_with(string_view s) const { return _size >= s.size() && subview(0, s.size()) == s; }
@@ -407,7 +413,7 @@ private:
     private:
         constexpr int64 next_idx(int64 start) const
         {
-            if (_ssize > (_size - start) || _ssize == 0)
+            if (_ssize > (_size - start))
                 return -1;
             for (size_t i = start; i < _size - _ssize + 1; ++i)
             {
