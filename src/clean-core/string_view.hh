@@ -435,7 +435,6 @@ private:
         {
         }
 
-        constexpr auto begin() { return string_indices_of_iterator(_data, _size, _sdata, _ssize); }
         constexpr auto begin() const { return string_indices_of_iterator(_data, _size, _sdata, _ssize); }
         constexpr cc::sentinel end() const { return {}; }
     };
