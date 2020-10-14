@@ -39,3 +39,28 @@ bool cc::from_string(cc::string_view s, unsigned long long& v) { return parse(s,
 bool cc::from_string(cc::string_view s, float& v) { return parse(s, v); }
 
 bool cc::from_string(cc::string_view s, double& v) { return parse(s, v); }
+
+bool cc::from_string(cc::string_view s, char& v)
+{
+    if (s.size() != 1)
+        return false;
+
+    v = s[0];
+    return true;
+}
+
+bool cc::from_string(cc::string_view s, bool& v)
+{
+    if (s == "true")
+    {
+        v = true;
+        return true;
+    }
+    else if (s == "false")
+    {
+        v = false;
+        return true;
+    }
+    else
+        return false;
+}
