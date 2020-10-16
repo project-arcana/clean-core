@@ -11,10 +11,10 @@
 
 namespace cc
 {
-// a non-owning view of a contiguous array of Ts
-// can be read and write (span<const T> vs span<T>)
-// is trivially copyable (and cheap)
-// NOTE: is range-checked via CC_CONTRACT
+/// a non-owning view of a contiguous array of Ts
+/// can be read and write (span<const T> vs span<T>)
+/// is trivially copyable (and cheap)
+/// NOTE: is range-checked via CC_CONTRACT
 template <class T>
 struct span
 {
