@@ -20,14 +20,36 @@ struct hash
     template <class U = T, cc::enable_if<std::is_trivially_copyable_v<U> && std::has_unique_object_representations_v<U>> = true>
     [[nodiscard]] hash_t operator()(T const& value) const noexcept
     {
-        auto constexpr wcnt = (sizeof(value) + sizeof(hash_t) - 1) / sizeof(hash_t);
+        if constexpr (sizeof(T) <= sizeof(hash_t))
+        {
+            hash_t h = 0;
+            std::memcpy(&h, &value, sizeof(value));
+            return h;
+        }
+        else
+        {
+            // full words
+            auto constexpr wcnt = sizeof(value) / sizeof(hash_t);
+            auto constexpr rest_size = sizeof(value) - wcnt * sizeof(hash_t);
+            static_assert(0 <= rest_size && rest_size < sizeof(hash_t));
 
-        hash_t words[wcnt] = {}; // zero-init
-        std::memcpy(words, &value, sizeof(value));
-        auto h = words[0];
-        for (size_t i = 1; i < wcnt; ++i)
-            h = cc::hash_combine(h, words[i]);
-        return h;
+            auto h_ptr = reinterpret_cast<hash_t const*>(&value);
+
+            // hash full words
+            hash_t r = 0;
+            for (size_t i = 0; i < wcnt; ++i)
+                r = cc::hash_combine(r, h_ptr[i]);
+
+            // hash rest
+            if constexpr (rest_size > 0)
+            {
+                hash_t h = 0;
+                std::memcpy(&h, h_ptr + wcnt, rest_size);
+                r = cc::hash_combine(r, h);
+            }
+
+            return r;
+        }
     }
 };
 

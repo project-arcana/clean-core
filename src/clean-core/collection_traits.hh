@@ -36,13 +36,25 @@ struct collection_traits;
 //  - is_any_contiguous_range
 
 template <class CollectionT>
-constexpr auto collection_size(CollectionT&& c)
+constexpr decltype(auto) collection_begin(CollectionT&& c)
+{
+    static_assert(collection_traits<CollectionT>::is_range);
+    return collection_traits<CollectionT>::begin(c);
+}
+template <class CollectionT>
+constexpr decltype(auto) collection_end(CollectionT&& c)
+{
+    static_assert(collection_traits<CollectionT>::is_range);
+    return collection_traits<CollectionT>::end(c);
+}
+template <class CollectionT>
+constexpr decltype(auto) collection_size(CollectionT&& c)
 {
     static_assert(collection_traits<CollectionT>::has_size);
     return collection_traits<CollectionT>::size(c);
 }
 template <class CollectionT, class T>
-constexpr auto collection_add(CollectionT&& c, T&& value)
+constexpr decltype(auto) collection_add(CollectionT&& c, T&& value)
 {
     static_assert(collection_traits<CollectionT>::can_add);
     return collection_traits<CollectionT>::add(c, cc::forward<T>(value));

@@ -107,7 +107,7 @@ public:
         if (s.size() > _size)
             return false;
 
-        for (size_t i = 0; i < _size - s.size(); ++i)
+        for (size_t i = 0; i < _size - s.size() + 1; ++i)
             if (subview(i, s.size()) == s)
                 return true;
 
