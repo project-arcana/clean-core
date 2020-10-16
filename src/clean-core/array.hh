@@ -14,7 +14,7 @@
 
 namespace cc
 {
-// compile-time fixed-size array
+/// compile-time fixed-size array
 template <class T, size_t N>
 struct array
 {
@@ -81,8 +81,8 @@ struct array
     }
 };
 
-// heap-allocated (runtime) fixed-size array
-// value semantics
+/// heap-allocated (runtime) fixed-size array
+/// value semantics
 template <class T>
 struct array<T, dynamic_size>
 {
