@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstring>
+#include <initializer_list>
 #include <type_traits>
 
 #include <clean-core/algorithms.hh>
@@ -53,7 +54,15 @@ public:
     constexpr capped_array(size_t size) : _size(compact_size_t(size))
     {
         CC_CONTRACT(size <= N);
-        new (&_u.value[0]) T[size]();
+        new (placement_new, &_u.value[0]) T[size]();
+    }
+
+    constexpr capped_array(std::initializer_list<T> data)
+    {
+        CC_CONTRACT(data.size() <= N);
+        _size = data.size();
+        for (compact_size_t i = 0; i < _size; ++i)
+            new (placement_new, &_u.value[i]) T(data.begin()[i]);
     }
 
     [[nodiscard]] static capped_array defaulted(size_t size) { return capped_array(size); }
@@ -92,11 +101,11 @@ public:
 
     capped_array(capped_array const& rhs) : _size(rhs._size)
     {
-        detail::container_copy_range<T, compact_size_t>(&rhs._u.value[0], _size, &_u.value[0]);
+        detail::container_copy_construct_range<T, compact_size_t>(&rhs._u.value[0], _size, &_u.value[0]);
     }
     capped_array(capped_array&& rhs) noexcept : _size(rhs._size)
     {
-        detail::container_move_range<T, compact_size_t>(&rhs._u.value[0], _size, &_u.value[0]);
+        detail::container_move_construct_range<T, compact_size_t>(&rhs._u.value[0], _size, &_u.value[0]);
         rhs._size = 0;
     }
 

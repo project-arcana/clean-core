@@ -123,7 +123,7 @@ struct arg_info
 template <class Formatter = default_formatter, class T>
 arg_info make_arg_info(T const& v)
 {
-    return {[](stream_ref<char> s, void const* data, string_view options) -> void { Formatter::do_format(s, *static_cast<T const*>(data), options); }, &v};
+    return {[](stream_ref<char> s, void const* data, string_view options) -> void { Formatter::do_format(s, *static_cast<T const*>(data), options); }, &v, {}};
 }
 
 template <class Formatter = default_formatter, class T>

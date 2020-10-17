@@ -100,18 +100,18 @@ public:
 
     capped_vector(capped_vector const& rhs) : _size(static_cast<compact_size_t>(rhs.size()))
     {
-        detail::container_copy_range<T, compact_size_t>(&rhs._u.value[0], _size, &_u.value[0]);
+        detail::container_copy_construct_range<T, compact_size_t>(&rhs._u.value[0], _size, &_u.value[0]);
     }
     capped_vector(capped_vector&& rhs) noexcept : _size(static_cast<compact_size_t>(rhs.size()))
     {
-        detail::container_move_range<T, compact_size_t>(&rhs._u.value[0], _size, &_u.value[0]);
+        detail::container_move_construct_range<T, compact_size_t>(&rhs._u.value[0], _size, &_u.value[0]);
         rhs._size = 0;
     }
     capped_vector(T const* begin, size_t num_elements)
     {
         CC_CONTRACT(num_elements <= N);
         _size = static_cast<compact_size_t>(num_elements);
-        detail::container_copy_range<T>(begin, num_elements, &_u.value[0]);
+        detail::container_copy_construct_range<T>(begin, num_elements, &_u.value[0]);
     }
     capped_vector(std::initializer_list<T> data) : capped_vector(data.begin(), data.size()) {}
     capped_vector(cc::span<T const> data) : capped_vector(data.begin(), data.size()) {}

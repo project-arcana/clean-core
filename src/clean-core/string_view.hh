@@ -18,6 +18,18 @@ enum class split_options
     skip_empty
 };
 
+namespace detail
+{
+struct equals_case_sensitive_t
+{
+    constexpr bool operator()(char a, char b) const { return a == b; }
+};
+struct equals_case_insensitive_t
+{
+    constexpr bool operator()(char a, char b) const { return a == b || cc::to_lower(a) == cc::to_lower(b); }
+};
+}
+
 // a view on an utf-8 string
 // is NON-OWNING
 // is a view and CANNOT modify the content of the string
@@ -43,6 +55,8 @@ struct string_view
 private:
     template <class Pred>
     struct string_split_range;
+
+    struct string_indices_of_range;
 
     // container
 public:
@@ -100,6 +114,69 @@ public:
                 return true;
 
         return false;
+    }
+
+    /// returns the index of the first occurrence of the character (or -1 if not found)
+    constexpr int64 index_of(char c) const
+    {
+        for (size_t i = 0; i < _size; ++i)
+            if (_data[i] == c)
+                return int64(i);
+        return -1;
+    }
+
+    /// returns the index of the start of the first occurrence of the character sequence (or -1 if not found)
+    constexpr int64 index_of(string_view s) const
+    {
+        CC_CONTRACT(!s.empty() && "search string must not be empty!");
+        if (s.size() > _size)
+            return -1;
+        for (size_t i = 0; i < _size - s.size() + 1; ++i)
+        {
+            for (size_t j = 0; j < s.size(); ++j)
+            {
+                if (_data[i + j] != s[j])
+                    break;
+                if (j == s.size() - 1)
+                    return int64(i);
+            }
+        }
+        return -1;
+    }
+
+    /// returns the index of the last occurrence of the character (or -1 if not found)
+    constexpr int64 last_index_of(char c) const
+    {
+        for (auto i = int64(_size) - 1; i >= 0; --i)
+            if (_data[i] == c)
+                return int64(i);
+        return -1;
+    }
+
+    /// returns the index of the start of the last occurrence of the character sequence (or -1 if not found)
+    constexpr int64 last_index_of(string_view s) const
+    {
+        CC_CONTRACT(!s.empty() && "search string must not be empty!");
+        if (s.size() > _size)
+            return -1;
+        for (size_t i = 0; i < _size - s.size() + 1; ++i)
+        {
+            for (size_t j = 0; j < s.size(); ++j)
+            {
+                if (_data[_size - (i + j + 1)] != s[s.size() - (j + 1)])
+                    break;
+                if (j == s.size() - 1)
+                    return int64(_size - (i + s.size()));
+            }
+        }
+        return -1;
+    }
+
+    /// returns a range of all indices that mark the start of the search string s
+    constexpr string_indices_of_range all_indices_of(string_view s) const
+    {
+        CC_CONTRACT(!s.empty() && "search string must not be empty!");
+        return string_indices_of_range(_data, _size, s.data(), s.size());
     }
 
     constexpr bool starts_with(char c) const { return _size > 0 && front() == c; }
@@ -181,6 +258,19 @@ public:
 
     [[nodiscard]] constexpr string_view first(size_t n) const { return {_data, n < _size ? n : _size}; }
     [[nodiscard]] constexpr string_view last(size_t n) const { return n <= _size ? string_view(_data + _size - n, n) : *this; }
+
+    /// returns true iff this and rhs are the same string using a custom compare function
+    template <class CompF = detail::equals_case_sensitive_t>
+    [[nodiscard]] constexpr bool equals(string_view rhs, CompF&& compare = {}) const
+    {
+        if (_size != rhs._size)
+            return false;
+        for (size_t i = 0; i != _size; ++i)
+            if (!compare(_data[i], rhs._data[i]))
+                return false;
+        return true;
+    }
+    [[nodiscard]] constexpr bool equals_ignore_case(string_view rhs) const { return equals<detail::equals_case_insensitive_t>(rhs); }
 
     // operators
 public:
@@ -299,6 +389,59 @@ private:
         }
         constexpr auto begin() { return string_split_iterator(_begin, _end, _options, _pred); }
         constexpr auto begin() const { return string_split_iterator(_begin, _end, _options, _pred); }
+        constexpr cc::sentinel end() const { return {}; }
+    };
+
+    struct string_indices_of_iterator
+    {
+        char const* _data;
+        size_t _size;
+        char const* _sdata;
+        size_t _ssize;
+        int64 _idx = -1;
+
+        constexpr string_indices_of_iterator(char const* data, size_t size, char const* sdata, size_t ssize)
+          : _data(data), _size(size), _sdata(sdata), _ssize(ssize)
+        {
+            _idx = next_idx(0);
+        }
+
+        constexpr void operator++() { _idx = next_idx(_idx + 1); }
+        constexpr int64 operator*() const { return _idx; }
+        constexpr bool operator!=(cc::sentinel) const { return _idx >= 0; }
+
+    private:
+        constexpr int64 next_idx(int64 start) const
+        {
+            if (_ssize > (_size - start))
+                return -1;
+            for (size_t i = start; i < _size - _ssize + 1; ++i)
+            {
+                for (size_t j = 0; j < _ssize; ++j)
+                {
+                    if (_data[i + j] != _sdata[j])
+                        break;
+                    if (j == _ssize - 1)
+                        return int64(i);
+                }
+            }
+            return -1;
+        }
+    };
+
+    struct string_indices_of_range
+    {
+        char const* _data;
+        size_t _size;
+        char const* _sdata;
+        size_t _ssize;
+
+        constexpr string_indices_of_range(char const* data, size_t size, char const* sdata, size_t ssize)
+          : _data(data), _size(size), _sdata(sdata), _ssize(ssize)
+        {
+        }
+
+        constexpr auto begin() const { return string_indices_of_iterator(_data, _size, _sdata, _ssize); }
         constexpr cc::sentinel end() const { return {}; }
     };
 };

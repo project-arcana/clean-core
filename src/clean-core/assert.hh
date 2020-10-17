@@ -45,9 +45,9 @@
 #endif
 
 #ifdef CC_ENABLE_CONTRACT_CHECKING
-#define CC_CONTRACT(condition) CC_ASSERT(condition && "contract violation")
+#define CC_CONTRACT(condition) CC_ASSERT((condition) && "contract violation")
 #else
-#define CC_CONTRACT(condition) CC_UNUSED(condition && "")
+#define CC_CONTRACT(condition) CC_UNUSED((condition) && "")
 #endif
 
 #ifdef CC_ENABLE_ASSERTIONS

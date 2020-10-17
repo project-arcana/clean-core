@@ -2,11 +2,14 @@
 
 #include <cinttypes>
 #include <cstdio>
+#include <cwchar>
 #include <type_traits>
+
 
 #include <clean-core/always_false.hh>
 #include <clean-core/assert.hh>
 #include <clean-core/char_predicates.hh>
+#include <clean-core/native/wchar_conversion.hh>
 #include <clean-core/stream_ref.hh>
 #include <clean-core/string.hh>
 #include <clean-core/string_stream.hh>
@@ -16,6 +19,15 @@ cc::string cc::to_string(char value) { return string::filled(1, value); }
 cc::string cc::to_string(bool value) { return value ? "true" : "false"; }
 cc::string cc::to_string(const char* value) { return value == nullptr ? "[nullptr]" : value; }
 cc::string cc::to_string(cc::string_view value) { return value; }
+
+cc::string cc::to_string(const wchar_t* value)
+{
+    cc::string res;
+    res.resize(std::wcslen(value));
+    widechar_to_char(res, value);
+    return res;
+}
+
 cc::string cc::to_string(cc::nullptr_t) { return "nullptr"; }
 
 cc::string cc::to_string(void* value)
@@ -143,155 +155,155 @@ cc::string cc::to_string(std::byte value)
     return s;
 }
 
-cc::string to_string(char value, cc::string_view fmt_str)
+cc::string cc::to_string(char value, cc::string_view fmt_str)
 {
     cc::string s;
     to_string([&s](cc::span<char const> ss) { s += cc::string_view(ss); }, value, fmt_str);
     return s;
 }
-cc::string to_string(bool value, cc::string_view fmt_str)
+cc::string cc::to_string(bool value, cc::string_view fmt_str)
 {
     cc::string s;
     to_string([&s](cc::span<char const> ss) { s += cc::string_view(ss); }, value, fmt_str);
     return s;
 }
-cc::string to_string(char const* value, cc::string_view fmt_str)
+cc::string cc::to_string(char const* value, cc::string_view fmt_str)
 {
     cc::string s;
     to_string([&s](cc::span<char const> ss) { s += cc::string_view(ss); }, value, fmt_str);
     return s;
 }
-cc::string to_string(cc::string_view value, cc::string_view fmt_str)
+cc::string cc::to_string(cc::string_view value, cc::string_view fmt_str)
 {
     cc::string s;
     to_string([&s](cc::span<char const> ss) { s += cc::string_view(ss); }, value, fmt_str);
     return s;
 }
-cc::string to_string(std::nullptr_t, cc::string_view fmt_str)
+cc::string cc::to_string(std::nullptr_t, cc::string_view fmt_str)
 {
     cc::string s;
     to_string([&s](cc::span<char const> ss) { s += cc::string_view(ss); }, std::nullptr_t{}, fmt_str);
     return s;
 }
 
-cc::string to_string(void* value, cc::string_view fmt_str)
+cc::string cc::to_string(void* value, cc::string_view fmt_str)
 {
     cc::string s;
     to_string([&s](cc::span<char const> ss) { s += cc::string_view(ss); }, value, fmt_str);
     return s;
 }
 
-cc::string to_string(std::byte value, cc::string_view fmt_str)
+cc::string cc::to_string(std::byte value, cc::string_view fmt_str)
 {
     cc::string s;
     to_string([&s](cc::span<char const> ss) { s += cc::string_view(ss); }, value, fmt_str);
     return s;
 }
 
-cc::string to_string(signed char value, cc::string_view fmt_str)
+cc::string cc::to_string(signed char value, cc::string_view fmt_str)
 {
     cc::string s;
     to_string([&s](cc::span<char const> ss) { s += cc::string_view(ss); }, value, fmt_str);
     return s;
 }
-cc::string to_string(short value, cc::string_view fmt_str)
+cc::string cc::to_string(short value, cc::string_view fmt_str)
 {
     cc::string s;
     to_string([&s](cc::span<char const> ss) { s += cc::string_view(ss); }, value, fmt_str);
     return s;
 }
-cc::string to_string(int value, cc::string_view fmt_str)
+cc::string cc::to_string(int value, cc::string_view fmt_str)
 {
     cc::string s;
     to_string([&s](cc::span<char const> ss) { s += cc::string_view(ss); }, value, fmt_str);
     return s;
 }
-cc::string to_string(long value, cc::string_view fmt_str)
+cc::string cc::to_string(long value, cc::string_view fmt_str)
 {
     cc::string s;
     to_string([&s](cc::span<char const> ss) { s += cc::string_view(ss); }, value, fmt_str);
     return s;
 }
-cc::string to_string(long long value, cc::string_view fmt_str)
+cc::string cc::to_string(long long value, cc::string_view fmt_str)
 {
     cc::string s;
     to_string([&s](cc::span<char const> ss) { s += cc::string_view(ss); }, value, fmt_str);
     return s;
 }
-cc::string to_string(unsigned char value, cc::string_view fmt_str)
+cc::string cc::to_string(unsigned char value, cc::string_view fmt_str)
 {
     cc::string s;
     to_string([&s](cc::span<char const> ss) { s += cc::string_view(ss); }, value, fmt_str);
     return s;
 }
-cc::string to_string(unsigned short value, cc::string_view fmt_str)
+cc::string cc::to_string(unsigned short value, cc::string_view fmt_str)
 {
     cc::string s;
     to_string([&s](cc::span<char const> ss) { s += cc::string_view(ss); }, value, fmt_str);
     return s;
 }
-cc::string to_string(unsigned int value, cc::string_view fmt_str)
+cc::string cc::to_string(unsigned int value, cc::string_view fmt_str)
 {
     cc::string s;
     to_string([&s](cc::span<char const> ss) { s += cc::string_view(ss); }, value, fmt_str);
     return s;
 }
-cc::string to_string(unsigned long value, cc::string_view fmt_str)
+cc::string cc::to_string(unsigned long value, cc::string_view fmt_str)
 {
     cc::string s;
     to_string([&s](cc::span<char const> ss) { s += cc::string_view(ss); }, value, fmt_str);
     return s;
 }
-cc::string to_string(unsigned long long value, cc::string_view fmt_str)
-{
-    cc::string s;
-    to_string([&s](cc::span<char const> ss) { s += cc::string_view(ss); }, value, fmt_str);
-    return s;
-}
-
-cc::string to_string(float value, cc::string_view fmt_str)
-{
-    cc::string s;
-    to_string([&s](cc::span<char const> ss) { s += cc::string_view(ss); }, value, fmt_str);
-    return s;
-}
-cc::string to_string(double value, cc::string_view fmt_str)
-{
-    cc::string s;
-    to_string([&s](cc::span<char const> ss) { s += cc::string_view(ss); }, value, fmt_str);
-    return s;
-}
-cc::string to_string(long double value, cc::string_view fmt_str)
+cc::string cc::to_string(unsigned long long value, cc::string_view fmt_str)
 {
     cc::string s;
     to_string([&s](cc::span<char const> ss) { s += cc::string_view(ss); }, value, fmt_str);
     return s;
 }
 
-void to_string(cc::stream_ref<char> ss, char value) { to_string(ss, value, ""); }
-void to_string(cc::stream_ref<char> ss, bool value) { to_string(ss, value, ""); }
-void to_string(cc::stream_ref<char> ss, char const* value) { to_string(ss, value, ""); }
-void to_string(cc::stream_ref<char> ss, cc::string_view value) { to_string(ss, value, ""); }
-void to_string(cc::stream_ref<char> ss, std::nullptr_t) { to_string(ss, std::nullptr_t{}, ""); }
+cc::string cc::to_string(float value, cc::string_view fmt_str)
+{
+    cc::string s;
+    to_string([&s](cc::span<char const> ss) { s += cc::string_view(ss); }, value, fmt_str);
+    return s;
+}
+cc::string cc::to_string(double value, cc::string_view fmt_str)
+{
+    cc::string s;
+    to_string([&s](cc::span<char const> ss) { s += cc::string_view(ss); }, value, fmt_str);
+    return s;
+}
+cc::string cc::to_string(long double value, cc::string_view fmt_str)
+{
+    cc::string s;
+    to_string([&s](cc::span<char const> ss) { s += cc::string_view(ss); }, value, fmt_str);
+    return s;
+}
 
-void to_string(cc::stream_ref<char> ss, void* value) { to_string(ss, value, ""); }
+void cc::to_string(cc::string_stream_ref ss, char value) { to_string(ss, value, ""); }
+void cc::to_string(cc::string_stream_ref ss, bool value) { to_string(ss, value, ""); }
+void cc::to_string(cc::string_stream_ref ss, char const* value) { to_string(ss, value, ""); }
+void cc::to_string(cc::string_stream_ref ss, cc::string_view value) { to_string(ss, value, ""); }
+void cc::to_string(cc::string_stream_ref ss, std::nullptr_t) { to_string(ss, std::nullptr_t{}, ""); }
 
-void to_string(cc::stream_ref<char> ss, std::byte value) { to_string(ss, value, ""); }
+void cc::to_string(cc::string_stream_ref ss, void* value) { to_string(ss, value, ""); }
 
-void to_string(cc::stream_ref<char> ss, signed char value) { to_string(ss, value, ""); }
-void to_string(cc::stream_ref<char> ss, short value) { to_string(ss, value, ""); }
-void to_string(cc::stream_ref<char> ss, int value) { to_string(ss, value, ""); }
-void to_string(cc::stream_ref<char> ss, long value) { to_string(ss, value, ""); }
-void to_string(cc::stream_ref<char> ss, long long value) { to_string(ss, value, ""); }
-void to_string(cc::stream_ref<char> ss, unsigned char value) { to_string(ss, value, ""); }
-void to_string(cc::stream_ref<char> ss, unsigned short value) { to_string(ss, value, ""); }
-void to_string(cc::stream_ref<char> ss, unsigned int value) { to_string(ss, value, ""); }
-void to_string(cc::stream_ref<char> ss, unsigned long value) { to_string(ss, value, ""); }
-void to_string(cc::stream_ref<char> ss, unsigned long long value) { to_string(ss, value, ""); }
+void cc::to_string(cc::string_stream_ref ss, std::byte value) { to_string(ss, value, ""); }
 
-void to_string(cc::stream_ref<char> ss, float value) { to_string(ss, value, ""); }
-void to_string(cc::stream_ref<char> ss, double value) { to_string(ss, value, ""); }
-void to_string(cc::stream_ref<char> ss, long double value) { to_string(ss, value, ""); }
+void cc::to_string(cc::string_stream_ref ss, signed char value) { to_string(ss, value, ""); }
+void cc::to_string(cc::string_stream_ref ss, short value) { to_string(ss, value, ""); }
+void cc::to_string(cc::string_stream_ref ss, int value) { to_string(ss, value, ""); }
+void cc::to_string(cc::string_stream_ref ss, long value) { to_string(ss, value, ""); }
+void cc::to_string(cc::string_stream_ref ss, long long value) { to_string(ss, value, ""); }
+void cc::to_string(cc::string_stream_ref ss, unsigned char value) { to_string(ss, value, ""); }
+void cc::to_string(cc::string_stream_ref ss, unsigned short value) { to_string(ss, value, ""); }
+void cc::to_string(cc::string_stream_ref ss, unsigned int value) { to_string(ss, value, ""); }
+void cc::to_string(cc::string_stream_ref ss, unsigned long value) { to_string(ss, value, ""); }
+void cc::to_string(cc::string_stream_ref ss, unsigned long long value) { to_string(ss, value, ""); }
+
+void cc::to_string(cc::string_stream_ref ss, float value) { to_string(ss, value, ""); }
+void cc::to_string(cc::string_stream_ref ss, double value) { to_string(ss, value, ""); }
+void cc::to_string(cc::string_stream_ref ss, long double value) { to_string(ss, value, ""); }
 
 namespace
 {
@@ -447,7 +459,7 @@ char const* unsigned_int_to_binary(IntType value, char* end)
 }
 
 template <class IntType>
-void unsigned_to_string_impl(cc::stream_ref<char> ss, IntType value, parsed_fmt_args const& args)
+void unsigned_to_string_impl(cc::string_stream_ref ss, IntType value, parsed_fmt_args const& args)
 {
     static_assert(std::is_unsigned_v<IntType>);
     switch (args.type)
@@ -716,7 +728,7 @@ void unsigned_to_string_impl(cc::stream_ref<char> ss, IntType value, parsed_fmt_
 }
 
 template <class IntType>
-void int_to_string_impl(cc::stream_ref<char> ss, IntType value, parsed_fmt_args const& args)
+void int_to_string_impl(cc::string_stream_ref ss, IntType value, parsed_fmt_args const& args)
 {
     auto const is_neg = value < 0;
     std::make_unsigned_t<IntType> unsigned_value = is_neg ? -value : value;
@@ -724,21 +736,21 @@ void int_to_string_impl(cc::stream_ref<char> ss, IntType value, parsed_fmt_args 
     switch (args.sign)
     {
     case ' ':
-        ss << (is_neg ? "-" : " ");
+        ss << (is_neg ? '-' : ' ');
         break;
     case '-':
         if (is_neg)
             ss << "-";
         break;
     case '+':
-        ss << (is_neg ? "-" : "+");
+        ss << (is_neg ? '-' : '+');
         break;
     }
     unsigned_to_string_impl(ss, unsigned_value, args);
 }
 
 template <class FloatType>
-void to_string_float_impl(cc::stream_ref<char> ss, FloatType value, parsed_fmt_args const& args)
+void to_string_float_impl(cc::string_stream_ref ss, FloatType value, parsed_fmt_args const& args)
 {
     // note: currently completely relys on std::sprintf
 
@@ -753,11 +765,11 @@ void to_string_float_impl(cc::stream_ref<char> ss, FloatType value, parsed_fmt_a
     if (args.sign_aware_zero_padding)
         sprintf_args << "0";
     if (args.width >= 0)
-        cc::to_string(cc::make_stream_ref<char>(sprintf_args), args.width, "");
+        cc::to_string(cc::make_string_stream_ref(sprintf_args), args.width, "");
     if (args.precision >= 0)
     {
         sprintf_args << ".";
-        cc::to_string(cc::make_stream_ref<char>(sprintf_args), args.precision, "");
+        cc::to_string(cc::make_string_stream_ref(sprintf_args), args.precision, "");
     }
 
     if (args.type == 0)
@@ -780,7 +792,7 @@ void to_string_float_impl(cc::stream_ref<char> ss, FloatType value, parsed_fmt_a
 }
 }
 
-void cc::to_string(cc::stream_ref<char> ss, char value, cc::string_view fmt_str)
+void cc::to_string(cc::string_stream_ref ss, char value, cc::string_view fmt_str)
 {
     auto const args = parse_args(fmt_str);
     if (args.type == 0 || args.type == 'c')
@@ -793,12 +805,15 @@ void cc::to_string(cc::stream_ref<char> ss, char value, cc::string_view fmt_str)
         int_to_string_impl(ss, value, args);
     }
 }
-void cc::to_string(cc::stream_ref<char> ss, bool value, cc::string_view fmt_str)
+void cc::to_string(cc::string_stream_ref ss, bool value, cc::string_view fmt_str)
 {
     auto const args = parse_args(fmt_str);
     if (args.type == 0) // default
     {
-        ss << (value ? "true" : "false");
+        if (value)
+            ss << "true";
+        else
+            ss << "false";
     }
     else
     { // handle as int
@@ -806,7 +821,7 @@ void cc::to_string(cc::stream_ref<char> ss, bool value, cc::string_view fmt_str)
         int_to_string_impl(ss, int(value), args);
     }
 }
-void cc::to_string(cc::stream_ref<char> ss, char const* value, cc::string_view fmt_str)
+void cc::to_string(cc::string_stream_ref ss, char const* value, cc::string_view fmt_str)
 {
     if (value)
     {
@@ -817,7 +832,7 @@ void cc::to_string(cc::stream_ref<char> ss, char const* value, cc::string_view f
         ss << "[nullptr]";
     }
 }
-void cc::to_string(cc::stream_ref<char> ss, cc::string_view value, cc::string_view fmt_str)
+void cc::to_string(cc::string_stream_ref ss, cc::string_view value, cc::string_view fmt_str)
 {
     if (fmt_str.empty())
     {
@@ -866,12 +881,12 @@ void cc::to_string(cc::stream_ref<char> ss, cc::string_view value, cc::string_vi
         }
     }
 }
-void cc::to_string(cc::stream_ref<char> ss, nullptr_t, cc::string_view fmt_str)
+void cc::to_string(cc::string_stream_ref ss, nullptr_t, cc::string_view fmt_str)
 {
     CC_ASSERT(fmt_str.empty()); // for now
     ss << "[nullptr]";
 }
-void cc::to_string(cc::stream_ref<char> ss, void* value, cc::string_view fmt_str)
+void cc::to_string(cc::string_stream_ref ss, void* value, cc::string_view fmt_str)
 {
     CC_ASSERT(fmt_str.empty()); // for now
     if (value)
@@ -884,72 +899,72 @@ void cc::to_string(cc::stream_ref<char> ss, void* value, cc::string_view fmt_str
         ss << "[nullptr]";
     }
 }
-void cc::to_string(cc::stream_ref<char> ss, std::byte value, cc::string_view fmt_str)
+void cc::to_string(cc::string_stream_ref ss, std::byte value, cc::string_view fmt_str)
 {
     CC_ASSERT(fmt_str.empty()); // for now
     ss << cc::string_view(to_string(value));
 }
-void cc::to_string(cc::stream_ref<char> ss, signed char value, cc::string_view fmt_str)
+void cc::to_string(cc::string_stream_ref ss, signed char value, cc::string_view fmt_str)
 {
     auto const args = parse_args(fmt_str);
     int_to_string_impl(ss, value, args);
 }
-void cc::to_string(cc::stream_ref<char> ss, short value, cc::string_view fmt_str)
+void cc::to_string(cc::string_stream_ref ss, short value, cc::string_view fmt_str)
 {
     auto const args = parse_args(fmt_str);
     int_to_string_impl(ss, value, args);
 }
-void cc::to_string(cc::stream_ref<char> ss, int value, cc::string_view fmt_str)
+void cc::to_string(cc::string_stream_ref ss, int value, cc::string_view fmt_str)
 {
     auto const args = parse_args(fmt_str);
     int_to_string_impl(ss, value, args);
 }
-void cc::to_string(cc::stream_ref<char> ss, long value, cc::string_view fmt_str)
+void cc::to_string(cc::string_stream_ref ss, long value, cc::string_view fmt_str)
 {
     auto const args = parse_args(fmt_str);
     int_to_string_impl(ss, value, args);
 }
-void cc::to_string(cc::stream_ref<char> ss, long long value, cc::string_view fmt_str)
+void cc::to_string(cc::string_stream_ref ss, long long value, cc::string_view fmt_str)
 {
     auto const args = parse_args(fmt_str);
     int_to_string_impl(ss, value, args);
 }
-void cc::to_string(cc::stream_ref<char> ss, unsigned char value, cc::string_view fmt_str)
+void cc::to_string(cc::string_stream_ref ss, unsigned char value, cc::string_view fmt_str)
 {
     auto const args = parse_args(fmt_str);
     unsigned_to_string_impl(ss, value, args);
 }
-void cc::to_string(cc::stream_ref<char> ss, unsigned short value, cc::string_view fmt_str)
+void cc::to_string(cc::string_stream_ref ss, unsigned short value, cc::string_view fmt_str)
 {
     auto const args = parse_args(fmt_str);
     unsigned_to_string_impl(ss, value, args);
 }
-void cc::to_string(cc::stream_ref<char> ss, unsigned int value, cc::string_view fmt_str)
+void cc::to_string(cc::string_stream_ref ss, unsigned int value, cc::string_view fmt_str)
 {
     auto const args = parse_args(fmt_str);
     unsigned_to_string_impl(ss, value, args);
 }
-void cc::to_string(cc::stream_ref<char> ss, unsigned long value, cc::string_view fmt_str)
+void cc::to_string(cc::string_stream_ref ss, unsigned long value, cc::string_view fmt_str)
 {
     auto const args = parse_args(fmt_str);
     unsigned_to_string_impl(ss, value, args);
 }
-void cc::to_string(cc::stream_ref<char> ss, unsigned long long value, cc::string_view fmt_str)
+void cc::to_string(cc::string_stream_ref ss, unsigned long long value, cc::string_view fmt_str)
 {
     auto const args = parse_args(fmt_str);
     unsigned_to_string_impl(ss, value, args);
 }
-void cc::to_string(cc::stream_ref<char> ss, float value, cc::string_view fmt_str)
+void cc::to_string(cc::string_stream_ref ss, float value, cc::string_view fmt_str)
 {
     auto const args = parse_args(fmt_str);
     to_string_float_impl(ss, value, args);
 }
-void cc::to_string(cc::stream_ref<char> ss, double value, cc::string_view fmt_str)
+void cc::to_string(cc::string_stream_ref ss, double value, cc::string_view fmt_str)
 {
     auto const args = parse_args(fmt_str);
     to_string_float_impl(ss, value, args);
 }
-void cc::to_string(cc::stream_ref<char> ss, long double value, cc::string_view fmt_str)
+void cc::to_string(cc::string_stream_ref ss, long double value, cc::string_view fmt_str)
 {
     auto const args = parse_args(fmt_str);
     to_string_float_impl(ss, value, args);

@@ -1,0 +1,103 @@
+#pragma once
+
+#include <initializer_list>
+
+#include <clean-core/collection_traits.hh>
+#include <clean-core/enable_if.hh>
+#include <clean-core/function_ref.hh>
+#include <clean-core/is_range.hh>
+#include <clean-core/iterator.hh>
+
+namespace cc
+{
+/// a type-erased range of elements that can be converted to T
+/// NOTE: any range assigned to this must always outlive the range_ref.
+///       this is designed to be mainly used as function argument (similar to span, string_view, stream_ref, etc.)
+///
+/// TODO: expose function<void(function<void(T)>)> interface
+template <class T>
+struct range_ref
+{
+    /// empty range
+    range_ref()
+    {
+        _for_each = [](cc::function_ref<void(T)>) {};
+    }
+
+    /// create a range_ref from any range (Range must support range-based-for)
+    /// NOTE: range element types must be convertible to T
+    /// CAUTION: range must always outlive the range_ref!
+    template <class Range, cc::enable_if<cc::is_any_range<Range>> = true>
+    range_ref(Range&& range)
+    {
+        static_assert(std::is_convertible_v<decltype(*cc::collection_begin(range)), T>, "range elements must be convertible to T");
+        if constexpr (std::is_const_v<std::remove_reference_t<Range>>)
+        {
+            _range.obj_const = &range;
+            _for_each = [](storage const& s, cc::function_ref<void(T)> f) {
+                for (auto&& v : *static_cast<decltype(&range)>(s.obj_const))
+                    f(v);
+            };
+        }
+        else
+        {
+            _range.obj = &range;
+            _for_each = [](storage const& s, cc::function_ref<void(T)> f) {
+                for (auto&& v : *static_cast<decltype(&range)>(s.obj))
+                    f(v);
+            };
+        }
+    }
+
+    /// creates a range_ref based on fixed values
+    range_ref(std::initializer_list<T> const& range)
+    {
+        _range.obj_const = &range;
+        _for_each = [](storage const& s, cc::function_ref<void(T)> f) {
+            for (auto&& v : *static_cast<decltype(&range)>(s.obj_const))
+                f(v);
+        };
+    }
+
+    /// iterates over all elements in the range and calls f for them
+    void for_each(cc::function_ref<void(T)> f) const { _for_each(_range, f); }
+
+private:
+    union storage {
+        void* obj;             // pointer to range
+        void const* obj_const; // pointer to const range
+
+        storage() { obj = nullptr; }
+    };
+
+    storage _range;
+    cc::function_ptr<void(storage const&, cc::function_ref<void(T)>)> _for_each = nullptr;
+};
+
+/// creates an object that can be used as range_ref<T>
+/// CAUTION: the result should be passed directly to a function accepting range_ref<T>
+///          (otherwise one can quickly get lifetime issues)
+template <class T, class Range>
+range_ref<T> make_range_ref(Range&& range)
+{
+    static_assert(cc::is_any_range<Range>, "only works for ranges");
+    return range;
+};
+/// same as make_range_ref<T> but tries to infer T
+/// NOTE: for technical reasons this just returns "range"
+///       the actual inference happens in the ctor of range_ref<T>
+template <class Range>
+decltype(auto) make_range_ref(Range&& range)
+{
+    static_assert(cc::is_any_range<Range>, "only works for ranges");
+    return range;
+};
+/// support for cc::make_range_ref({1, 2, 3})
+/// NOTE: for technical reasons this just returns "range"
+///       the actual inference happens in the ctor of range_ref<T>
+template <class T>
+decltype(auto) make_range_ref(std::initializer_list<T> const& range)
+{
+    return range;
+}
+}
