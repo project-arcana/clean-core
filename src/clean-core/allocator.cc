@@ -19,8 +19,22 @@
 #define CC_DTRACE_ALLOC_FFLUSH() (void)0
 #endif
 
+
 namespace
 {
+template <class T>
+[[nodiscard]] T align_up_masked(T value, size_t mask)
+{
+    return (T)(((size_t)value + mask) & ~mask);
+}
+
+/// increment the value (pointer or integer) to align at the given boundary
+template <class T>
+[[nodiscard]] T align_up(T value, size_t alignment)
+{
+    return align_up_masked(value, alignment - 1);
+}
+
 struct stack_alloc_header
 {
     size_t padding;
@@ -37,7 +51,7 @@ constexpr uint32_t const gc_header_free_bit = 0x80000000u;
 // [... pad ...] [header] [data]
 std::byte* align_up_with_header(std::byte* head, size_t align, size_t header_size)
 {
-    std::byte* padded_res = cc::align_up(head, align);
+    std::byte* padded_res = align_up(head, align);
     size_t const padding = size_t(padded_res - head);
 
     if (padding < header_size)
@@ -62,7 +76,7 @@ std::byte* align_up_with_header(std::byte* head, size_t align, size_t header_siz
 std::byte* align_up_from_header(scratch_alloc_header* header, size_t align)
 {
     void* const p = header + 1;
-    return static_cast<std::byte*>(cc::align_up(p, align));
+    return static_cast<std::byte*>(align_up(p, align));
 }
 
 // returns a pointer to the header preceding the given allocation
@@ -227,6 +241,20 @@ cc::byte* cc::allocator::realloc_request(void* ptr, cc::size_t old_size, cc::siz
     out_received_size = new_min_size;
     return this->realloc(ptr, old_size, new_min_size, align);
 }
+// cc::scratch_allocator is based on the bitsquid foundation ScratchAllocator
+// https://github.com/niklas-ourmachinery/bitsquid-foundation/blob/master/memory.cpp#L142
+// the original implementation contains bugs which are fixed here
+//
+// original license (MIT):
+//
+// Copyright (C) 2012 Bitsquid AB
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 cc::byte* cc::scratch_allocator::alloc(cc::size_t size, cc::size_t align)
 {

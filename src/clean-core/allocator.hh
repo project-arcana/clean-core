@@ -54,18 +54,6 @@ struct allocator : polymorphic
         void* ptr, size_t old_size, size_t new_min_size, size_t request_size, size_t& out_received_size, size_t align = alignof(std::max_align_t));
 };
 
-template <class T>
-[[nodiscard]] T align_up_masked(T value, size_t mask)
-{
-    return (T)(((size_t)value + mask) & ~mask);
-}
-
-/// increment the value (pointer or integer) to align at the given boundary
-template <class T>
-[[nodiscard]] T align_up(T value, size_t alignment)
-{
-    return align_up_masked(value, alignment - 1);
-}
 
 /// system provided allocator (malloc / free)
 struct system_allocator_t final : allocator
@@ -79,9 +67,11 @@ struct system_allocator_t final : allocator
     system_allocator_t() = default;
 };
 
+
 /// global instance of the system allocator (malloc / free) (thread safe)
 extern allocator* const system_allocator;
 extern system_allocator_t system_allocator_instance;
+
 
 /// trivial linear allocator operating in a given buffer
 /// cannot free individual allocations, only reset entirely
@@ -110,6 +100,7 @@ private:
     byte* _head = nullptr;
     byte* _buffer_end = nullptr;
 };
+
 
 /// stack allocator operating in a given buffer
 /// like a linear allocator, but can also free the most recent allocation
