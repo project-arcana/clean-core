@@ -22,7 +22,7 @@ struct range_ref
     /// empty range
     range_ref()
     {
-        _for_each = [](cc::function_ref<void(T)>) {};
+        _for_each = [](storage const&, cc::function_ref<void(T)>) {};
     }
 
     /// create a range_ref from any range (Range must support range-based-for)
