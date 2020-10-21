@@ -94,11 +94,21 @@ public:
         return {_data + offset, _size - offset};
     }
 
-    constexpr span<byte const> as_bytes() const { return {reinterpret_cast<byte const*>(_data), _size * sizeof(T)}; }
+    span<byte const> as_bytes() const { return {reinterpret_cast<byte const*>(_data), _size * sizeof(T)}; }
     template <class U = T, cc::enable_if<!std::is_const_v<U>> = true>
-    constexpr span<byte> as_writable_bytes() const
+    span<byte> as_writable_bytes() const
     {
         return {reinterpret_cast<byte*>(_data), _size * sizeof(T)};
+    }
+
+    template <class U>
+    span<U> reinterpret_as() const
+    {
+        static_assert(std::is_trivially_copyable_v<T>, "only works if source type is trivially copyable");
+        static_assert(std::is_trivially_copyable_v<U>, "only works if target type is trivially copyable");
+        CC_CONTRACT(size_bytes() % sizeof(U) == 0 && "target size must be integer");
+        static_assert(std::is_const_v<U> || !std::is_const_v<T>, "cannot break const-correctness with reinterpret_as<U>");
+        return {reinterpret_cast<U*>(_data), _size * sizeof(T) / sizeof(U)};
     }
 
     // operations
@@ -184,5 +194,22 @@ template <class T>
 auto as_byte_span(T&& value, size_t offset, size_t count)
 {
     return cc::as_byte_span(value).subspan(offset, count);
+}
+
+/// reinterprets the given bytes as object T
+template <class T>
+T& from_byte_span(cc::span<std::byte> bytes)
+{
+    static_assert(std::is_trivially_copyable_v<T>);
+    CC_ASSERT(bytes.size() == sizeof(T) && "size must match exactly");
+    return *reinterpret_cast<T*>(bytes.data());
+}
+template <class T>
+T& from_byte_span(cc::span<std::byte const> bytes)
+{
+    static_assert(std::is_trivially_copyable_v<T>);
+    static_assert(std::is_const_v<T>, "cannot break const-correctness");
+    CC_ASSERT(bytes.size() == sizeof(T) && "size must match exactly");
+    return *reinterpret_cast<T*>(bytes.data());
 }
 }
