@@ -56,6 +56,20 @@ template <class T>
     return pos == 0 ? max - 1 : pos - 1;
 }
 
+/// Divide ints and round up, nom > 0, denom > 0
+template <class T>
+[[nodiscard]] constexpr T int_div_ceil(T nom, T denom)
+{
+    return 1 + ((nom - 1) / denom);
+}
+
+/// Ceil a value to a multiple of a given value
+template <class T>
+[[nodiscard]] constexpr T int_ceil_to_multiple(T val, T multiple)
+{
+    return ((val + multiple - 1) / multiple) * multiple;
+}
+
 [[maybe_unused]] struct
 {
     template <class T>
@@ -65,11 +79,4 @@ template <class T>
     }
 } constexpr swap; // implemented as functor so it cannot be found by ADL
 
-// Divide ints and round up
-// a > 0, b > 0
-template <class T>
-[[nodiscard]] constexpr T int_div_ceil(T a, T b)
-{
-    return 1 + ((a - 1) / b);
-}
 }

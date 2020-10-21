@@ -60,7 +60,7 @@ public:
     constexpr capped_array(std::initializer_list<T> data)
     {
         CC_CONTRACT(data.size() <= N);
-        _size = data.size();
+        _size = compact_size_t(data.size());
         for (compact_size_t i = 0; i < _size; ++i)
             new (placement_new, &_u.value[i]) T(data.begin()[i]);
     }
