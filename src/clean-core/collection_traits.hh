@@ -3,10 +3,15 @@
 #include <cstddef>
 #include <type_traits>
 
+#include <clean-core/enable_if.hh>
 #include <clean-core/forward.hh>
 #include <clean-core/fwd.hh>
 #include <clean-core/move.hh>
 #include <clean-core/priority_tag.hh>
+
+// collection_traits<T> provide compile time information about how to use / call a collection
+// the cc::collection_xyz functions are designed to provide collection trait functions in a SFINAE-friendly manner
+// e.g. "decltype(*cc::collection_begin(some_range))" can be used in cc::enable_if or in decltype-SFINAE
 
 namespace cc
 {
@@ -35,28 +40,35 @@ struct collection_traits;
 //  - is_contiguous_range
 //  - is_any_contiguous_range
 
-template <class CollectionT>
+/// returns the begin iterator for the collection
+/// NOTE: is SFINAE-friendly
+template <class CollectionT, cc::enable_if<collection_traits<CollectionT>::is_range> = true>
 constexpr decltype(auto) collection_begin(CollectionT&& c)
 {
-    static_assert(collection_traits<CollectionT>::is_range);
     return collection_traits<CollectionT>::begin(c);
 }
-template <class CollectionT>
+
+/// returns the end iterator for the collection
+/// NOTE: is SFINAE-friendly
+template <class CollectionT, cc::enable_if<collection_traits<CollectionT>::is_range> = true>
 constexpr decltype(auto) collection_end(CollectionT&& c)
 {
-    static_assert(collection_traits<CollectionT>::is_range);
     return collection_traits<CollectionT>::end(c);
 }
-template <class CollectionT>
+
+/// returns the size of a collection
+/// NOTE: is SFINAE-friendly
+template <class CollectionT, cc::enable_if<collection_traits<CollectionT>::has_size> = true>
 constexpr decltype(auto) collection_size(CollectionT&& c)
 {
-    static_assert(collection_traits<CollectionT>::has_size);
     return collection_traits<CollectionT>::size(c);
 }
-template <class CollectionT, class T>
+
+/// adds an element in a collection-defined semantic
+/// NOTE: is SFINAE-friendly
+template <class CollectionT, class T, cc::enable_if<collection_traits<CollectionT>::can_add> = true>
 constexpr decltype(auto) collection_add(CollectionT&& c, T&& value)
 {
-    static_assert(collection_traits<CollectionT>::can_add);
     return collection_traits<CollectionT>::add(c, cc::forward<T>(value));
 }
 
@@ -238,7 +250,14 @@ struct cc_array_collection_traits : base_collection_traits
 }
 
 template <class T, class>
-struct collection_traits : detail::inferred_collection_traits<T>
+struct collection_traits : detail::base_collection_traits // not a range
+{
+};
+
+// specialization for normal range-based for
+template <class RangeT>
+struct collection_traits<RangeT, std::void_t<decltype(std::declval<RangeT>().begin()), decltype(std::declval<RangeT>().end())>>
+  : detail::inferred_collection_traits<RangeT>
 {
 };
 
