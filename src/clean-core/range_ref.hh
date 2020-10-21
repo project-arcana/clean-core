@@ -16,6 +16,11 @@ namespace cc
 ///
 /// TODO: expose function<void(function<void(T)>)> interface
 /// TODO: disambiguate case where element and *element are convertible to T
+///
+/// Implementation note:
+///   the templated constructors use the SFINAE-friendly cc::collection_begin
+///   and are themselves designed to support SFINAE.
+///   this is important so that functions can be overloaded on different types of range_ref<T>s
 template <class T>
 struct range_ref
 {
