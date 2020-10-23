@@ -22,18 +22,22 @@ cc::string cc::to_string(cc::string_view value) { return value; }
 
 cc::string cc::to_string(const wchar_t* value)
 {
+    if (value == nullptr)
+        return "[nullptr]";
+
     cc::string res;
     res.resize(std::wcslen(value));
     widechar_to_char(res, value);
     return res;
 }
 
-cc::string cc::to_string(cc::nullptr_t) { return "nullptr"; }
+cc::string cc::to_string(cc::nullptr_t) { return "[nullptr]"; }
 
-cc::string cc::to_string(void* value)
+cc::string cc::to_string(void* value) { return cc::to_string((void const*)value); }
+cc::string cc::to_string(void const* value)
 {
     if (value == nullptr)
-        return "nullptr";
+        return "[nullptr]";
 
     char buffer[16 + 2 + 1];
     auto res = std::snprintf(buffer, sizeof(buffer), "0x%.16zx", size_t(value));
@@ -173,6 +177,12 @@ cc::string cc::to_string(char const* value, cc::string_view fmt_str)
     to_string([&s](cc::span<char const> ss) { s += cc::string_view(ss); }, value, fmt_str);
     return s;
 }
+cc::string cc::to_string(wchar_t const* value, cc::string_view fmt_str)
+{
+    cc::string s;
+    to_string([&s](cc::span<char const> ss) { s += cc::string_view(ss); }, value, fmt_str);
+    return s;
+}
 cc::string cc::to_string(cc::string_view value, cc::string_view fmt_str)
 {
     cc::string s;
@@ -283,10 +293,12 @@ cc::string cc::to_string(long double value, cc::string_view fmt_str)
 void cc::to_string(cc::string_stream_ref ss, char value) { to_string(ss, value, ""); }
 void cc::to_string(cc::string_stream_ref ss, bool value) { to_string(ss, value, ""); }
 void cc::to_string(cc::string_stream_ref ss, char const* value) { to_string(ss, value, ""); }
+void cc::to_string(cc::string_stream_ref ss, wchar_t const* value) { to_string(ss, value, ""); }
 void cc::to_string(cc::string_stream_ref ss, cc::string_view value) { to_string(ss, value, ""); }
 void cc::to_string(cc::string_stream_ref ss, std::nullptr_t) { to_string(ss, std::nullptr_t{}, ""); }
 
 void cc::to_string(cc::string_stream_ref ss, void* value) { to_string(ss, value, ""); }
+void cc::to_string(cc::string_stream_ref ss, void const* value) { to_string(ss, value, ""); }
 
 void cc::to_string(cc::string_stream_ref ss, std::byte value) { to_string(ss, value, ""); }
 
@@ -832,6 +844,11 @@ void cc::to_string(cc::string_stream_ref ss, char const* value, cc::string_view 
         ss << "[nullptr]";
     }
 }
+void cc::to_string(cc::string_stream_ref ss, wchar_t const* value, cc::string_view fmt_str)
+{
+    (void)fmt_str;
+    ss << cc::to_string(value);
+}
 void cc::to_string(cc::string_stream_ref ss, cc::string_view value, cc::string_view fmt_str)
 {
     if (fmt_str.empty())
@@ -889,15 +906,12 @@ void cc::to_string(cc::string_stream_ref ss, nullptr_t, cc::string_view fmt_str)
 void cc::to_string(cc::string_stream_ref ss, void* value, cc::string_view fmt_str)
 {
     CC_ASSERT(fmt_str.empty()); // for now
-    if (value)
-    {
-        // for now print as hex value
-        cc::to_string(ss, intptr_t(value), "#x");
-    }
-    else
-    {
-        ss << "[nullptr]";
-    }
+    ss << cc::to_string(value);
+}
+void cc::to_string(cc::string_stream_ref ss, void const* value, cc::string_view fmt_str)
+{
+    CC_ASSERT(fmt_str.empty()); // for now
+    ss << cc::to_string(value);
 }
 void cc::to_string(cc::string_stream_ref ss, std::byte value, cc::string_view fmt_str)
 {
