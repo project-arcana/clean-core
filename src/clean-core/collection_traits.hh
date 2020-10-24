@@ -158,6 +158,8 @@ constexpr auto collection_add(Container& c, T&& v)
 
 struct base_collection_traits
 {
+    static constexpr bool has_data = false;
+    static constexpr bool has_size = false;
     static constexpr bool is_range = false;
     static constexpr bool is_contiguous = false;
     static constexpr bool is_fixed_size = false;
