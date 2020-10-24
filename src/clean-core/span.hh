@@ -1,46 +1,48 @@
 #pragma once
 
+#include <cstring> // memcpy
 #include <type_traits>
 
 #include <clean-core/assert.hh>
 #include <clean-core/enable_if.hh>
-#include <clean-core/fwd.hh>
 #include <clean-core/is_contiguous_range.hh>
 #include <clean-core/typedefs.hh>
 
 namespace cc
 {
-// a non-owning view of a contiguous array of Ts
-// can be read and write (span<const T> vs span<T>)
-// is trivially copyable (and cheap)
-// NOTE: is range-checked via CC_CONTRACT
+/// a non-owning view of a contiguous array of Ts
+/// can be read and write (span<const T> vs span<T>)
+/// is trivially copyable (and cheap)
+/// NOTE: is range-checked via CC_CONTRACT
 template <class T>
 struct span
 {
     // ctors
 public:
     constexpr span() = default;
-    constexpr span(T* data, size_t size) : _data(data), _size(size) {}
-    constexpr span(T* d_begin, T* d_end) : _data(d_begin), _size(d_end - d_begin) {}
+
+    CC_FORCE_INLINE constexpr span(T* data, size_t size) : _data(data), _size(size) {}
+    CC_FORCE_INLINE constexpr span(T* d_begin, T* d_end) : _data(d_begin), _size(d_end - d_begin) {}
+
     template <size_t N>
-    constexpr span(T (&data)[N]) : _data(data), _size(N)
+    CC_FORCE_INLINE constexpr span(T (&data)[N]) : _data(data), _size(N)
     {
     }
 
     /// generic span constructor from contiguous_range
     /// CAUTION: container MUST outlive the span!
     template <class Container, cc::enable_if<is_contiguous_range<Container, T>> = true>
-    constexpr span(Container&& c) : _data(c.data()), _size(c.size())
+    CC_FORCE_INLINE constexpr span(Container&& c) : _data(c.data()), _size(c.size())
     {
     }
 
-    explicit constexpr span(T& val) : _data(&val), _size(1) {}
+    CC_FORCE_INLINE explicit constexpr span(T& val) : _data(&val), _size(1) {}
 
     /// CAUTION: value MUST outlive the span!
     /// NOTE: this ctor is for spans constructed inside an expression
-    explicit constexpr span(T&& val) : _data(&val), _size(1) {}
+    CC_FORCE_INLINE explicit constexpr span(T&& val) : _data(&val), _size(1) {}
 
-    constexpr operator span<T const>() const noexcept { return {_data, _size}; }
+    CC_FORCE_INLINE constexpr operator span<T const>() const noexcept { return {_data, _size}; }
 
     // container
 public:
@@ -92,17 +94,62 @@ public:
         return {_data + offset, _size - offset};
     }
 
-    constexpr span<byte const> as_bytes() const { return {reinterpret_cast<byte const*>(_data), _size * sizeof(T)}; }
+    span<byte const> as_bytes() const { return {reinterpret_cast<byte const*>(_data), _size * sizeof(T)}; }
     template <class U = T, cc::enable_if<!std::is_const_v<U>> = true>
-    constexpr span<byte> as_writable_bytes() const
+    span<byte> as_writable_bytes() const
     {
         return {reinterpret_cast<byte*>(_data), _size * sizeof(T)};
+    }
+
+    template <class U>
+    span<U> reinterpret_as() const
+    {
+        static_assert(std::is_trivially_copyable_v<T>, "only works if source type is trivially copyable");
+        static_assert(std::is_trivially_copyable_v<U>, "only works if target type is trivially copyable");
+        CC_CONTRACT(size_bytes() % sizeof(U) == 0 && "target size must be integer");
+        static_assert(std::is_const_v<U> || !std::is_const_v<T>, "cannot break const-correctness with reinterpret_as<U>");
+        return {reinterpret_cast<U*>(_data), _size * sizeof(T) / sizeof(U)};
+    }
+
+    // operations
+public:
+    /// copies all elements from this span to a target
+    /// NOTE: sizes must match
+    /// NOTE: target and this must not overlap!
+    /// NOTE: uses std::memcpy for trivially copyable types
+    /// TODO: versions with offset + count?
+    template <class U = std::remove_const_t<T>, enable_if<std::is_assignable_v<U&, T>> = true>
+    constexpr void copy_to(span<U> target) const
+    {
+        CC_CONTRACT(target.size() == _size);
+        if constexpr (std::is_same_v<std::decay_t<T>, std::decay_t<U>> && std::is_trivially_copyable_v<T>)
+            std::memcpy(target.data(), _data, size_bytes());
+        else
+            for (size_t i = 0; i < _size; ++i)
+                target._data[i] = _data[i];
+    }
+
+    /// copies all elements from the source to this span
+    /// NOTE: sizes must match
+    /// NOTE: target and this must not overlap!
+    /// NOTE: uses std::memcpy for trivially copyable types
+    /// TODO: versions with offset + count?
+    template <class U = T const, enable_if<std::is_assignable_v<T&, U>> = true>
+    constexpr void copy_from(span<U> source) const
+    {
+        CC_CONTRACT(source.size() == _size);
+        if constexpr (std::is_same_v<std::decay_t<T>, std::decay_t<U>> && std::is_trivially_copyable_v<T>)
+            std::memcpy(_data, source._data, size_bytes());
+        else
+            for (size_t i = 0; i < _size; ++i)
+                _data[i] = source._data[i];
     }
 
 private:
     T* _data = nullptr;
     size_t _size = 0;
 };
+
 
 // deduction guide for containers
 template <class Container, cc::enable_if<is_any_contiguous_range<Container>> = true>
@@ -140,5 +187,29 @@ auto as_byte_span(T&& value)
         static_assert(std::is_trivially_copyable_v<std::remove_reference_t<T>>, "cannot convert non-trivially copyable element to byte span");
         return span<byte>{reinterpret_cast<byte*>(&value), sizeof(T)};
     }
+}
+
+/// same as as_byte_span(value).subspan(offset, count)
+template <class T>
+auto as_byte_span(T&& value, size_t offset, size_t count)
+{
+    return cc::as_byte_span(value).subspan(offset, count);
+}
+
+/// reinterprets the given bytes as object T
+template <class T>
+T& from_byte_span(cc::span<std::byte> bytes)
+{
+    static_assert(std::is_trivially_copyable_v<T>);
+    CC_ASSERT(bytes.size() == sizeof(T) && "size must match exactly");
+    return *reinterpret_cast<T*>(bytes.data());
+}
+template <class T>
+T& from_byte_span(cc::span<std::byte const> bytes)
+{
+    static_assert(std::is_trivially_copyable_v<T>);
+    static_assert(std::is_const_v<T>, "cannot break const-correctness");
+    CC_ASSERT(bytes.size() == sizeof(T) && "size must match exactly");
+    return *reinterpret_cast<T*>(bytes.data());
 }
 }

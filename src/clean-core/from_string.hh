@@ -10,6 +10,9 @@
 
 namespace cc
 {
+bool from_string(cc::string_view s, bool& v); // "true" or "false"
+bool from_string(cc::string_view s, char& v);
+
 bool from_string(cc::string_view s, signed char& v);
 bool from_string(cc::string_view s, signed short& v);
 bool from_string(cc::string_view s, signed int& v);

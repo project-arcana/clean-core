@@ -107,11 +107,28 @@ public:
         if (s.size() > _size)
             return false;
 
-        for (size_t i = 0; i < _size - s.size(); ++i)
+        for (size_t i = 0; i < _size - s.size() + 1; ++i)
             if (subview(i, s.size()) == s)
                 return true;
 
         return false;
+    }
+
+    /// returns the index of the first occurrence of the character (or -1 if not found)
+    constexpr int64 index_of(char c) const
+    {
+        for (size_t i = 0; i < _size; ++i)
+            if (_data[i] == c)
+                return int64(i);
+        return -1;
+    }
+    /// returns the index of the last occurrence of the character (or -1 if not found)
+    constexpr int64 last_index_of(char c) const
+    {
+        for (auto i = int64(_size) - 1; i >= 0; --i)
+            if (_data[i] == c)
+                return int64(i);
+        return -1;
     }
 
     constexpr bool starts_with(char c) const { return _size > 0 && front() == c; }
