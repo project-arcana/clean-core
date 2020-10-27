@@ -643,9 +643,6 @@ public:
 
     // operators
 public:
-    bool operator==(string_view rhs) const { return string_view(_data, _size) == rhs; }
-    bool operator!=(string_view rhs) const { return string_view(_data, _size) != rhs; }
-
     // TODO: op<, >, ...
 
     sbo_string& operator+=(char c)
@@ -690,19 +687,15 @@ public:
         return *this;
     }
 
-    operator string_view() const { return string_view(_data, _size); }
-
-    friend bool operator==(string_view lhs, sbo_string const& rhs) { return lhs == string_view(rhs); }
-    friend bool operator!=(string_view lhs, sbo_string const& rhs) { return lhs != string_view(rhs); }
     template <size_t B>
-    friend bool operator==(sbo_string const& lhs, sbo_string<B> const& rhs)
+    bool operator==(sbo_string<B> const& rhs) const
     {
-        return string_view(lhs) == string_view(rhs);
+        return string_view(*this) == string_view(rhs);
     }
     template <size_t B>
-    friend bool operator!=(sbo_string const& lhs, sbo_string<B> const& rhs)
+    bool operator!=(sbo_string<B> const& rhs) const
     {
-        return string_view(lhs) != string_view(rhs);
+        return string_view(*this) != string_view(rhs);
     }
 
     friend sbo_string operator+(sbo_string lhs, string_view rhs)
