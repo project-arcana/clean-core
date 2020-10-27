@@ -266,6 +266,9 @@ public:
         return false;
     }
 
+    friend constexpr bool operator==(char const* lhs, string_view rhs) { return string_view(lhs) == rhs; }
+    friend constexpr bool operator!=(char const* lhs, string_view rhs) { return string_view(lhs) != rhs; }
+
 private:
     char const* _data = nullptr;
     size_t _size = 0;
@@ -344,6 +347,7 @@ private:
         constexpr cc::sentinel end() const { return {}; }
     };
 };
+
 constexpr auto string_view::split(char sep, split_options opts) const
 {
     return string_split_range(_data, _data + _size, opts, cc::is_equal_fun(sep));
