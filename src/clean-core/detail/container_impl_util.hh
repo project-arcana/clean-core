@@ -47,7 +47,7 @@ void container_copy_construct_fill(T const& value, SizeT num, T* __restrict dest
 }
 
 template <class T, class SizeT = std::size_t>
-void container_destroy_reverse(T* data, SizeT size, SizeT to_index = 0)
+void container_destroy_reverse([[maybe_unused]] T* data, [[maybe_unused]] SizeT size, [[maybe_unused]] SizeT to_index = 0)
 {
     if constexpr (!std::is_trivially_destructible_v<T>)
     {

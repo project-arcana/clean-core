@@ -77,28 +77,14 @@ public:
     sbo_string()
     {
         _size = 0;
-        _capacity = 0; // clear first word of sbo
+        _sbo_words = {}; // also sets capacity to 0
         _data = _sbo;
     }
 
-    sbo_string(string_view s)
-    {
-        _size = s.size();
-
-        if (_size <= sbo_capacity)
-            _data = _sbo;
-        else
-        {
-            _capacity = _size;
-            _data = new char[_size + 1];
-        }
-
-        std::memcpy(_data, s.data(), _size);
-        _data[_size] = '\0';
-    }
     sbo_string(char const* s)
     {
         _size = std::strlen(s);
+        _sbo_words = {}; // also sets capacity to 0
 
         if (_size <= sbo_capacity)
             _data = _sbo;
@@ -111,6 +97,23 @@ public:
         std::memcpy(_data, s, _size);
         _data[_size] = '\0';
     }
+    sbo_string(char const* s, size_t size)
+    {
+        _size = size;
+        _sbo_words = {}; // also sets capacity to 0
+
+        if (_size <= sbo_capacity)
+            _data = _sbo;
+        else
+        {
+            _capacity = _size;
+            _data = new char[_size + 1];
+        }
+
+        std::memcpy(_data, s, _size);
+        _data[_size] = '\0';
+    }
+    sbo_string(string_view s) : sbo_string(s.data(), s.size()) {}
 
     [[nodiscard]] static sbo_string uninitialized(size_t size)
     {
@@ -130,6 +133,8 @@ public:
 
     sbo_string(sbo_string const& rhs)
     {
+        _sbo_words = {}; // also sets capacity to 0
+
         if (rhs._is_short())
         {
             _data = _sbo;
@@ -152,6 +157,8 @@ public:
     }
     sbo_string(sbo_string&& rhs) noexcept
     {
+        _sbo_words = {}; // also sets capacity to 0
+
         _size = rhs._size;
         if (rhs._is_short())
         {
@@ -168,31 +175,32 @@ public:
 
     sbo_string& operator=(sbo_string const& rhs)
     {
-        if (this != &rhs)
-        {
-            if (!_is_short())
-                delete[] _data;
+        if (this == &rhs)
+            return *this;
 
-            if (rhs._is_short())
-            {
-                _data = _sbo;
-                _size = rhs._size;
-                _sbo_words = rhs._sbo_words;
-            }
-            else if (rhs.size() <= sbo_capacity)
-            {
-                _data = _sbo;
-                _size = rhs.size();
-                std::memcpy(_data, rhs._data, _size + 1);
-            }
-            else
-            {
-                _size = rhs._size;
-                _capacity = rhs._size;
-                _data = new char[_size + 1];
-                std::memcpy(_data, rhs._data, _size + 1);
-            }
+        if (!_is_short())
+            delete[] _data;
+
+        if (rhs._is_short())
+        {
+            _data = _sbo;
+            _size = rhs._size;
+            _sbo_words = rhs._sbo_words;
         }
+        else if (rhs.size() <= sbo_capacity)
+        {
+            _data = _sbo;
+            _size = rhs.size();
+            std::memcpy(_data, rhs._data, _size + 1);
+        }
+        else
+        {
+            _size = rhs._size;
+            _capacity = rhs._size;
+            _data = new char[_size + 1];
+            std::memcpy(_data, rhs._data, _size + 1);
+        }
+
         return *this;
     }
     sbo_string& operator=(sbo_string&& rhs) noexcept
@@ -642,9 +650,6 @@ public:
 
     // operators
 public:
-    bool operator==(string_view rhs) const { return string_view(_data, _size) == rhs; }
-    bool operator!=(string_view rhs) const { return string_view(_data, _size) != rhs; }
-
     // TODO: op<, >, ...
 
     sbo_string& operator+=(char c)
@@ -689,19 +694,15 @@ public:
         return *this;
     }
 
-    operator string_view() const { return string_view(_data, _size); }
-
-    friend bool operator==(string_view lhs, sbo_string const& rhs) { return lhs == string_view(rhs); }
-    friend bool operator!=(string_view lhs, sbo_string const& rhs) { return lhs != string_view(rhs); }
     template <size_t B>
-    friend bool operator==(sbo_string const& lhs, sbo_string<B> const& rhs)
+    bool operator==(sbo_string<B> const& rhs) const
     {
-        return string_view(lhs) == string_view(rhs);
+        return string_view(*this) == string_view(rhs);
     }
     template <size_t B>
-    friend bool operator!=(sbo_string const& lhs, sbo_string<B> const& rhs)
+    bool operator!=(sbo_string<B> const& rhs) const
     {
-        return string_view(lhs) != string_view(rhs);
+        return string_view(*this) != string_view(rhs);
     }
 
     friend sbo_string operator+(sbo_string lhs, string_view rhs)

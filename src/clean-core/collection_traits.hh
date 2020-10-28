@@ -3,10 +3,15 @@
 #include <cstddef>
 #include <type_traits>
 
+#include <clean-core/enable_if.hh>
 #include <clean-core/forward.hh>
 #include <clean-core/fwd.hh>
 #include <clean-core/move.hh>
 #include <clean-core/priority_tag.hh>
+
+// collection_traits<T> provide compile time information about how to use / call a collection
+// the cc::collection_xyz functions are designed to provide collection trait functions in a SFINAE-friendly manner
+// e.g. "decltype(*cc::collection_begin(some_range))" can be used in cc::enable_if or in decltype-SFINAE
 
 namespace cc
 {
@@ -35,16 +40,35 @@ struct collection_traits;
 //  - is_contiguous_range
 //  - is_any_contiguous_range
 
-template <class CollectionT>
-constexpr auto collection_size(CollectionT&& c)
+/// returns the begin iterator for the collection
+/// NOTE: is SFINAE-friendly
+template <class CollectionT, cc::enable_if<collection_traits<CollectionT>::is_range> = true>
+constexpr decltype(auto) collection_begin(CollectionT&& c)
 {
-    static_assert(collection_traits<CollectionT>::has_size);
+    return collection_traits<CollectionT>::begin(c);
+}
+
+/// returns the end iterator for the collection
+/// NOTE: is SFINAE-friendly
+template <class CollectionT, cc::enable_if<collection_traits<CollectionT>::is_range> = true>
+constexpr decltype(auto) collection_end(CollectionT&& c)
+{
+    return collection_traits<CollectionT>::end(c);
+}
+
+/// returns the size of a collection
+/// NOTE: is SFINAE-friendly
+template <class CollectionT, cc::enable_if<collection_traits<CollectionT>::has_size> = true>
+constexpr decltype(auto) collection_size(CollectionT&& c)
+{
     return collection_traits<CollectionT>::size(c);
 }
-template <class CollectionT, class T>
-constexpr auto collection_add(CollectionT&& c, T&& value)
+
+/// adds an element in a collection-defined semantic
+/// NOTE: is SFINAE-friendly
+template <class CollectionT, class T, cc::enable_if<collection_traits<CollectionT>::can_add> = true>
+constexpr decltype(auto) collection_add(CollectionT&& c, T&& value)
 {
-    static_assert(collection_traits<CollectionT>::can_add);
     return collection_traits<CollectionT>::add(c, cc::forward<T>(value));
 }
 
@@ -52,39 +76,41 @@ constexpr auto collection_add(CollectionT&& c, T&& value)
 
 namespace detail
 {
-template <class Container, class = void>
+// NOTE: unified naming scheme and switch begin/end as a temporary workaround for:
+// https://developercommunity.visualstudio.com/content/problem/1234402/wrong-partial-specialization-with-spooky-action-at.html
+template <class CollectionT, class = void>
 struct has_begin_end_t : std::false_type
 {
 };
-template <class Container>
-struct has_begin_end_t<Container,
-                       std::void_t<                                     //
-                           decltype(std::declval<Container>().begin()), //
-                           decltype(std::declval<Container>().end())    //
+template <class CollectionT>
+struct has_begin_end_t<CollectionT,
+                       std::void_t<                                      //
+                           decltype(std::declval<CollectionT>().end()),  //
+                           decltype(std::declval<CollectionT>().begin()) //
                            >> : std::true_type
 {
 };
 
-template <class Container, class = void>
+template <class CollectionT, class = void>
 struct has_size_t : std::false_type
 {
 };
-template <class Container>
-struct has_size_t<Container,
-                  std::void_t<                                   //
-                      decltype(std::declval<Container>().size()) //
+template <class CollectionT>
+struct has_size_t<CollectionT,
+                  std::void_t<                                     //
+                      decltype(std::declval<CollectionT>().size()) //
                       >> : std::true_type
 {
 };
 
-template <class Container, class = void>
+template <class CollectionT, class = void>
 struct has_data_t : std::false_type
 {
 };
-template <class Container>
-struct has_data_t<Container,
-                  std::void_t<                                   //
-                      decltype(std::declval<Container>().data()) //
+template <class CollectionT>
+struct has_data_t<CollectionT,
+                  std::void_t<                                     //
+                      decltype(std::declval<CollectionT>().data()) //
                       >> : std::true_type
 {
 };
@@ -93,47 +119,52 @@ struct collection_op_not_supported
 {
 };
 
-template <class Container, class T>
-constexpr auto impl_collection_add(Container& c, T&& v, cc::priority_tag<6>) -> decltype(c.push_back(cc::forward<T>(v)))
+template <class CollectionT, class T>
+constexpr auto impl_collection_add(CollectionT& c, T&& v, cc::priority_tag<6>) -> decltype(c.push_back(cc::forward<T>(v)))
 {
     return c.push_back(cc::forward<T>(v));
 }
-template <class Container, class T>
-constexpr auto impl_collection_add(Container& c, T&& v, cc::priority_tag<5>) -> decltype(c.add(cc::forward<T>(v)))
+template <class CollectionT, class T>
+constexpr auto impl_collection_add(CollectionT& c, T&& v, cc::priority_tag<5>) -> decltype(c.add(cc::forward<T>(v)))
 {
     return c.add(cc::forward<T>(v));
 }
-template <class Container, class T>
-constexpr auto impl_collection_add(Container& c, T&& v, cc::priority_tag<4>) -> decltype(c.insert(cc::forward<T>(v)))
+template <class CollectionT, class T>
+constexpr auto impl_collection_add(CollectionT& c, T&& v, cc::priority_tag<4>) -> decltype(c.insert(cc::forward<T>(v)))
 {
     return c.insert(cc::forward<T>(v));
 }
-template <class Container, class T>
-constexpr auto impl_collection_add(Container& c, T&& v, cc::priority_tag<3>) -> decltype(c.push(cc::forward<T>(v)))
+template <class CollectionT, class T>
+constexpr auto impl_collection_add(CollectionT& c, T&& v, cc::priority_tag<3>) -> decltype(c.push(cc::forward<T>(v)))
 {
     return c.push(cc::forward<T>(v));
 }
-template <class Container, class T>
-constexpr auto impl_collection_add(Container& c, T&& v, cc::priority_tag<2>) -> decltype(c << cc::forward<T>(v))
+template <class CollectionT, class T>
+constexpr auto impl_collection_add(CollectionT& c, T&& v, cc::priority_tag<2>) -> decltype(c << cc::forward<T>(v))
 {
     return c << cc::forward<T>(v);
 }
-template <class Container, class T>
-constexpr auto impl_collection_add(Container& c, T&& v, cc::priority_tag<1>) -> decltype(c += cc::forward<T>(v))
+template <class CollectionT, class T>
+constexpr auto impl_collection_add(CollectionT& c, T&& v, cc::priority_tag<1>) -> decltype(c += cc::forward<T>(v))
 {
     return c += cc::forward<T>(v);
 }
-template <class Container, class T>
-collection_op_not_supported impl_collection_add(Container& c, T&& v, cc::priority_tag<0>);
+template <class CollectionT, class T>
+constexpr collection_op_not_supported impl_collection_add(CollectionT&, T&&, cc::priority_tag<0>)
+{
+    return {};
+}
 
-template <class Container, class T>
-constexpr auto collection_add(Container& c, T&& v)
+template <class CollectionT, class T>
+constexpr decltype(auto) collection_add(CollectionT& c, T&& v)
 {
     return detail::impl_collection_add(c, cc::forward<T>(v), cc::priority_tag<6>{});
 }
 
 struct base_collection_traits
 {
+    static constexpr bool has_data = false;
+    static constexpr bool has_size = false;
     static constexpr bool is_range = false;
     static constexpr bool is_contiguous = false;
     static constexpr bool is_fixed_size = false;
@@ -226,7 +257,14 @@ struct cc_array_collection_traits : base_collection_traits
 }
 
 template <class T, class>
-struct collection_traits : detail::inferred_collection_traits<T>
+struct collection_traits : detail::base_collection_traits // not a range
+{
+};
+
+// specialization for normal range-based for
+template <class CollectionT>
+struct collection_traits<CollectionT, std::void_t<decltype(std::declval<CollectionT>().end()), decltype(std::declval<CollectionT>().begin())>>
+  : detail::inferred_collection_traits<CollectionT>
 {
 };
 
@@ -241,7 +279,7 @@ struct collection_traits<ElementT (&)[N]> : detail::array_collection_traits<Elem
 };
 
 // specialization for cc:arrays
-// TODO: is there a way to reduce the amount of repitition?
+// TODO: is there a way to reduce the amount of repetition?
 template <class T>
 struct collection_traits<cc::array<T>> : detail::inferred_collection_traits<cc::array<T>>
 {

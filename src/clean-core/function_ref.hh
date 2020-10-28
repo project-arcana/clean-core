@@ -70,7 +70,7 @@ private:
         void const* obj_const;             // pointer to const callable
         function_ptr<Result(Args...)> fun; // original function pointer
 
-        storage() {}
+        storage() { obj = nullptr; }
     };
 
     storage _data;                                                // storage for a pointer to the callable
