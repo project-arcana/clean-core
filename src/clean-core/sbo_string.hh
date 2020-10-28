@@ -77,13 +77,14 @@ public:
     sbo_string()
     {
         _size = 0;
-        _capacity = 0; // clear first word of sbo
+        _sbo_words = {}; // also sets capacity to 0
         _data = _sbo;
     }
 
     sbo_string(char const* s)
     {
         _size = std::strlen(s);
+        _sbo_words = {}; // also sets capacity to 0
 
         if (_size <= sbo_capacity)
             _data = _sbo;
@@ -99,6 +100,7 @@ public:
     sbo_string(char const* s, size_t size)
     {
         _size = size;
+        _sbo_words = {}; // also sets capacity to 0
 
         if (_size <= sbo_capacity)
             _data = _sbo;
@@ -131,6 +133,8 @@ public:
 
     sbo_string(sbo_string const& rhs)
     {
+        _sbo_words = {}; // also sets capacity to 0
+
         if (rhs._is_short())
         {
             _data = _sbo;
@@ -153,6 +157,8 @@ public:
     }
     sbo_string(sbo_string&& rhs) noexcept
     {
+        _sbo_words = {}; // also sets capacity to 0
+
         _size = rhs._size;
         if (rhs._is_short())
         {
@@ -169,31 +175,32 @@ public:
 
     sbo_string& operator=(sbo_string const& rhs)
     {
-        if (this != &rhs)
-        {
-            if (!_is_short())
-                delete[] _data;
+        if (this == &rhs)
+            return *this;
 
-            if (rhs._is_short())
-            {
-                _data = _sbo;
-                _size = rhs._size;
-                _sbo_words = rhs._sbo_words;
-            }
-            else if (rhs.size() <= sbo_capacity)
-            {
-                _data = _sbo;
-                _size = rhs.size();
-                std::memcpy(_data, rhs._data, _size + 1);
-            }
-            else
-            {
-                _size = rhs._size;
-                _capacity = rhs._size;
-                _data = new char[_size + 1];
-                std::memcpy(_data, rhs._data, _size + 1);
-            }
+        if (!_is_short())
+            delete[] _data;
+
+        if (rhs._is_short())
+        {
+            _data = _sbo;
+            _size = rhs._size;
+            _sbo_words = rhs._sbo_words;
         }
+        else if (rhs.size() <= sbo_capacity)
+        {
+            _data = _sbo;
+            _size = rhs.size();
+            std::memcpy(_data, rhs._data, _size + 1);
+        }
+        else
+        {
+            _size = rhs._size;
+            _capacity = rhs._size;
+            _data = new char[_size + 1];
+            std::memcpy(_data, rhs._data, _size + 1);
+        }
+
         return *this;
     }
     sbo_string& operator=(sbo_string&& rhs) noexcept
