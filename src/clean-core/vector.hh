@@ -5,7 +5,7 @@
 namespace cc
 {
 template <class T>
-struct vector : public detail::vector_base<T, false>
+struct vector : detail::vector_base<T, false>
 {
     // ctors
 public:

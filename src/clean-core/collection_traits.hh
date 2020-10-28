@@ -76,39 +76,41 @@ constexpr decltype(auto) collection_add(CollectionT&& c, T&& value)
 
 namespace detail
 {
-template <class Container, class = void>
+// NOTE: unified naming scheme and switch begin/end as a temporary workaround for:
+// https://developercommunity.visualstudio.com/content/problem/1234402/wrong-partial-specialization-with-spooky-action-at.html
+template <class CollectionT, class = void>
 struct has_begin_end_t : std::false_type
 {
 };
-template <class Container>
-struct has_begin_end_t<Container,
-                       std::void_t<                                     //
-                           decltype(std::declval<Container>().begin()), //
-                           decltype(std::declval<Container>().end())    //
+template <class CollectionT>
+struct has_begin_end_t<CollectionT,
+                       std::void_t<                                      //
+                           decltype(std::declval<CollectionT>().end()),  //
+                           decltype(std::declval<CollectionT>().begin()) //
                            >> : std::true_type
 {
 };
 
-template <class Container, class = void>
+template <class CollectionT, class = void>
 struct has_size_t : std::false_type
 {
 };
-template <class Container>
-struct has_size_t<Container,
-                  std::void_t<                                   //
-                      decltype(std::declval<Container>().size()) //
+template <class CollectionT>
+struct has_size_t<CollectionT,
+                  std::void_t<                                     //
+                      decltype(std::declval<CollectionT>().size()) //
                       >> : std::true_type
 {
 };
 
-template <class Container, class = void>
+template <class CollectionT, class = void>
 struct has_data_t : std::false_type
 {
 };
-template <class Container>
-struct has_data_t<Container,
-                  std::void_t<                                   //
-                      decltype(std::declval<Container>().data()) //
+template <class CollectionT>
+struct has_data_t<CollectionT,
+                  std::void_t<                                     //
+                      decltype(std::declval<CollectionT>().data()) //
                       >> : std::true_type
 {
 };
@@ -117,47 +119,52 @@ struct collection_op_not_supported
 {
 };
 
-template <class Container, class T>
-constexpr auto impl_collection_add(Container& c, T&& v, cc::priority_tag<6>) -> decltype(c.push_back(cc::forward<T>(v)))
+template <class CollectionT, class T>
+constexpr auto impl_collection_add(CollectionT& c, T&& v, cc::priority_tag<6>) -> decltype(c.push_back(cc::forward<T>(v)))
 {
     return c.push_back(cc::forward<T>(v));
 }
-template <class Container, class T>
-constexpr auto impl_collection_add(Container& c, T&& v, cc::priority_tag<5>) -> decltype(c.add(cc::forward<T>(v)))
+template <class CollectionT, class T>
+constexpr auto impl_collection_add(CollectionT& c, T&& v, cc::priority_tag<5>) -> decltype(c.add(cc::forward<T>(v)))
 {
     return c.add(cc::forward<T>(v));
 }
-template <class Container, class T>
-constexpr auto impl_collection_add(Container& c, T&& v, cc::priority_tag<4>) -> decltype(c.insert(cc::forward<T>(v)))
+template <class CollectionT, class T>
+constexpr auto impl_collection_add(CollectionT& c, T&& v, cc::priority_tag<4>) -> decltype(c.insert(cc::forward<T>(v)))
 {
     return c.insert(cc::forward<T>(v));
 }
-template <class Container, class T>
-constexpr auto impl_collection_add(Container& c, T&& v, cc::priority_tag<3>) -> decltype(c.push(cc::forward<T>(v)))
+template <class CollectionT, class T>
+constexpr auto impl_collection_add(CollectionT& c, T&& v, cc::priority_tag<3>) -> decltype(c.push(cc::forward<T>(v)))
 {
     return c.push(cc::forward<T>(v));
 }
-template <class Container, class T>
-constexpr auto impl_collection_add(Container& c, T&& v, cc::priority_tag<2>) -> decltype(c << cc::forward<T>(v))
+template <class CollectionT, class T>
+constexpr auto impl_collection_add(CollectionT& c, T&& v, cc::priority_tag<2>) -> decltype(c << cc::forward<T>(v))
 {
     return c << cc::forward<T>(v);
 }
-template <class Container, class T>
-constexpr auto impl_collection_add(Container& c, T&& v, cc::priority_tag<1>) -> decltype(c += cc::forward<T>(v))
+template <class CollectionT, class T>
+constexpr auto impl_collection_add(CollectionT& c, T&& v, cc::priority_tag<1>) -> decltype(c += cc::forward<T>(v))
 {
     return c += cc::forward<T>(v);
 }
-template <class Container, class T>
-collection_op_not_supported impl_collection_add(Container& c, T&& v, cc::priority_tag<0>);
+template <class CollectionT, class T>
+constexpr collection_op_not_supported impl_collection_add(CollectionT&, T&&, cc::priority_tag<0>)
+{
+    return {};
+}
 
-template <class Container, class T>
-constexpr auto collection_add(Container& c, T&& v)
+template <class CollectionT, class T>
+constexpr decltype(auto) collection_add(CollectionT& c, T&& v)
 {
     return detail::impl_collection_add(c, cc::forward<T>(v), cc::priority_tag<6>{});
 }
 
 struct base_collection_traits
 {
+    static constexpr bool has_data = false;
+    static constexpr bool has_size = false;
     static constexpr bool is_range = false;
     static constexpr bool is_contiguous = false;
     static constexpr bool is_fixed_size = false;
@@ -255,9 +262,9 @@ struct collection_traits : detail::base_collection_traits // not a range
 };
 
 // specialization for normal range-based for
-template <class RangeT>
-struct collection_traits<RangeT, std::void_t<decltype(std::declval<RangeT>().begin()), decltype(std::declval<RangeT>().end())>>
-  : detail::inferred_collection_traits<RangeT>
+template <class CollectionT>
+struct collection_traits<CollectionT, std::void_t<decltype(std::declval<CollectionT>().end()), decltype(std::declval<CollectionT>().begin())>>
+  : detail::inferred_collection_traits<CollectionT>
 {
 };
 
@@ -272,7 +279,7 @@ struct collection_traits<ElementT (&)[N]> : detail::array_collection_traits<Elem
 };
 
 // specialization for cc:arrays
-// TODO: is there a way to reduce the amount of repitition?
+// TODO: is there a way to reduce the amount of repetition?
 template <class T>
 struct collection_traits<cc::array<T>> : detail::inferred_collection_traits<cc::array<T>>
 {

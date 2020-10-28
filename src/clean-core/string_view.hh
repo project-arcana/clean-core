@@ -30,10 +30,10 @@ struct equals_case_insensitive_t
 };
 }
 
-// a view on an utf-8 string
-// is NON-OWNING
-// is a view and CANNOT modify the content of the string
-// this class is cheap to copy, passing it by reference has no benefits
+/// a view on an utf-8 string
+/// is NON-OWNING
+/// is a view and CANNOT modify the content of the string
+/// this class is cheap to copy, passing it by reference has no benefits
 struct string_view
 {
     constexpr string_view() = default;
@@ -43,6 +43,13 @@ struct string_view
         _size = 0;
         while (data[_size] != '\0')
             ++_size;
+    }
+    template <size_t N>
+    constexpr string_view(char const (&data)[N])
+    {
+        CC_ASSERT(data[N - 1] == '\0' && "only string literals supported for array construction. use (data, size) ctor otherwise.");
+        _data = data;
+        _size = N - 1;
     }
     constexpr string_view(char const* data, size_t size) : _data(data), _size(size) {}
     constexpr string_view(char const* begin, char const* end) : _data(begin), _size(end - begin) {}
@@ -274,45 +281,22 @@ public:
 
     // operators
 public:
-    constexpr bool operator==(string_view rhs) const
+    template <size_t N>
+    friend constexpr bool operator==(char const (&lhs)[N], string_view rhs)
     {
-        if (_size != rhs._size)
-            return false;
-        for (size_t i = 0; i != _size; ++i)
-            if (_data[i] != rhs._data[i])
-                return false;
-        return true;
+        return string_view(lhs) == rhs;
     }
-    constexpr bool operator!=(string_view rhs) const
+    template <size_t N>
+    friend constexpr bool operator!=(char const (&lhs)[N], string_view rhs)
     {
-        if (_size != rhs._size)
-            return true;
-        for (size_t i = 0; i != _size; ++i)
-            if (_data[i] != rhs._data[i])
-                return true;
-        return false;
+        return string_view(lhs) != rhs;
     }
 
-    template <size_t N>
-    constexpr bool operator==(char const (&rhs)[N]) const
-    {
-        if (N - 1 != _size)
-            return false;
-        for (size_t i = 0; i != _size; ++i)
-            if (_data[i] != rhs[i])
-                return false;
-        return true;
-    }
-    template <size_t N>
-    constexpr bool operator!=(char const (&rhs)[N]) const
-    {
-        if (N - 1 != _size)
-            return true;
-        for (size_t i = 0; i != _size; ++i)
-            if (_data[i] != rhs[i])
-                return true;
-        return false;
-    }
+    friend constexpr bool operator==(char const* lhs, string_view rhs) { return string_view(lhs) == rhs; }
+    friend constexpr bool operator!=(char const* lhs, string_view rhs) { return string_view(lhs) != rhs; }
+
+    friend constexpr bool operator==(string_view lhs, string_view rhs);
+    friend constexpr bool operator!=(string_view lhs, string_view rhs);
 
 private:
     char const* _data = nullptr;
@@ -445,6 +429,26 @@ private:
         constexpr cc::sentinel end() const { return {}; }
     };
 };
+
+constexpr bool operator==(string_view lhs, string_view rhs)
+{
+    if (lhs._size != rhs._size)
+        return false;
+    for (size_t i = 0; i != lhs._size; ++i)
+        if (lhs._data[i] != rhs._data[i])
+            return false;
+    return true;
+}
+constexpr bool operator!=(string_view lhs, string_view rhs)
+{
+    if (lhs._size != rhs._size)
+        return true;
+    for (size_t i = 0; i != lhs._size; ++i)
+        if (lhs._data[i] != rhs._data[i])
+            return true;
+    return false;
+}
+
 constexpr auto string_view::split(char sep, split_options opts) const
 {
     return string_split_range(_data, _data + _size, opts, cc::is_equal_fun(sep));

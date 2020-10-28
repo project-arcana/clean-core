@@ -10,21 +10,21 @@
 
 namespace cc
 {
-bool from_string(cc::string_view s, bool& v); // "true" or "false"
-bool from_string(cc::string_view s, char& v);
+[[nodiscard]] bool from_string(cc::string_view s, bool& v); // "true" or "false"
+[[nodiscard]] bool from_string(cc::string_view s, char& v);
 
-bool from_string(cc::string_view s, signed char& v);
-bool from_string(cc::string_view s, signed short& v);
-bool from_string(cc::string_view s, signed int& v);
-bool from_string(cc::string_view s, signed long& v);
-bool from_string(cc::string_view s, signed long long& v);
+[[nodiscard]] bool from_string(cc::string_view s, signed char& v);
+[[nodiscard]] bool from_string(cc::string_view s, signed short& v);
+[[nodiscard]] bool from_string(cc::string_view s, signed int& v);
+[[nodiscard]] bool from_string(cc::string_view s, signed long& v);
+[[nodiscard]] bool from_string(cc::string_view s, signed long long& v);
 
-bool from_string(cc::string_view s, unsigned char& v);
-bool from_string(cc::string_view s, unsigned short& v);
-bool from_string(cc::string_view s, unsigned int& v);
-bool from_string(cc::string_view s, unsigned long& v);
-bool from_string(cc::string_view s, unsigned long long& v);
+[[nodiscard]] bool from_string(cc::string_view s, unsigned char& v);
+[[nodiscard]] bool from_string(cc::string_view s, unsigned short& v);
+[[nodiscard]] bool from_string(cc::string_view s, unsigned int& v);
+[[nodiscard]] bool from_string(cc::string_view s, unsigned long& v);
+[[nodiscard]] bool from_string(cc::string_view s, unsigned long long& v);
 
-bool from_string(cc::string_view s, float& v);
-bool from_string(cc::string_view s, double& v);
+[[nodiscard]] bool from_string(cc::string_view s, float& v);
+[[nodiscard]] bool from_string(cc::string_view s, double& v);
 }
