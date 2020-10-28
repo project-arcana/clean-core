@@ -150,10 +150,13 @@ constexpr auto impl_collection_add(CollectionT& c, T&& v, cc::priority_tag<1>) -
     return c += cc::forward<T>(v);
 }
 template <class CollectionT, class T>
-collection_op_not_supported impl_collection_add(CollectionT& c, T&& v, cc::priority_tag<0>);
+constexpr collection_op_not_supported impl_collection_add(CollectionT& c, T&& v, cc::priority_tag<0>)
+{
+    return {};
+}
 
 template <class CollectionT, class T>
-constexpr auto collection_add(CollectionT& c, T&& v)
+constexpr decltype(auto) collection_add(CollectionT& c, T&& v)
 {
     return detail::impl_collection_add(c, cc::forward<T>(v), cc::priority_tag<6>{});
 }
