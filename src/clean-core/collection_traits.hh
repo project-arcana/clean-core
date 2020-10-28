@@ -150,7 +150,7 @@ constexpr auto impl_collection_add(CollectionT& c, T&& v, cc::priority_tag<1>) -
     return c += cc::forward<T>(v);
 }
 template <class CollectionT, class T>
-constexpr collection_op_not_supported impl_collection_add(CollectionT& c, T&& v, cc::priority_tag<0>)
+constexpr collection_op_not_supported impl_collection_add(CollectionT&, T&&, cc::priority_tag<0>)
 {
     return {};
 }
