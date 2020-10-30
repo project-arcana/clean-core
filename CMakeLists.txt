@@ -26,14 +26,11 @@ file(GLOB_RECURSE SOURCES "src/*.cc")
 file(GLOB_RECURSE HEADERS "src/*.hh" "src/*.inl")
 file(GLOB_RECURSE MISC_FILES "*.natvis")
 
-# set up source_group, optionally enable unity builds
-arcana_prepare_library(CC clean-core SOURCES HEADERS)
+# set up source_group, optionally enable unity builds, add the library
+arcana_add_library(CC clean-core SOURCES HEADERS)
 
-# add the library, separate because of natvis files
-add_library(clean-core ${SOURCES} ${HEADERS} ${MISC_FILES})
-
-# configure flags
-arcana_configure_lib_options(clean-core)
+# add natvis files (visual studio debug views for span, vector, etc.)
+target_sources(clean-core PUBLIC ${MISC_FILES})
 
 target_include_directories(clean-core PUBLIC src/)
 
