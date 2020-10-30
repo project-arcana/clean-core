@@ -1,28 +1,5 @@
 
 # usage:
-#   arcana_prepare_library(ML my-lib SOURCES HEADERS)
-#
-# - sets up source groups for sources and headers
-# - enables unity builds for all sources (including an option to opt-out)
-function(arcana_prepare_library LIB_PREFIX LIB_TARGET SOURCES_VARIABLE_NAME HEADERS_VARIABLE_NAME)
-
-    if (CC_VERBOSE_CMAKE)
-        message(STATUS "[${LIB_TARGET}] configuring library")
-    endif()
-
-    arcana_source_group(${SOURCES_VARIABLE_NAME} ${HEADERS_VARIABLE_NAME})
-
-    option(${LIB_PREFIX}_ENABLE_UNITY_BUILD "If enabled, compiles this library as a single compilation unit" ON)
-
-    if (${${LIB_PREFIX}_ENABLE_UNITY_BUILD})
-        if (CC_VERBOSE_CMAKE)
-            message(STATUS "[${LIB_TARGET}] enabling unity builds")
-        endif()
-        arcana_enable_unity_build(${LIB_TARGET} ${SOURCES_VARIABLE_NAME} 100 cc)
-    endif()
-endfunction()
-
-# usage:
 #   arcana_add_library(ML my-lib SOURCES HEADERS)
 #
 #   (where ML is the prefix used in cmake options for my-lib)
