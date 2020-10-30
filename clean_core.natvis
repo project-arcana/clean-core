@@ -30,8 +30,8 @@
     </Expand>
   </Type>
 
-  <!-- clean-core dynamic arrays -->
-  <Type Name="cc::alloc_array&lt;*, 18446744073709551615&gt;">
+  <!-- clean-core dynamic arrays (second template arg: size_t(-1)  -->
+  <Type Name="cc::array&lt;*, 18446744073709551615&gt;">
     <Intrinsic Name="size" Expression="_size" />
     <DisplayString>{{ size={size()} }}</DisplayString>
     <Expand>
