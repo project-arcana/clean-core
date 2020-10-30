@@ -1,10 +1,7 @@
 #pragma once
 
-// TODO: use [[likely]] and [[unlikely]] in C++20
-
-
 // =========
-// configurations
+// compiler
 
 #if defined(_MSC_VER)
 #define CC_COMPILER_MSVC
@@ -55,6 +52,7 @@
 #define CC_FORCE_INLINE __forceinline
 #define CC_DONT_INLINE __declspec(noinline)
 
+// only way of reproducing these is using C++20 [[likely]] / [[unlikely]]
 #define CC_LIKELY(x) x
 #define CC_UNLIKELY(x) x
 #define CC_COLD_FUNC
@@ -67,6 +65,7 @@
 
 #define CC_PRETTY_FUNC __PRETTY_FUNCTION__
 
+// additional 'inline' is required on gcc and makes no difference on clang
 #define CC_FORCE_INLINE __attribute__((always_inline)) inline
 #define CC_DONT_INLINE __attribute__((noinline))
 
@@ -76,6 +75,8 @@
 #define CC_HOT_FUNC __attribute__((hot))
 
 #define CC_BUILTIN_UNREACHABLE __builtin_unreachable()
+// enables warnings/errors on malformed calls to a printf-like function
+// indices start at 1 and count the implicit 'this'-argument of methods
 #define CC_PRINTF_FUNC(_fmt_index_, _args_index_) __attribute__((format(printf, _fmt_index_, _args_index_)))
 
 #else
