@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+  <!-- clean-core vectors -->
+  <Type Name="cc::vector&lt;*&gt;">
+    <Intrinsic Name="size" Expression="_size" />
+    <Intrinsic Name="capacity" Expression="_capacity" />
+    <DisplayString>{{ size={size()} }}</DisplayString>
+    <Expand>
+      <Item Name="[capacity]" ExcludeView="simple">capacity()</Item>
+      <!--<Item Name="[allocator]" ExcludeView="simple">_Mypair</Item>-->
+      <ArrayItems>
+        <Size>size()</Size>
+        <ValuePointer>_data</ValuePointer>
+        </ArrayItems>
+    </Expand>
+  </Type>
+
+  <Type Name="cc::alloc_vector&lt;*&gt;">
+    <Intrinsic Name="size" Expression="_size" />
+    <Intrinsic Name="capacity" Expression="_capacity" />
+    <DisplayString>{{ size={size()} }}</DisplayString>
+    <Expand>
+      <Item Name="[capacity]" ExcludeView="simple">capacity()</Item>
+      <Item Name="[allocator]" ExcludeView="simple">_allocator</Item>
+      <ArrayItems>
+        <Size>size()</Size>
+        <ValuePointer>_data</ValuePointer>
+        </ArrayItems>
+    </Expand>
+  </Type>
+
+  <!-- clean-core dynamic arrays (second template arg: size_t(-1)  -->
+  <Type Name="cc::array&lt;*, 18446744073709551615&gt;">
+    <Intrinsic Name="size" Expression="_size" />
+    <DisplayString>{{ size={size()} }}</DisplayString>
+    <Expand>
+      <Item Name="[allocator]" ExcludeView="simple">_allocator</Item>
+      <ArrayItems>
+        <Size>size()</Size>
+        <ValuePointer>_data</ValuePointer>
+        </ArrayItems>
+    </Expand>
+  </Type>
+
+  <Type Name="cc::alloc_array&lt;*&gt;">
+    <Intrinsic Name="size" Expression="_size" />
+    <DisplayString>{{ size={size()} }}</DisplayString>
+    <Expand>
+      <Item Name="[allocator]" ExcludeView="simple">_allocator</Item>
+      <ArrayItems>
+        <Size>size()</Size>
+        <ValuePointer>_data</ValuePointer>
+        </ArrayItems>
+    </Expand>
+  </Type>
+
+  <!-- clean-core span -->
+  <Type Name="cc::span&lt;*&gt;">
+    <Intrinsic Name="size" Expression="_size" />
+    <DisplayString>{{ size={size()} }}</DisplayString>
+    <Expand>
+      <ArrayItems>
+        <Size>size()</Size>
+        <ValuePointer>_data</ValuePointer>
+        </ArrayItems>
+    </Expand>
+  </Type>
+</AutoVisualizer>
