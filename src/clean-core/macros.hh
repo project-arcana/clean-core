@@ -59,7 +59,6 @@
 #define CC_HOT_FUNC
 
 #define CC_BUILTIN_UNREACHABLE __assume(0)
-#define CC_PRINTF_FUNC(_fmt_index_, _args_index_)
 
 #elif defined(CC_COMPILER_POSIX)
 
@@ -75,14 +74,27 @@
 #define CC_HOT_FUNC __attribute__((hot))
 
 #define CC_BUILTIN_UNREACHABLE __builtin_unreachable()
-// enables warnings/errors on malformed calls to a printf-like function
-// indices start at 1 and count the implicit 'this'-argument of methods
-#define CC_PRINTF_FUNC(_fmt_index_, _args_index_) __attribute__((format(printf, _fmt_index_, _args_index_)))
 
 #else
 #error "Unknown compiler"
 #endif
 
+// =========
+// compiler/code model helpers
+
+#if defined(CC_COMPILER_POSIX) || defined(__clang__) || defined(__GNUC__)
+// even if code isn't compiled on a POSIX compiler, these helpers can still
+// be active in ie. a clang code model (ie.: MSVC via Qt Creator)
+
+// enables warnings/errors on malformed calls to a printf-like function
+// indices start at 1 and count the implicit 'this'-argument of methods
+#define CC_PRINTF_FUNC(_fmt_index_) __attribute__((format(printf, _fmt_index_, _fmt_index_ + 1)))
+
+#else
+
+#define CC_PRINTF_FUNC(_fmt_index_)
+
+#endif
 
 // =========
 // common helper
