@@ -15,7 +15,6 @@ bool parse(cc::string_view s, T& v)
     return bool(ss) && ss.eof();
 }
 
-template <>
 bool parse(cc::string_view s, unsigned char& v)
 {
     unsigned int i;
@@ -24,7 +23,6 @@ bool parse(cc::string_view s, unsigned char& v)
     return parsed_as_int && (i <= 255);
 }
 
-template <>
 bool parse(cc::string_view s, signed char& v)
 {
     int i;
