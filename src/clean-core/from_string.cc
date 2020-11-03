@@ -14,6 +14,22 @@ bool parse(cc::string_view s, T& v)
     ss >> v;
     return bool(ss) && ss.eof();
 }
+
+bool parse(cc::string_view s, unsigned char& v)
+{
+    unsigned int i;
+    bool parsed_as_int = parse(s, i);
+    v = static_cast<unsigned char>(i);
+    return parsed_as_int && (i <= 255);
+}
+
+bool parse(cc::string_view s, signed char& v)
+{
+    int i;
+    bool parsed_as_int = parse(s, i);
+    v = static_cast<signed char>(i);
+    return parsed_as_int && (-128 <= i && i <= 127);
+}
 }
 
 bool cc::from_string(cc::string_view s, signed char& v) { return parse(s, v); }
