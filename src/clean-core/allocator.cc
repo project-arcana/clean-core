@@ -6,6 +6,7 @@
 #include <cstring>
 
 #include <clean-core/assert.hh>
+#include <clean-core/string_view.hh>
 #include <clean-core/utility.hh>
 
 // enable debug trace prints in some allocators
@@ -22,19 +23,6 @@
 
 namespace
 {
-template <class T>
-[[nodiscard]] T align_up_masked(T value, size_t mask)
-{
-    return (T)(((size_t)value + mask) & ~mask);
-}
-
-/// increment the value (pointer or integer) to align at the given boundary
-template <class T>
-[[nodiscard]] T align_up(T value, size_t alignment)
-{
-    return align_up_masked(value, alignment - 1);
-}
-
 struct stack_alloc_header
 {
     size_t padding;
@@ -51,7 +39,7 @@ constexpr uint32_t const gc_header_free_bit = 0x80000000u;
 // [... pad ...] [header] [data]
 std::byte* align_up_with_header(std::byte* head, size_t align, size_t header_size)
 {
-    std::byte* padded_res = align_up(head, align);
+    std::byte* padded_res = cc::align_up(head, align);
     size_t const padding = size_t(padded_res - head);
 
     if (padding < header_size)
@@ -76,7 +64,7 @@ std::byte* align_up_with_header(std::byte* head, size_t align, size_t header_siz
 std::byte* align_up_from_header(scratch_alloc_header* header, size_t align)
 {
     void* const p = header + 1;
-    return static_cast<std::byte*>(align_up(p, align));
+    return static_cast<std::byte*>(cc::align_up(p, align));
 }
 
 // returns a pointer to the header preceding the given allocation
@@ -209,6 +197,18 @@ cc::byte* cc::system_allocator_t::realloc(void* ptr, cc::size_t old_size, cc::si
 
 cc::system_allocator_t cc::system_allocator_instance = {};
 cc::allocator* const cc::system_allocator = &cc::system_allocator_instance;
+
+char* cc::allocator::alloc_string_copy(cc::string_view source)
+{
+    char* const res = reinterpret_cast<char*>(alloc(source.size() + 1));
+#ifdef CC_OS_WINDOWS
+    ::strncpy_s(res, source.size() + 1, source.data(), source.size());
+#else
+    std::strncpy(res, source.data(), source.size());
+#endif
+    res[source.size()] = '\0';
+    return res;
+}
 
 cc::byte* cc::allocator::realloc(void* ptr, cc::size_t old_size, cc::size_t new_size, cc::size_t align)
 {
