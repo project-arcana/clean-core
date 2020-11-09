@@ -473,265 +473,159 @@ char const* unsigned_int_to_binary(IntType value, char* end)
 template <class IntType>
 void unsigned_to_string_impl(cc::string_stream_ref ss, IntType value, parsed_fmt_args const& args)
 {
+    auto const add_fill = [&](int length) {
+        auto const fill = args.sign_aware_zero_padding ? '0' : args.fill;
+        if (args.width > 0 && length < args.width)
+            for (auto i = 0; i < args.width - length; ++i)
+                ss << fill;
+    };
+
+    auto const to_binary = [&]() {
+        char buffer[sizeof(IntType) * 8 + 1];
+        char* end = buffer + sizeof(buffer);
+        char const* begin = unsigned_int_to_binary(value, end);
+        ss << cc::string_view(begin, end);
+    };
+
     static_assert(std::is_unsigned_v<IntType>);
     switch (args.type)
     {
     case 0:   // fallthrough
     case 'd': // default, decimal
     {
+        auto const buffer_size = [] {
+            switch (sizeof(IntType))
+            {
+            case 1:
+                return 3 + 1; // 255
+            case 2:
+                return 6 + 1; // 65535
+            case 4:
+                return 10 + 1; // 4 294 967 295
+            case 8:
+                return 20 + 1; // 18 446 744 073 709 551 615
+            }
+        }();
+
+        char buffer[buffer_size];
+        int length = 0;
         if constexpr (sizeof(IntType) == 1)
-        {
-            char buffer[3 + 1 + 1];
-            auto const length = std::snprintf(buffer, sizeof(buffer), "%hhu", value);
-            ss << cc::string_view(buffer, length);
-        }
+            length = std::snprintf(buffer, sizeof(buffer), "%hhu", value);
         if constexpr (sizeof(IntType) == 2)
-        {
-            char buffer[6 + 1 + 1];
-            auto const length = std::snprintf(buffer, sizeof(buffer), "%hu", value);
-            ss << cc::string_view(buffer, length);
-        }
+            length = std::snprintf(buffer, sizeof(buffer), "%hu", value);
         if constexpr (sizeof(IntType) == 4)
-        {
-            char buffer[10 + 1 + 1];
             // the cast prevents a warning when unsigned long is 32bit
-            auto const length = std::snprintf(buffer, sizeof(buffer), "%u", static_cast<unsigned int>(value));
-            ss << cc::string_view(buffer, length);
-        }
+            length = std::snprintf(buffer, sizeof(buffer), "%u", static_cast<unsigned int>(value));
         if constexpr (sizeof(IntType) == 8)
-        {
-            char buffer[19 + 1 + 1];
             // the cast prevents a warning when unsigned long is 64bit
-            auto const length = std::snprintf(buffer, sizeof(buffer), "%llu", static_cast<unsigned long long>(value));
-            ss << cc::string_view(buffer, length);
-        }
+            length = std::snprintf(buffer, sizeof(buffer), "%llu", static_cast<unsigned long long>(value));
+        add_fill(length);
+        ss << cc::string_view(buffer, length);
     }
     break;
     case 'b': // binary, with # prefix 0b
     {
         if (args.alternative_mode)
             ss << "0b";
-
-        if constexpr (sizeof(IntType) == 1)
-        {
-            char buffer[8 + 1 + 1];
-            auto const end = buffer + sizeof(buffer);
-            auto const begin = unsigned_int_to_binary(value, end);
-            ss << cc::string_view(begin, end);
-        }
-        if constexpr (sizeof(IntType) == 2)
-        {
-            char buffer[16 + 1 + 1];
-            auto const end = buffer + sizeof(buffer);
-            auto const begin = unsigned_int_to_binary(value, end);
-            ss << cc::string_view(begin, end);
-        }
-        if constexpr (sizeof(IntType) == 4)
-        {
-            char buffer[32 + 1 + 1];
-            auto const end = buffer + sizeof(buffer);
-            auto const begin = unsigned_int_to_binary(value, end);
-            ss << cc::string_view(begin, end);
-        }
-        if constexpr (sizeof(IntType) == 8)
-        {
-            char buffer[65 + 1 + 1];
-            auto const end = buffer + sizeof(buffer);
-            auto const begin = unsigned_int_to_binary(value, end);
-            ss << cc::string_view(begin, end);
-        }
+        to_binary();
     }
     break;
     case 'B': // binary, with # prefix 0B
     {
         if (args.alternative_mode)
             ss << "0B";
-
-        if constexpr (sizeof(IntType) == 1)
-        {
-            char buffer[8 + 1 + 1];
-            auto const end = buffer + sizeof(buffer);
-            auto const begin = unsigned_int_to_binary(value, end);
-            ss << cc::string_view(begin, end);
-        }
-        if constexpr (sizeof(IntType) == 2)
-        {
-            char buffer[16 + 1 + 1];
-            auto const end = buffer + sizeof(buffer);
-            auto const begin = unsigned_int_to_binary(value, end);
-            ss << cc::string_view(begin, end);
-        }
-        if constexpr (sizeof(IntType) == 4)
-        {
-            char buffer[32 + 1 + 1];
-            auto const end = buffer + sizeof(buffer);
-            auto const begin = unsigned_int_to_binary(value, end);
-            ss << cc::string_view(begin, end);
-        }
-        if constexpr (sizeof(IntType) == 8)
-        {
-            char buffer[65 + 1 + 1];
-            auto const end = buffer + sizeof(buffer);
-            auto const begin = unsigned_int_to_binary(value, end);
-            ss << cc::string_view(begin, end);
-        }
+        to_binary();
     }
     break;
     case 'o': // octal, with # prefix 0
     {
         if (args.alternative_mode)
             ss << "0";
-
+        char buffer[(sizeof(IntType) * 8) / 3 + 1 + 1];
+        int length = 0;
         if constexpr (sizeof(IntType) == 1)
-        {
-            char buffer[3 + 1 + 1];
-            auto const length = std::snprintf(buffer, sizeof(buffer), "%hho", value);
-            ss << cc::string_view(buffer, length);
-        }
+            length = std::snprintf(buffer, sizeof(buffer), "%hho", value);
         if constexpr (sizeof(IntType) == 2)
-        {
-            char buffer[6 + 1 + 1];
-            auto const length = std::snprintf(buffer, sizeof(buffer), "%ho", value);
-            ss << cc::string_view(buffer, length);
-        }
+            length = std::snprintf(buffer, sizeof(buffer), "%ho", value);
         if constexpr (sizeof(IntType) == 4)
-        {
-            char buffer[10 + 1 + 1];
             // the cast prevents a warning when unsigned long is 32bit
-            auto const length = std::snprintf(buffer, sizeof(buffer), "%o", static_cast<unsigned int>(value));
-            ss << cc::string_view(buffer, length);
-        }
+            length = std::snprintf(buffer, sizeof(buffer), "%o", static_cast<unsigned int>(value));
         if constexpr (sizeof(IntType) == 8)
-        {
-            char buffer[19 + 1 + 1];
             // the cast prevents a warning when unsigned long is 64bit
-            auto const length = std::snprintf(buffer, sizeof(buffer), "%llo", static_cast<unsigned long long>(value));
-            ss << cc::string_view(buffer, length);
-        }
+            length = std::snprintf(buffer, sizeof(buffer), "%llo", static_cast<unsigned long long>(value));
+
+        add_fill(length);
+        ss << cc::string_view(buffer, length);
     }
     break;
     case 'x': // hexadecimal, with # prefix 0x
     {
+        constexpr auto buffer_size = sizeof(IntType) * 2 + 1;
+        char buffer[buffer_size];
+        int length = 0;
         if (args.alternative_mode)
         {
             if constexpr (sizeof(IntType) == 1)
-            {
-                char buffer[3 + 1 + 1];
-                auto const length = std::snprintf(buffer, sizeof(buffer), "%#hhx", value);
-                ss << cc::string_view(buffer, length);
-            }
+                length = std::snprintf(buffer, sizeof(buffer), "%#hhx", value);
             if constexpr (sizeof(IntType) == 2)
-            {
-                char buffer[6 + 1 + 1];
-                auto const length = std::snprintf(buffer, sizeof(buffer), "%#hx", value);
-                ss << cc::string_view(buffer, length);
-            }
+                length = std::snprintf(buffer, sizeof(buffer), "%#hx", value);
             if constexpr (sizeof(IntType) == 4)
-            {
-                char buffer[10 + 1 + 1];
                 // the cast prevents a warning when unsigned long is 32bit
-                auto const length = std::snprintf(buffer, sizeof(buffer), "%#x", static_cast<unsigned int>(value));
-                ss << cc::string_view(buffer, length);
-            }
+                length = std::snprintf(buffer, sizeof(buffer), "%#x", static_cast<unsigned int>(value));
             if constexpr (sizeof(IntType) == 8)
-            {
-                char buffer[19 + 1 + 1];
                 // the cast prevents a warning when unsigned long is 64bit
-                auto const length = std::snprintf(buffer, sizeof(buffer), "%#llx", static_cast<unsigned long long>(value));
-                ss << cc::string_view(buffer, length);
-            }
+                length = std::snprintf(buffer, sizeof(buffer), "%#llx", static_cast<unsigned long long>(value));
         }
         else
         {
             if constexpr (sizeof(IntType) == 1)
-            {
-                char buffer[3 + 1 + 1];
-                auto const length = std::snprintf(buffer, sizeof(buffer), "%hhx", value);
-                ss << cc::string_view(buffer, length);
-            }
+                length = std::snprintf(buffer, sizeof(buffer), "%hhx", value);
             if constexpr (sizeof(IntType) == 2)
-            {
-                char buffer[6 + 1 + 1];
-                auto const length = std::snprintf(buffer, sizeof(buffer), "%hx", value);
-                ss << cc::string_view(buffer, length);
-            }
+                length = std::snprintf(buffer, sizeof(buffer), "%hx", value);
             if constexpr (sizeof(IntType) == 4)
-            {
-                char buffer[10 + 1 + 1];
                 // the cast prevents a warning when unsigned long is 32bit
-                auto const length = std::snprintf(buffer, sizeof(buffer), "%x", static_cast<unsigned int>(value));
-                ss << cc::string_view(buffer, length);
-            }
+                length = std::snprintf(buffer, sizeof(buffer), "%x", static_cast<unsigned int>(value));
             if constexpr (sizeof(IntType) == 8)
-            {
-                char buffer[19 + 1 + 1];
                 // the cast prevents a warning when unsigned long is 64bit
-                auto const length = std::snprintf(buffer, sizeof(buffer), "%llx", static_cast<unsigned long long>(value));
-                ss << cc::string_view(buffer, length);
-            }
+                length = std::snprintf(buffer, sizeof(buffer), "%llx", static_cast<unsigned long long>(value));
         }
+        add_fill(length);
+        ss << cc::string_view(buffer, length);
     }
     break;
     case 'X': // hexadecimal, with # prefix 0X
     {
+        constexpr auto buffer_size = sizeof(IntType) * 2 + 1;
+        char buffer[buffer_size];
+        int length = 0;
         if (args.alternative_mode)
         {
             if constexpr (sizeof(IntType) == 1)
-            {
-                char buffer[3 + 1 + 1];
-                auto const length = std::snprintf(buffer, sizeof(buffer), "%#hhX", value);
-                ss << cc::string_view(buffer, length);
-            }
+                length = std::snprintf(buffer, sizeof(buffer), "%#hhX", value);
             if constexpr (sizeof(IntType) == 2)
-            {
-                char buffer[6 + 1 + 1];
-                auto const length = std::snprintf(buffer, sizeof(buffer), "%#hX", value);
-                ss << cc::string_view(buffer, length);
-            }
+                length = std::snprintf(buffer, sizeof(buffer), "%#hX", value);
             if constexpr (sizeof(IntType) == 4)
-            {
-                char buffer[10 + 1 + 1];
                 // the cast prevents a warning when unsigned long is 32bit
-                auto const length = std::snprintf(buffer, sizeof(buffer), "%#X", static_cast<unsigned int>(value));
-                ss << cc::string_view(buffer, length);
-            }
+                length = std::snprintf(buffer, sizeof(buffer), "%#X", static_cast<unsigned int>(value));
             if constexpr (sizeof(IntType) == 8)
-            {
-                char buffer[19 + 1 + 1];
                 // the cast prevents a warning when unsigned long is 64bit
-                auto const length = std::snprintf(buffer, sizeof(buffer), "%#llX", static_cast<unsigned long long>(value));
-                ss << cc::string_view(buffer, length);
-            }
+                length = std::snprintf(buffer, sizeof(buffer), "%#llX", static_cast<unsigned long long>(value));
         }
         else
         {
             if constexpr (sizeof(IntType) == 1)
-            {
-                char buffer[3 + 1 + 1];
-                auto const length = std::snprintf(buffer, sizeof(buffer), "%hhX", value);
-                ss << cc::string_view(buffer, length);
-            }
+                length = std::snprintf(buffer, sizeof(buffer), "%hhX", value);
             if constexpr (sizeof(IntType) == 2)
-            {
-                char buffer[6 + 1 + 1];
-                auto const length = std::snprintf(buffer, sizeof(buffer), "%hX", value);
-                ss << cc::string_view(buffer, length);
-            }
+                length = std::snprintf(buffer, sizeof(buffer), "%hX", value);
             if constexpr (sizeof(IntType) == 4)
-            {
-                char buffer[10 + 1 + 1];
                 // the cast prevents a warning when unsigned long is 32bit
-                auto const length = std::snprintf(buffer, sizeof(buffer), "%X", static_cast<unsigned int>(value));
-                ss << cc::string_view(buffer, length);
-            }
+                length = std::snprintf(buffer, sizeof(buffer), "%X", static_cast<unsigned int>(value));
             if constexpr (sizeof(IntType) == 8)
-            {
-                char buffer[19 + 1 + 1];
                 // the cast prevents a warning when unsigned long is 64bit
-                auto const length = std::snprintf(buffer, sizeof(buffer), "%llX", static_cast<unsigned long long>(value));
-                ss << cc::string_view(buffer, length);
-            }
+                length = std::snprintf(buffer, sizeof(buffer), "%llX", static_cast<unsigned long long>(value));
         }
+        add_fill(length);
+        ss << cc::string_view(buffer, length);
     }
     break;
     default:
@@ -745,20 +639,30 @@ void int_to_string_impl(cc::string_stream_ref ss, IntType value, parsed_fmt_args
     auto const is_neg = value < 0;
     std::make_unsigned_t<IntType> unsigned_value = is_neg ? -value : value;
 
+    // the width must be reduced by one, if any sign symbol is added
+    auto args_cpy = args;
     switch (args.sign)
     {
     case ' ':
         ss << (is_neg ? '-' : ' ');
+        if (args.width > 0)
+            --args_cpy.width;
         break;
     case '-':
         if (is_neg)
+        {
             ss << "-";
+            if (args.width > 0)
+                --args_cpy.width;
+        }
         break;
     case '+':
         ss << (is_neg ? '-' : '+');
+        if (args.width > 0)
+            --args_cpy.width;
         break;
     }
-    unsigned_to_string_impl(ss, unsigned_value, args);
+    unsigned_to_string_impl(ss, unsigned_value, args_cpy);
 }
 
 template <class FloatType>
