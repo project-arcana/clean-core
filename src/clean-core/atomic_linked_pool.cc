@@ -22,7 +22,7 @@ CC_FORCE_INLINE void radix_sort_pass(uint32_t const* __restrict src, uint32_t* _
 }
 
 
-void cc::radix_sort(uint32_t* __restrict a, uint32_t* __restrict temp, size_t n)
+void cc::detail::radix_sort(uint32_t* __restrict a, uint32_t* __restrict temp, size_t n)
 {
     radix_sort_pass(a, temp, n, 0 * 8);
     radix_sort_pass(temp, a, n, 1 * 8);

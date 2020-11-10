@@ -13,7 +13,10 @@
 
 namespace cc
 {
+namespace detail
+{
 void radix_sort(uint32_t* __restrict a, uint32_t* __restrict temp, size_t n);
+}
 
 /// Fixed-size object pool, synchronized and lock-free
 /// Uses an in-place linked list in free nodes, for O(1) acquire, release and size overhead
