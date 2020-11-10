@@ -57,6 +57,41 @@ public:
         }
     }
 
+    /// same as "function_ref(F&& f)" ctor but uses
+    /// return Invoker::invoke(f, cc::forward<Args>(args)...);
+    /// (can be used to map/customize return value or args)
+    template <class Invoker, class F>
+    [[nodiscard]] static constexpr function_ref with_custom_invoker(F&& f)
+    {
+        function_ref r;
+        if constexpr (std::is_function_v<std::remove_pointer_t<std::remove_reference_t<F>>>) // function pointer
+        {
+            // comes first since in some architectures function pointers are void* convertible as well
+            r._data.fun = f;
+            CC_CONTRACT(r._data.fun != nullptr && "null function pointers not allowed in cc::function_ref");
+            r._fun = [](storage const& s, Args... args) -> Result { return Invoker::invoke(s.fun, cc::forward<Args>(args)...); };
+        }
+        else if constexpr (std::is_assignable_v<void*&, decltype(&f)>) // ptr / ref to callable
+        {
+            r._data.obj = &f;
+            r._fun = [](storage const& s, Args... args) -> Result {
+                return Invoker::invoke(*static_cast<std::remove_reference_t<F>*>(s.obj), cc::forward<Args>(args)...);
+            };
+        }
+        else if constexpr (std::is_assignable_v<void const*&, decltype(&f)>) // ptr / ref to const callable
+        {
+            r._data.obj_const = &f;
+            r._fun = [](storage const& s, Args... args) -> Result {
+                return Invoker::invoke(*static_cast<std::remove_reference_t<F>*>(s.obj), cc::forward<Args>(args)...);
+            };
+        }
+        else
+        {
+            static_assert(cc::always_false<F>, "argument cannot be converted to cc::function_ref");
+        }
+        return r;
+    }
+
     /// NOTE: this function_ref is invalid and must not be called
     ///       it may only be assigned to
     constexpr function_ref() = default;

@@ -43,6 +43,7 @@ void cc::detail::vformat_to(cc::stream_ref<char> ss, cc::string_view fmt_str, cc
         {
             // case {}
             CC_ASSERT(arg_id >= 0 && "Invalid format string: Cannot use {} after named or indexed argument");
+            CC_ASSERT(arg_id < int(args.size()) && "too many arguments for cc::format");
             args[arg_id].do_format(ss, args[arg_id].data, {});
             ++arg_id;
         }
