@@ -24,8 +24,14 @@ include(cmake/AddLibrary.cmake)
 
 file(GLOB_RECURSE SOURCES "src/*.cc")
 file(GLOB_RECURSE HEADERS "src/*.hh" "src/*.inl")
+file(GLOB_RECURSE MISC_FILES "*.natvis")
 
+# set up source_group, optionally enable unity builds, add the library
 arcana_add_library(CC clean-core SOURCES HEADERS)
+
+# add natvis files (visual studio debug views for span, vector, etc.)
+target_sources(clean-core PUBLIC ${MISC_FILES})
+
 target_include_directories(clean-core PUBLIC src/)
 
 # =========================================

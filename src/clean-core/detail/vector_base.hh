@@ -69,7 +69,9 @@ public:
     size_t size() const { return _size; }
     size_t size_bytes() const { return _size * sizeof(T); }
     size_t capacity() const { return _capacity; }
+    size_t capacity_remaining() const { return _capacity - _size; }
     bool empty() const { return _size == 0; }
+    bool at_capacity() const { return capacity_remaining() == 0; }
     T* data() { return _data; }
     T const* data() const { return _data; }
     T* begin() { return _data; }
