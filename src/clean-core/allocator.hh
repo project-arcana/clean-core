@@ -1,6 +1,7 @@
 #pragma once
 
 #include <clean-core/forward.hh>
+#include <clean-core/fwd.hh>
 #include <clean-core/new.hh>
 #include <clean-core/polymorphic.hh>
 #include <clean-core/span.hh>
@@ -39,6 +40,9 @@ struct allocator : polymorphic
     /// destruct and deallocate an array previously created with new_array_sized
     template <class T>
     void delete_array_sized(T* ptr, size_t num_elems);
+
+    /// allocates a new null terminated string with a copy of the source
+    char* alloc_string_copy(cc::string_view source);
 
     // below:
     // specific interfaces which can be overriden by allocators to be more efficient, with fallback otherwise
@@ -191,6 +195,8 @@ template <class T>
 void allocator::delete_t(T* ptr)
 {
     static_assert(sizeof(T) > 0, "cannot destruct incomplete type");
+    static_assert(!std::is_const_v<T>, "cannot delete pointer-to-const");
+
     if (ptr == nullptr)
         return;
 
@@ -222,6 +228,8 @@ template <class T>
 void allocator::delete_array(T* ptr)
 {
     static_assert(sizeof(T) > 0, "cannot destruct incomplete type");
+    static_assert(!std::is_const_v<T>, "cannot delete pointer-to-const");
+
     if (ptr == nullptr)
         return;
 
@@ -253,6 +261,8 @@ template <class T>
 void allocator::delete_array_sized(T* ptr, size_t num_elems)
 {
     static_assert(sizeof(T) > 0, "cannot destruct incomplete type");
+    static_assert(!std::is_const_v<T>, "cannot delete pointer-to-const");
+
     if (ptr == nullptr)
         return;
 

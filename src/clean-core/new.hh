@@ -10,7 +10,7 @@ struct placement_new_tag
 {
 };
 }
-static constexpr cc::detail::placement_new_tag placement_new;
+[[maybe_unused]] static constexpr cc::detail::placement_new_tag placement_new;
 }
 
 /// Usage:

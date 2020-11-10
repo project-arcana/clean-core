@@ -64,6 +64,7 @@ public:
 
     ~alloc_vector()
     {
+        static_assert(sizeof(T) > 0, "alloc_vector destructor requires complete type");
         detail::container_destroy_reverse<T>(this->_data, this->_size);
         this->_free(this->_data);
     }
