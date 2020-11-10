@@ -200,7 +200,7 @@ struct atomic_linked_pool
     /// This operation is slow and should not occur in normal operation
     unsigned release_all(cc::allocator* scratch_alloc = cc::system_allocator)
     {
-        return iterate_allocated_nodes([this](T& node) { release_node(&node); }, scratch_alloc);
+        return iterate_allocated_nodes([this](T& node) { unsafe_release_node(&node); }, scratch_alloc);
     }
 
     /// release a slot in the pool by the pointer to it's node
@@ -285,7 +285,7 @@ private:
         }
         // sort ascending
         auto temp_sortvec = cc::alloc_vector<handle_t>::uninitialized(free_indices.size(), scratch_alloc);
-        radix_sort(free_indices.data(), temp_sortvec.data(), free_indices.size());
+        detail::radix_sort(free_indices.data(), temp_sortvec.data(), free_indices.size());
 
         return free_indices;
     }
