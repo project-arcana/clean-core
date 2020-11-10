@@ -493,7 +493,7 @@ void unsigned_to_string_impl(cc::string_stream_ref ss, IntType value, parsed_fmt
     case 0:   // fallthrough
     case 'd': // default, decimal
     {
-        auto const buffer_size = [] {
+        constexpr auto buffer_size = [] {
             switch (sizeof(IntType))
             {
             case 1:
