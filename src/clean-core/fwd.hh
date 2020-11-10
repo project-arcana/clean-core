@@ -54,6 +54,8 @@ template <class KeyT, class ValueT, class HashT = cc::hash<KeyT>, class EqualT =
 struct map;
 template <class T, class HashT = cc::hash<T>, class EqualT = cc::equal_to<void>>
 struct set;
+template <class T, bool GenCheckEnabled = false>
+struct atomic_linked_pool;
 
 // values
 template <class T>
