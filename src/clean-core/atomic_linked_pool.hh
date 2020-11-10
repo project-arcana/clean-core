@@ -23,7 +23,7 @@ void radix_sort(uint32_t* __restrict a, uint32_t* __restrict temp, size_t n);
 /// Pointers remain stable
 /// acquire() and release() fully thread-safe
 /// (access to underlying memory unsynchronized)
-template <class T, bool GenCheckEnabled = false>
+template <class T, bool GenCheckEnabled>
 struct atomic_linked_pool
 {
     using handle_t = uint32_t;
