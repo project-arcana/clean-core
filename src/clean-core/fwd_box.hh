@@ -1,6 +1,6 @@
 #pragma once
 
-#include <clean-core/allocator.hh>
+#include <clean-core/allocate.hh>
 #include <clean-core/enable_if.hh>
 #include <clean-core/forward.hh>
 #include <clean-core/function_ptr.hh>
@@ -38,11 +38,11 @@ struct fwd_box
     ~fwd_box()
     {
         if (_deleter)
-            _deleter(_data, _alloc);
+            _deleter(_data);
     }
 
     template <class U, class... Args>
-    friend fwd_box<U> make_alloc_fwd_box(cc::allocator*, Args&&...);
+    friend fwd_box<U> make_fwd_box(Args&&... args);
 
     [[nodiscard]] T* get() { return _data; }
     [[nodiscard]] T const* get() const { return _data; }
@@ -72,25 +72,19 @@ struct fwd_box
     operator T&() { return *_data; }
 
 private:
-    explicit fwd_box(T* data, cc::allocator* alloc) : _data(data), _alloc(alloc)
+    explicit fwd_box(T* data) : _data(data)
     {
-        _deleter = [](T* d, cc::allocator* a) { a->delete_t<T>(d); };
+        _deleter = [](T* data) { cc::free(data); };
     }
 
     T* _data;
-    cc::allocator* _alloc;
-    function_ptr<void(T*, cc::allocator*)> _deleter;
+    function_ptr<void(T*)> _deleter;
 };
-
-template <class T, class... Args>
-fwd_box<T> make_alloc_fwd_box(cc::allocator* alloc, Args&&... args)
-{
-    return fwd_box<T>(alloc->new_t<T>(cc::forward<Args>(args)...), alloc);
-}
 
 template <class T, class... Args>
 fwd_box<T> make_fwd_box(Args&&... args)
 {
-    return make_alloc_fwd_box<T>(cc::system_allocator, cc::forward<Args>(args)...);
+    return fwd_box<T>(cc::alloc<T>(cc::forward<Args>(args)...));
 }
+
 }
