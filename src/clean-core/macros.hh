@@ -59,6 +59,7 @@
 #define CC_HOT_FUNC
 
 #define CC_BUILTIN_UNREACHABLE __assume(0)
+#define CC_COUNTOF(arr) _countof(arr)
 
 #elif defined(CC_COMPILER_POSIX)
 
@@ -74,6 +75,7 @@
 #define CC_HOT_FUNC __attribute__((hot))
 
 #define CC_BUILTIN_UNREACHABLE __builtin_unreachable()
+#define CC_COUNTOF(arr) (sizeof(arr) / sizeof(arr[0]))
 
 #else
 #error "Unknown compiler"
