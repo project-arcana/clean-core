@@ -40,16 +40,10 @@ struct string_view
     constexpr string_view(char const* data)
     {
         _data = data;
+        // TODO: replace by constexpr strlen (compiler-dependent)
         _size = 0;
         while (data[_size] != '\0')
             ++_size;
-    }
-    template <size_t N>
-    constexpr string_view(char const (&data)[N])
-    {
-        CC_ASSERT(data[N - 1] == '\0' && "only string literals supported for array construction. use (data, size) ctor otherwise.");
-        _data = data;
-        _size = N - 1;
     }
     constexpr string_view(char const* data, size_t size) : _data(data), _size(size) {}
     constexpr string_view(char const* begin, char const* end) : _data(begin), _size(end - begin) {}
