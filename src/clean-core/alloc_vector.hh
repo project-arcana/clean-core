@@ -116,6 +116,8 @@ public:
         this->_allocator = new_allocator;
         this->reserve(reserve_size);
     }
+
+    cc::allocator* allocator() const { return this->_allocator; }
 };
 
 // hash
