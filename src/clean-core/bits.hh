@@ -20,6 +20,10 @@ inline int popcount(uint16 v) { return int(__popcnt16(v)); }
 inline int popcount(uint32 v) { return int(__popcnt(v)); }
 inline int popcount(uint64 v) { return int(__popcnt64(v)); }
 
+inline uint16 byteswap(uint16 v) { return _byteswap_ushort(v); }
+inline uint32 byteswap(uint32 v) { return _byteswap_ulong(v); }
+inline uint64 byteswap(uint64 v) { return _byteswap_uint64(v); }
+
 // NOTE: the _lzcnt_u32/_tzcnt_u32 intrinsics don't care about compilation target arch, they always output T/LZCNT
 // however LZCNT, on an assembly level, falls back to plain BSR if LZCNT isn't supported
 // if unsupported, we work around this using (explicit) BSR, XOR, SUB and a branch on 0
@@ -100,6 +104,20 @@ inline int popcount(uint8 v) { return __builtin_popcount(v); }
 inline int popcount(uint16 v) { return __builtin_popcount(v); }
 inline int popcount(uint32 v) { return __builtin_popcount(v); }
 inline int popcount(uint64 v) { return __builtin_popcountll(v); }
+
+inline uint16 byteswap(uint16 val) { return uint16(val >> uint16(8)) | uint16(val << uint16(8)); }
+inline uint32 byteswap(uint32 val) { return (val >> 24) | ((val & 0x00FF0000u) >> 8) | ((val & 0x0000FF00u) << 8) | (val << 24); }
+inline uint64 byteswap(uint64 val)
+{
+    return (val >> 56) |                         //
+           ((val & 0x00FF000000000000u) >> 40) | //
+           ((val & 0x0000FF0000000000u) >> 24) | //
+           ((val & 0x000000FF00000000u) >> 8) |  //
+           ((val & 0x00000000FF000000u) << 8) |  //
+           ((val & 0x0000000000FF0000u) << 24) | //
+           ((val & 0x000000000000FF00u) << 40) | //
+           (val << 56);
+}
 
 #ifdef __BMI__
 inline int count_trailing_zeros(uint32 v) { return int(_tzcnt_u32(v)); }
