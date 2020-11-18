@@ -20,6 +20,10 @@ inline int popcount(uint16 v) { return int(__popcnt16(v)); }
 inline int popcount(uint32 v) { return int(__popcnt(v)); }
 inline int popcount(uint64 v) { return int(__popcnt64(v)); }
 
+inline uint16 byteswap(uint16 v) { return _byteswap_ushort(v); }
+inline uint32 byteswap(uint32 v) { return _byteswap_ulong(v); }
+inline uint64 byteswap(uint64 v) { return _byteswap_uint64(v); }
+
 // NOTE: the _lzcnt_u32/_tzcnt_u32 intrinsics don't care about compilation target arch, they always output T/LZCNT
 // however LZCNT, on an assembly level, falls back to plain BSR if LZCNT isn't supported
 // if unsupported, we work around this using (explicit) BSR, XOR, SUB and a branch on 0
@@ -101,6 +105,29 @@ inline int popcount(uint16 v) { return __builtin_popcount(v); }
 inline int popcount(uint32 v) { return __builtin_popcount(v); }
 inline int popcount(uint64 v) { return __builtin_popcountll(v); }
 
+inline uint16 byteswap(uint16 val)
+{
+    val = uint16(val >> uint16(8)) | uint16(val << uint16(8));
+    return val;
+}
+inline uint32 byteswap(uint32 val)
+{
+    val = (val >> 24) | ((val & 0x00FF0000u) >> 8) | ((val & 0x0000FF00u) << 8) | (val << 24);
+    return val;
+}
+inline uint64 byteswap(uint64 val)
+{
+    val = (val >> 56) |                         //
+          ((val & 0x00FF000000000000u) >> 40) | //
+          ((val & 0x0000FF0000000000u) >> 24) | //
+          ((val & 0x000000FF00000000u) >> 8) |  //
+          ((val & 0x00000000FF000000u) << 8) |  //
+          ((val & 0x0000000000FF0000u) << 24) | //
+          ((val & 0x000000000000FF00u) << 40) | //
+          (val << 56);
+    return val;
+}
+
 #ifdef __BMI__
 inline int count_trailing_zeros(uint32 v) { return int(_tzcnt_u32(v)); }
 inline int count_trailing_zeros(uint64 v) { return int(_tzcnt_u64(v)); }
@@ -175,4 +202,5 @@ constexpr bool has_bit(uint8 val, uint32 bit_idx) { return (val & (uint8(1) << b
 constexpr bool has_bit(uint16 val, uint32 bit_idx) { return (val & (uint16(1) << bit_idx)) != 0; }
 constexpr bool has_bit(uint32 val, uint32 bit_idx) { return (val & (uint32(1) << bit_idx)) != 0; }
 constexpr bool has_bit(uint64 val, uint32 bit_idx) { return (val & (uint64(1) << bit_idx)) != 0; }
+
 }
