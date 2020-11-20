@@ -98,19 +98,9 @@ inline int popcount(uint16 v) { return __builtin_popcount(v); }
 inline int popcount(uint32 v) { return __builtin_popcount(v); }
 inline int popcount(uint64 v) { return __builtin_popcountll(v); }
 
-inline uint16 byteswap(uint16 val) { return uint16(val >> uint16(8)) | uint16(val << uint16(8)); }
-inline uint32 byteswap(uint32 val) { return (val >> 24) | ((val & 0x00FF0000u) >> 8) | ((val & 0x0000FF00u) << 8) | (val << 24); }
-inline uint64 byteswap(uint64 val)
-{
-    return (val >> 56) |                         //
-           ((val & 0x00FF000000000000u) >> 40) | //
-           ((val & 0x0000FF0000000000u) >> 24) | //
-           ((val & 0x000000FF00000000u) >> 8) |  //
-           ((val & 0x00000000FF000000u) << 8) |  //
-           ((val & 0x0000000000FF0000u) << 24) | //
-           ((val & 0x000000000000FF00u) << 40) | //
-           (val << 56);
-}
+inline uint16 byteswap(uint16 val) { return __builtin_bswap16(val); }
+inline uint32 byteswap(uint32 val) { return __builtin_bswap32(val); }
+inline uint64 byteswap(uint64 val) { return __builtin_bswap64(val); }
 
 #ifdef __BMI__
 inline int count_trailing_zeros(uint32 v) { return int(_tzcnt_u32(v)); }
