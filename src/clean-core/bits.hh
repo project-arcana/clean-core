@@ -91,13 +91,6 @@ inline int count_leading_zeros(uint64 v)
 }
 #endif
 
-inline bool test_cpuid_register(int level, int register_index, int bit_index)
-{
-    int info[4];
-    __cpuid(info, level);
-    return (info[register_index] >> bit_index) != 0;
-}
-
 #else
 
 inline int popcount(uint8 v) { return __builtin_popcount(v); }
@@ -144,19 +137,7 @@ inline int count_leading_zeros(uint32 v) { return v ? __builtin_clz(v) : 32; }
 inline int count_leading_zeros(uint64 v) { return v ? __builtin_clzll(v) : 64; }
 #endif
 
-inline bool test_cpuid_register(int level, int register_index, int bit_index)
-{
-    unsigned info[4];
-    __get_cpuid(level, &info[0], &info[1], &info[2], &info[3]);
-    return (info[register_index] >> bit_index) != 0;
-}
 #endif
-
-// returns true if the executing CPU has support for LZCNT
-// Intel: Haswell (4th gen Core-i, 2013), AMD: Piledriver (ABM, 2012)
-inline bool test_cpu_support_lzcnt() { return test_cpuid_register(0x80000001, 2, 5); }
-// returns true if the executing CPU has support for POPCNT
-inline bool test_cpu_support_popcount() { return test_cpuid_register(0x00000001, 2, 23); }
 
 // returns rounded down logarithm to base 2
 inline uint32 bit_log2(uint32 v) { return uint32(8 * sizeof(uint32) - count_leading_zeros(v) - 1); }
