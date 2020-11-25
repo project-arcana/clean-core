@@ -19,6 +19,31 @@
 #define CC_COMPILER_POSIX
 #endif
 
+// =========
+// compilation modes
+
+#ifdef CC_COMPILER_MSVC
+#ifdef _CPPRTTI
+#define CC_HAS_RTTI
+#endif
+#ifdef _CPPUNWIND
+#define CC_HAS_CPP_EXCEPTIONS
+#endif
+#elif defined(CC_COMPILER_CLANG)
+#if __has_feature(cxx_rtti)
+#define CC_HAS_RTTI
+#endif
+#if __EXCEPTIONS && __has_feature(cxx_exceptions)
+#define CC_HAS_CPP_EXCEPTIONS
+#endif
+#elif defined(CC_COMPILER_GCC)
+#ifdef __GXX_RTTI
+#define CC_HAS_RTTI
+#endif
+#if __EXCEPTIONS
+#define CC_HAS_CPP_EXCEPTIONS
+#endif
+#endif
 
 // =========
 // operating system
