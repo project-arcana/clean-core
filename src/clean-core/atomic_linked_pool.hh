@@ -255,12 +255,17 @@ private:
     static constexpr bool sc_enable_gen_check = GenCheckEnabled;
 #endif
 
-    static constexpr size_t sc_num_padding_bits = 3;
-    static constexpr size_t sc_num_index_bits = 16;
+    enum : size_t
+    {
+        sc_num_padding_bits = 3,
+        sc_num_index_bits = 16,
+        sc_num_generation_bits = 32 - (sc_num_padding_bits + sc_num_index_bits)
+    };
+
     struct internal_handle_t
     {
         uint32_t index : sc_num_index_bits; // least significant
-        uint32_t generation : 32 - (sc_num_padding_bits + sc_num_index_bits);
+        uint32_t generation : sc_num_generation_bits;
         uint32_t padding : sc_num_padding_bits; // most significant
     };
     static_assert(sizeof(internal_handle_t) == sizeof(handle_t));
