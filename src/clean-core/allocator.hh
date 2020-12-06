@@ -44,6 +44,9 @@ struct allocator : polymorphic
     /// allocates a new null terminated string with a copy of the source
     char* alloc_string_copy(cc::string_view source);
 
+    template <class T>
+    T* alloc_data_copy(cc::span<T const> data);
+
     // below:
     // specific interfaces which can be overriden by allocators to be more efficient, with fallback otherwise
 
@@ -303,5 +306,20 @@ void allocator::delete_array_sized(T* ptr, size_t num_elems)
         for (auto i = 0u; i < num_elems; ++i)
             (ptr + i)->~T();
     this->free(ptr);
+}
+
+template <class T>
+T* allocator::alloc_data_copy(cc::span<T const> data)
+{
+    static_assert(sizeof(T) > 0, "T must be complete");
+    static_assert(std::is_trivially_copyable_v<T>, "T must be memcpyable");
+
+    T* const res = reinterpret_cast<T*>(this->alloc(data.size_bytes(), alignof(T)));
+
+    if (!res)
+        return nullptr;
+
+    std::memcpy(res, data.data(), data.size_bytes());
+    return res;
 }
 }
