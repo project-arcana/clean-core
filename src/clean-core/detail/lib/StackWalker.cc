@@ -287,7 +287,7 @@ public:
         if (GetModuleFileName(NULL, szTemp, 4096) > 0)
         {
             _tcscat_s(szTemp, _T(".local"));
-            if (GetFileAttributes(szTemp) == INVALID_FILE_ATTRIBUTES)
+            if (GetFileAttributesA(szTemp) == INVALID_FILE_ATTRIBUTES)
             {
                 // ".local" file does not exist, so we can try to load the dbghelp.dll from the "Debugging Tools for Windows"
                 // Ok, first try the new path according to the architecture:
@@ -302,11 +302,11 @@ public:
                     }
                 }
 #elif _M_X64
-                if ((m_hDbhHelp == NULL) && (GetEnvironmentVariable(_T("ProgramFiles"), szTemp, 4096) > 0))
+                if ((m_hDbhHelp == NULL) && (GetEnvironmentVariableA(_T("ProgramFiles"), szTemp, 4096) > 0))
                 {
                     _tcscat_s(szTemp, _T("\\Debugging Tools for Windows (x64)\\dbghelp.dll"));
                     // now check if the file exists:
-                    if (GetFileAttributes(szTemp) != INVALID_FILE_ATTRIBUTES)
+                    if (GetFileAttributesA(szTemp) != INVALID_FILE_ATTRIBUTES)
                     {
                         m_hDbhHelp = LoadLibrary(szTemp);
                     }
@@ -323,21 +323,21 @@ public:
                 }
 #endif
                 // If still not found, try the old directories...
-                if ((m_hDbhHelp == NULL) && (GetEnvironmentVariable(_T("ProgramFiles"), szTemp, 4096) > 0))
+                if ((m_hDbhHelp == NULL) && (GetEnvironmentVariableA(_T("ProgramFiles"), szTemp, 4096) > 0))
                 {
                     _tcscat_s(szTemp, _T("\\Debugging Tools for Windows\\dbghelp.dll"));
                     // now check if the file exists:
-                    if (GetFileAttributes(szTemp) != INVALID_FILE_ATTRIBUTES)
+                    if (GetFileAttributesA(szTemp) != INVALID_FILE_ATTRIBUTES)
                     {
                         m_hDbhHelp = LoadLibrary(szTemp);
                     }
                 }
 #if defined _M_X64 || defined _M_IA64
                 // Still not found? Then try to load the (old) 64-Bit version:
-                if ((m_hDbhHelp == NULL) && (GetEnvironmentVariable(_T("ProgramFiles"), szTemp, 4096) > 0))
+                if ((m_hDbhHelp == NULL) && (GetEnvironmentVariableA(_T("ProgramFiles"), szTemp, 4096) > 0))
                 {
                     _tcscat_s(szTemp, _T("\\Debugging Tools for Windows 64-Bit\\dbghelp.dll"));
-                    if (GetFileAttributes(szTemp) != INVALID_FILE_ATTRIBUTES)
+                    if (GetFileAttributesA(szTemp) != INVALID_FILE_ATTRIBUTES)
                     {
                         m_hDbhHelp = LoadLibrary(szTemp);
                     }
