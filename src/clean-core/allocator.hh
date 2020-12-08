@@ -3,13 +3,12 @@
 #include <clean-core/forward.hh>
 #include <clean-core/fwd.hh>
 #include <clean-core/new.hh>
-#include <clean-core/polymorphic.hh>
 #include <clean-core/span.hh>
 #include <clean-core/typedefs.hh>
 
 namespace cc
 {
-struct allocator : polymorphic
+struct allocator
 {
     /// allocate a buffer with specified size and alignment
     [[nodiscard]] virtual byte* alloc(size_t size, size_t align = alignof(std::max_align_t)) = 0;
@@ -59,6 +58,14 @@ struct allocator : polymorphic
     /// reallocate a buffer with specified minimum size, will span up to request_size if possible
     [[nodiscard]] virtual byte* realloc_request(
         void* ptr, size_t old_size, size_t new_min_size, size_t request_size, size_t& out_received_size, size_t align = alignof(std::max_align_t));
+
+    // delete copy, default move
+    allocator() = default;
+    allocator(allocator const&) = delete;
+    allocator& operator=(allocator const&) = delete;
+    allocator(allocator&&) noexcept = default;
+    allocator& operator=(allocator&&) noexcept = default;
+    virtual ~allocator() = default;
 };
 
 
@@ -193,8 +200,6 @@ struct tlsf_allocator final : allocator
 
     std::byte* realloc(void* ptr, size_t old_size, size_t new_size, size_t align = alignof(std::max_align_t)) override;
 
-    tlsf_allocator(tlsf_allocator const&) = delete;
-    tlsf_allocator& operator==(tlsf_allocator const&) = delete;
     tlsf_allocator(tlsf_allocator&& rhs) noexcept : _tlsf(rhs._tlsf) { rhs._tlsf = nullptr; }
     tlsf_allocator& operator==(tlsf_allocator&& rhs) noexcept
     {
