@@ -5,6 +5,7 @@
 #include <clean-core/new.hh>
 #include <clean-core/span.hh>
 #include <clean-core/typedefs.hh>
+#include <clean-core/utility.hh>
 
 namespace cc
 {
@@ -91,7 +92,16 @@ extern system_allocator_t system_allocator_instance;
 /// cannot free individual allocations, only reset entirely
 struct linear_allocator final : allocator
 {
-    byte* alloc(size_t size, size_t align = alignof(std::max_align_t)) override;
+    byte* alloc(size_t size, size_t align = alignof(std::max_align_t)) override
+    {
+        CC_ASSERT(_buffer_begin != nullptr && "linear_allocator uninitialized");
+
+        auto* const padded_res = cc::align_up(_head, align);
+        CC_ASSERT(padded_res + size <= _buffer_end && "linear_allocator overcommitted");
+        _head = padded_res + size;
+
+        return padded_res;
+    }
 
     void free(void* ptr) override
     {

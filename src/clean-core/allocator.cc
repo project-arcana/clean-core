@@ -41,17 +41,7 @@ std::byte* align_up_with_header(std::byte* head, size_t align, size_t header_siz
 }
 }
 
-cc::byte* cc::linear_allocator::alloc(cc::size_t size, cc::size_t align)
-{
-    CC_ASSERT(_buffer_begin != nullptr && "linear_allocator uninitialized");
 
-    auto* const padded_res = align_up(_head, align);
-
-    CC_ASSERT(padded_res + size <= _buffer_end && "linear_allocator overcommitted");
-
-    _head = padded_res + size;
-    return padded_res;
-}
 
 cc::byte* cc::stack_allocator::alloc(cc::size_t size, cc::size_t align)
 {

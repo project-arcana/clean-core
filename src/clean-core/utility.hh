@@ -93,4 +93,11 @@ template <class T>
 {
     return align_up_masked(value, alignment - 1);
 }
+
+/// returns true if the value (pointer or integer) is aligned at the given boundary
+template <class T>
+[[nodiscard]] constexpr bool is_aligned(T value, size_t alignment)
+{
+    return 0 == ((size_t)value & (alignment - 1));
+}
 }
