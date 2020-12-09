@@ -1,8 +1,14 @@
 #include "threadsafe_allocators.hh"
 
-cc::atomic_pool_allocator::atomic_pool_allocator(span<cc::byte> buffer, cc::size_t block_size)
-  : _buffer_begin(buffer.data()), _buffer_size(buffer.size()), _block_size(block_size)
+cc::atomic_pool_allocator::atomic_pool_allocator(span<cc::byte> buffer, cc::size_t block_size) { initialize(buffer, block_size); }
+
+void cc::atomic_pool_allocator::initialize(span<cc::byte> buffer, cc::size_t block_size)
 {
+    CC_ASSERT(_buffer_begin == nullptr && "double initialize");
+    _buffer_begin = buffer.data();
+    _buffer_size = buffer.size();
+    _block_size = block_size;
+
     CC_ASSERT(_block_size >= sizeof(byte*) && "blocks must be large enough to accomodate a pointer");
     CC_ASSERT(_block_size <= _buffer_size && "not enough memory to allocate a single block");
 

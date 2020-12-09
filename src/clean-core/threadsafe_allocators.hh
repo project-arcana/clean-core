@@ -64,6 +64,16 @@ struct atomic_pool_allocator final : allocator
         } while (!cas_success);
     }
 
+    /// returns the offset of a node to the buffer start in bytes
+    size_t get_node_offset_bytes(void const* ptr) const
+    {
+        byte const* const node = static_cast<byte const*>(ptr);
+        CC_ASSERT(node >= _buffer_begin && node - _buffer_begin <= ptrdiff_t(_buffer_size)
+                  && "pointer in pool_allocator::get_node_offset_bytes is not part of the buffer");
+        CC_ASSERT((node - _buffer_begin) % _block_size == 0 && "pointer is not on a node boundary");
+        return size_t(node - _buffer_begin);
+    }
+
     bool is_full() const { return _first_free_node == nullptr; }
     size_t max_size_bytes() const { return _buffer_size; }
     size_t block_size_bytes() const { return _block_size; }
@@ -71,6 +81,8 @@ struct atomic_pool_allocator final : allocator
 
     atomic_pool_allocator() = default;
     atomic_pool_allocator(span<byte> buffer, size_t block_size);
+
+    void initialize(span<byte> buffer, size_t block_size);
 
 private:
     byte* _buffer_begin = nullptr;
