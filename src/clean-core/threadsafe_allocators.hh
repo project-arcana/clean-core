@@ -84,6 +84,12 @@ struct atomic_pool_allocator final : allocator
 
     void initialize(span<byte> buffer, size_t block_size);
 
+    template <class T>
+    void initialize_from_array(span<T> elements, size_t block_size_in_elements = 1)
+    {
+        return initialize(cc::as_byte_span(elements), sizeof(T) * block_size_in_elements);
+    }
+
 private:
     byte* _buffer_begin = nullptr;
     std::atomic<byte*> _first_free_node = nullptr;
