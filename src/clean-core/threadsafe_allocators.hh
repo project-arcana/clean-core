@@ -74,6 +74,12 @@ struct atomic_pool_allocator final : allocator
         return size_t(node - _buffer_begin);
     }
 
+    size_t get_node_index(void const* ptr) const
+    {
+        auto const offset_bytes = get_node_offset_bytes(ptr);
+        return offset_bytes / _block_size;
+    }
+
     bool is_full() const { return _first_free_node == nullptr; }
     size_t max_size_bytes() const { return _buffer_size; }
     size_t block_size_bytes() const { return _block_size; }
