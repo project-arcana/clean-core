@@ -121,11 +121,12 @@ public:
         {
             auto const new_cap = _capacity == 0 ? 1 : _capacity << 1;
 
-            if constexpr (std::is_trivially_copyable_v<T> && std::is_trivially_destructible_v<T>)
+            if constexpr (std::is_trivially_copyable_v<T> && sizeof(T) <= 256)
             {
                 // we can use realloc
+                auto tmp_obj = T(cc::forward<Args>(args)...);
                 _data = this->_realloc(_data, _capacity, new_cap);
-                T* new_element = new (placement_new, &_data[_size]) T(cc::forward<Args>(args)...);
+                T* new_element = new (placement_new, &_data[_size]) T(tmp_obj);
                 _capacity = new_cap;
                 _size++;
                 return *new_element;
