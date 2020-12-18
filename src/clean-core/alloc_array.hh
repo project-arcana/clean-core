@@ -180,6 +180,8 @@ struct alloc_array
         return false;
     }
 
+    cc::allocator* allocator() const { return this->_allocator; }
+
 private:
     T* _alloc(size_t size) { return reinterpret_cast<T*>(_allocator->alloc(size * sizeof(T), alignof(T))); }
     void _free(T* p) { _allocator->free(p); }

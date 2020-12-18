@@ -1,12 +1,56 @@
 #include <clean-core/assert.hh>
 
 #include <clean-core/breakpoint.hh>
+#include <clean-core/macros.hh>
+
+#ifdef CC_OS_WINDOWS
+#include <clean-core/detail/lib/StackWalker.hh>
+#endif
 
 #include <cstdio>
 #include <cstdlib>
 
 namespace
 {
+#ifdef CC_OS_WINDOWS
+
+class CallstackOutputWalker final : public StackWalker
+{
+protected:
+    void OnOutput(LPCSTR) override {}
+    void OnCallstackEntry(CallstackEntryType eType, CallstackEntry& entry) override
+    {
+        if (eType == CallstackEntryType::firstEntry)
+            return; // the first entry is StackWalker::ShowCallstack(), skip
+
+        if (entry.lineFileName[0]) // callstack inside of known source files
+        {
+            // this file/line formatting allows clickable "links" in VC output, it's not arbitrary
+            fprintf(stderr, "  %s (%lu) : %s\n", entry.lineFileName, entry.lineNumber, entry.name);
+        }
+        else // callstack in external modules (DLLs, Kernel)
+        {
+            fprintf(stderr, "  %s : %s\n", entry.loadedImageName, entry.name);
+        }
+    }
+};
+
+// macro instead of function to reduce noise in the callstack
+#define CC_PRINT_STACK_TRACE()               \
+    do                                       \
+    {                                        \
+        fprintf(stderr, "\nstack trace:\n"); \
+        CallstackOutputWalker sw;            \
+        sw.ShowCallstack();                  \
+    } while (0)
+
+#else
+
+// TODO
+#define CC_PRINT_STACK_TRACE()
+
+#endif
+
 struct assertion_not_handled
 {
 };
@@ -19,7 +63,7 @@ void default_assertion_handler(cc::detail::assertion_info const& info)
 {
     fflush(stdout);
 
-    fprintf(stderr, "assertion `%s' failed.\n", info.expr);
+    fprintf(stderr, "\nassertion `%s' failed.\n", info.expr);
 
     if (info.msg != nullptr)
     {
@@ -30,7 +74,8 @@ void default_assertion_handler(cc::detail::assertion_info const& info)
     fprintf(stderr, "  file %s:%d\n", info.file, info.line);
     fflush(stderr);
 
-    // TODO: stacktrace
+    CC_PRINT_STACK_TRACE();
+    fflush(stderr);
 
 #if !defined(CC_RELEASE) && !defined(CC_OS_WINDOWS)
     // on win32, this suppresses the CRT abort/retry debugger attach message

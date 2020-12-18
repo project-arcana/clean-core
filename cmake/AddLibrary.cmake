@@ -18,6 +18,7 @@ function(arcana_add_library LIB_PREFIX LIB_TARGET SOURCES_VARIABLE_NAME HEADERS_
     arcana_source_group(${SOURCES_VARIABLE_NAME} ${HEADERS_VARIABLE_NAME})
 
     option(${LIB_PREFIX}_ENABLE_UNITY_BUILD "If enabled, compiles this library as a single compilation unit" ON)
+    option(${LIB_PREFIX}_BUILD_DLL "If enabled, build a shared DLL instead of a static library" OFF)
 
     if (${${LIB_PREFIX}_ENABLE_UNITY_BUILD})
         if (CC_VERBOSE_CMAKE)
@@ -26,7 +27,21 @@ function(arcana_add_library LIB_PREFIX LIB_TARGET SOURCES_VARIABLE_NAME HEADERS_
         arcana_enable_unity_build(${LIB_TARGET} ${SOURCES_VARIABLE_NAME} 100 cc)
     endif()
 
-    add_library(${LIB_TARGET} STATIC ${${SOURCES_VARIABLE_NAME}} ${${HEADERS_VARIABLE_NAME}})
+    if (${${LIB_PREFIX}_BUILD_DLL})
+        if (CC_VERBOSE_CMAKE)
+            message(STATUS "[${LIB_TARGET}] building shared library (DLL)")
+        endif()
+
+        add_library(${LIB_TARGET} SHARED ${${SOURCES_VARIABLE_NAME}} ${${HEADERS_VARIABLE_NAME}})
+        # define <LIB>_BUILD_DLL always, and <LIB>_DLL only privately - when the DLL itself is being built
+        # macro is used to differentiate between dllexport/dllimport
+        target_compile_definitions(${LIB_TARGET} PUBLIC ${LIB_PREFIX}_BUILD_DLL PRIVATE ${LIB_PREFIX}_DLL)
+    else()
+        if (CC_VERBOSE_CMAKE)
+            message(STATUS "[${LIB_TARGET}] building static library")
+        endif()
+        add_library(${LIB_TARGET} STATIC ${${SOURCES_VARIABLE_NAME}} ${${HEADERS_VARIABLE_NAME}})
+    endif()
 
     arcana_configure_lib_options(${LIB_TARGET})
 

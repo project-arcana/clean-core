@@ -30,20 +30,20 @@ struct atomic_linked_pool
 
     void initialize(size_t size, cc::allocator* allocator = cc::system_allocator)
     {
-        static_assert(sizeof(T) >= sizeof(T*), "linked_pool element type must be large enough to accomodate a pointer");
+        static_assert(sizeof(T) >= sizeof(T*), "atomic_linked_pool element type must be large enough to accomodate a pointer");
         if (size == 0)
             return;
 
         if constexpr (sc_enable_gen_check)
         {
-            CC_ASSERT(size < 1u << sc_num_index_bits && "linked_pool size too large for index type");
+            CC_ASSERT(size <= sc_max_size_with_gen_check && "atomic_linked_pool size too large for index type");
         }
         else
         {
-            CC_ASSERT(size < (1u << (32 - sc_num_padding_bits)) && "linked_pool size too large for index type");
+            CC_ASSERT(size <= sc_max_size_without_gen_check && "atomic_linked_pool size too large for index type");
         }
 
-        CC_ASSERT(_pool == nullptr && "re-initialized linked_pool");
+        CC_ASSERT(_pool == nullptr && "re-initialized atomic_linked_pool");
         CC_CONTRACT(allocator != nullptr);
 
         _alloc = allocator;
@@ -72,6 +72,16 @@ struct atomic_linked_pool
         }
 
         _first_free_node = &_pool[0];
+
+        if constexpr (!std::is_trivially_destructible_v<T>)
+        {
+            // set up the function pointer now, as T is complete in this function (unlike in the dtor and this->_destroy())
+            _fptr_call_all_dtors = +[](atomic_linked_pool& pool) { pool.iterate_allocated_nodes([](T& node) { node.~T(); }); };
+        }
+        else
+        {
+            _fptr_call_all_dtors = nullptr;
+        }
     }
 
     void destroy() { _destroy(); }
@@ -79,7 +89,7 @@ struct atomic_linked_pool
     /// acquire a new slot in the pool
     [[nodiscard]] handle_t acquire()
     {
-        CC_ASSERT(!is_full() && "linked_pool full");
+        CC_ASSERT(!is_full() && "atomic_linked_pool full");
 
         // CAS-loop to acquire a free node and write the matching next pointer
         bool cas_success = false;
@@ -155,7 +165,7 @@ struct atomic_linked_pool
     CC_FORCE_INLINE uint32_t get_node_index(T const* node) const
     {
         CC_ASSERT(node >= &_pool[0] && node < &_pool[_pool_size] && "node outside of pool");
-        return node - _pool;
+        return uint32_t(node - _pool);
     }
 
     /// obtain the index of a node
@@ -171,6 +181,8 @@ struct atomic_linked_pool
     template <class F>
     unsigned iterate_allocated_nodes(F&& func, cc::allocator* scratch_alloc = cc::system_allocator)
     {
+        static_assert(sizeof(T) > 0, "requires complete type");
+
         if (_pool == nullptr)
             return 0;
 
@@ -207,6 +219,7 @@ struct atomic_linked_pool
     /// unsafe: cannot check handle generation
     void unsafe_release_node(T* node)
     {
+        static_assert(sizeof(T) > 0, "requires complete type");
         CC_ASSERT(node >= &_pool[0] && node < &_pool[_pool_size] && "node outside of pool");
 
         if constexpr (sc_enable_gen_check)
@@ -227,7 +240,12 @@ public:
     ~atomic_linked_pool() { _destroy(); }
 
     atomic_linked_pool(atomic_linked_pool&& rhs) noexcept
-      : _pool(rhs._pool), _pool_size(rhs._pool_size), _first_free_node(cc::move(rhs._first_free_node)), _alloc(rhs._alloc), _generation(rhs._generation)
+      : _pool(rhs._pool),
+        _pool_size(rhs._pool_size),
+        _first_free_node(cc::move(rhs._first_free_node)),
+        _alloc(rhs._alloc),
+        _fptr_call_all_dtors(rhs._fptr_call_all_dtors),
+        _generation(rhs._generation)
     {
         rhs._pool = nullptr;
     }
@@ -240,6 +258,7 @@ public:
         _pool_size = rhs._pool_size;
         _first_free_node = cc::move(rhs._first_free_node);
         _alloc = rhs._alloc;
+        _fptr_call_all_dtors = rhs._fptr_call_all_dtors;
         _generation = rhs._generation;
 
         rhs._pool = nullptr;
@@ -255,12 +274,25 @@ private:
     static constexpr bool sc_enable_gen_check = GenCheckEnabled;
 #endif
 
-    static constexpr size_t sc_num_padding_bits = 3;
-    static constexpr size_t sc_num_index_bits = 16;
+    enum : size_t
+    {
+        sc_num_padding_bits = 3,
+        sc_num_index_bits = 16,
+        sc_num_generation_bits = 32 - (sc_num_padding_bits + sc_num_index_bits),
+
+        // masks non-padding bytes
+        // 0b000 <..#sc_num_padding_bits..> 000111 <..rest of uint32..> 111
+        sc_padding_mask = ((uint32_t(1) << (32 - sc_num_padding_bits)) - 1),
+
+        // largest possible index that can be stored in the handle
+        sc_max_size_with_gen_check = (1u << sc_num_index_bits) - 1,
+        sc_max_size_without_gen_check = (1u << (32 - sc_num_padding_bits)) - 1
+    };
+
     struct internal_handle_t
     {
         uint32_t index : sc_num_index_bits; // least significant
-        uint32_t generation : 32 - (sc_num_padding_bits + sc_num_index_bits);
+        uint32_t generation : sc_num_generation_bits;
         uint32_t padding : sc_num_padding_bits; // most significant
     };
     static_assert(sizeof(internal_handle_t) == sizeof(handle_t));
@@ -319,13 +351,7 @@ private:
         else
         {
             // we use the handle as-is, but mask out the padding
-            // mask is
-            // 0b000 <..#sc_num_padding_bits..> 000111 <..rest of uint32..> 111
-            enum : uint32_t
-            {
-                e_padding_mask = ((uint32_t(1) << (32 - sc_num_padding_bits)) - 1)
-            };
-            return handle & e_padding_mask;
+            return handle & sc_padding_mask;
         }
     }
 
@@ -368,6 +394,9 @@ private:
     {
         if (_pool)
         {
+            if (_fptr_call_all_dtors)
+                _fptr_call_all_dtors(*this);
+
             _alloc->free(_pool);
             _pool = nullptr;
             _pool_size = 0;
@@ -385,6 +414,10 @@ private:
 
     std::atomic<T*> _first_free_node = nullptr;
     cc::allocator* _alloc = nullptr;
+
+    // function pointer that calls all dtors, used in _destroy() to work with fwd-declared types
+    // only non-null if T has a dtor
+    void (*_fptr_call_all_dtors)(atomic_linked_pool&) = nullptr;
 
     // this field is useless for instances without generational checks,
     // but the impact is likely not worth the trouble of conditional inheritance
