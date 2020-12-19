@@ -126,7 +126,7 @@ public:
                 // we can use realloc
                 auto tmp_obj = T(cc::forward<Args>(args)...);
                 _data = this->_realloc(_data, _capacity, new_cap);
-                T* new_element = new (placement_new, &_data[_size]) T(tmp_obj);
+                T* new_element = new (placement_new, &_data[_size]) T(cc::move(tmp_obj));
                 _capacity = new_cap;
                 _size++;
                 return *new_element;
