@@ -20,6 +20,10 @@ inline int popcount(uint16 v) { return int(__popcnt16(v)); }
 inline int popcount(uint32 v) { return int(__popcnt(v)); }
 inline int popcount(uint64 v) { return int(__popcnt64(v)); }
 
+inline uint16 byteswap(uint16 v) { return _byteswap_ushort(v); }
+inline uint32 byteswap(uint32 v) { return _byteswap_ulong(v); }
+inline uint64 byteswap(uint64 v) { return _byteswap_uint64(v); }
+
 // NOTE: the _lzcnt_u32/_tzcnt_u32 intrinsics don't care about compilation target arch, they always output T/LZCNT
 // however LZCNT, on an assembly level, falls back to plain BSR if LZCNT isn't supported
 // if unsupported, we work around this using (explicit) BSR, XOR, SUB and a branch on 0
@@ -87,19 +91,16 @@ inline int count_leading_zeros(uint64 v)
 }
 #endif
 
-inline bool test_cpuid_register(int level, int register_index, int bit_index)
-{
-    int info[4];
-    __cpuid(info, level);
-    return (info[register_index] >> bit_index) != 0;
-}
-
 #else
 
 inline int popcount(uint8 v) { return __builtin_popcount(v); }
 inline int popcount(uint16 v) { return __builtin_popcount(v); }
 inline int popcount(uint32 v) { return __builtin_popcount(v); }
 inline int popcount(uint64 v) { return __builtin_popcountll(v); }
+
+inline uint16 byteswap(uint16 val) { return __builtin_bswap16(val); }
+inline uint32 byteswap(uint32 val) { return __builtin_bswap32(val); }
+inline uint64 byteswap(uint64 val) { return __builtin_bswap64(val); }
 
 #ifdef __BMI__
 inline int count_trailing_zeros(uint32 v) { return int(_tzcnt_u32(v)); }
@@ -126,19 +127,7 @@ inline int count_leading_zeros(uint32 v) { return v ? __builtin_clz(v) : 32; }
 inline int count_leading_zeros(uint64 v) { return v ? __builtin_clzll(v) : 64; }
 #endif
 
-inline bool test_cpuid_register(int level, int register_index, int bit_index)
-{
-    unsigned info[4];
-    __get_cpuid(level, &info[0], &info[1], &info[2], &info[3]);
-    return (info[register_index] >> bit_index) != 0;
-}
 #endif
-
-// returns true if the executing CPU has support for LZCNT
-// Intel: Haswell (4th gen Core-i, 2013), AMD: Piledriver (ABM, 2012)
-inline bool test_cpu_support_lzcnt() { return test_cpuid_register(0x80000001, 2, 5); }
-// returns true if the executing CPU has support for POPCNT
-inline bool test_cpu_support_popcount() { return test_cpuid_register(0x00000001, 2, 23); }
 
 // returns rounded down logarithm to base 2
 inline uint32 bit_log2(uint32 v) { return uint32(8 * sizeof(uint32) - count_leading_zeros(v) - 1); }

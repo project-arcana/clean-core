@@ -79,4 +79,25 @@ template <class T>
     }
 } constexpr swap; // implemented as functor so it cannot be found by ADL
 
+
+/// increment the value (pointer or integer) to align to the given mask
+template <class T>
+[[nodiscard]] T align_up_masked(T value, size_t mask)
+{
+    return (T)(((size_t)value + mask) & ~mask);
+}
+
+/// increment the value (pointer or integer) to align at the given boundary
+template <class T>
+[[nodiscard]] T align_up(T value, size_t alignment)
+{
+    return align_up_masked(value, alignment - 1);
+}
+
+/// returns true if the value (pointer or integer) is aligned at the given boundary
+template <class T>
+[[nodiscard]] constexpr bool is_aligned(T value, size_t alignment)
+{
+    return 0 == ((size_t)value & (alignment - 1));
+}
 }

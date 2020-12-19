@@ -54,6 +54,8 @@ template <class KeyT, class ValueT, class HashT = cc::hash<KeyT>, class EqualT =
 struct map;
 template <class T, class HashT = cc::hash<T>, class EqualT = cc::equal_to<void>>
 struct set;
+template <class T, bool GenCheckEnabled = false>
+struct atomic_linked_pool;
 
 // values
 template <class T>
@@ -93,5 +95,14 @@ struct poly_unique_ptr;
 
 // allocators
 struct allocator;
+struct linear_allocator;
+struct system_allocator_t;
+struct stack_allocator;
+struct scratch_allocator;
+struct tlsf_allocator;
+struct atomic_pool_allocator;
+struct atomic_linear_allocator;
+struct synced_tlsf_allocator;
+
 extern allocator* const system_allocator;
 }

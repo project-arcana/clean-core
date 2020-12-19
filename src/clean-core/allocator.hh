@@ -1,14 +1,15 @@
 #pragma once
 
 #include <clean-core/forward.hh>
+#include <clean-core/fwd.hh>
 #include <clean-core/new.hh>
-#include <clean-core/polymorphic.hh>
 #include <clean-core/span.hh>
 #include <clean-core/typedefs.hh>
+#include <clean-core/utility.hh>
 
 namespace cc
 {
-struct allocator : polymorphic
+struct allocator
 {
     /// allocate a buffer with specified size and alignment
     [[nodiscard]] virtual byte* alloc(size_t size, size_t align = alignof(std::max_align_t)) = 0;
@@ -40,6 +41,12 @@ struct allocator : polymorphic
     template <class T>
     void delete_array_sized(T* ptr, size_t num_elems);
 
+    /// allocates a new null terminated string with a copy of the source
+    char* alloc_string_copy(cc::string_view source);
+
+    template <class T>
+    T* alloc_data_copy(cc::span<T const> data);
+
     // below:
     // specific interfaces which can be overriden by allocators to be more efficient, with fallback otherwise
 
@@ -52,6 +59,14 @@ struct allocator : polymorphic
     /// reallocate a buffer with specified minimum size, will span up to request_size if possible
     [[nodiscard]] virtual byte* realloc_request(
         void* ptr, size_t old_size, size_t new_min_size, size_t request_size, size_t& out_received_size, size_t align = alignof(std::max_align_t));
+
+    // delete copy, default move
+    allocator() = default;
+    allocator(allocator const&) = delete;
+    allocator& operator=(allocator const&) = delete;
+    allocator(allocator&&) noexcept = default;
+    allocator& operator=(allocator&&) noexcept = default;
+    virtual ~allocator() = default;
 };
 
 
@@ -77,7 +92,16 @@ extern system_allocator_t system_allocator_instance;
 /// cannot free individual allocations, only reset entirely
 struct linear_allocator final : allocator
 {
-    byte* alloc(size_t size, size_t align = alignof(std::max_align_t)) override;
+    byte* alloc(size_t size, size_t align = alignof(std::max_align_t)) override
+    {
+        CC_ASSERT(_buffer_begin != nullptr && "linear_allocator uninitialized");
+
+        auto* const padded_res = cc::align_up(_head, align);
+        CC_ASSERT(padded_res + size <= _buffer_end && "linear_allocator overcommitted");
+        _head = padded_res + size;
+
+        return padded_res;
+    }
 
     void free(void* ptr) override
     {
@@ -168,6 +192,37 @@ private:
     allocator* _backing_alloc = nullptr;
 };
 
+/// Two Level Segregated Fit allocator
+/// O(1) cost for alloc, free, realloc
+/// extremely low memory overhead, 4 byte per allocation
+struct tlsf_allocator final : allocator
+{
+    tlsf_allocator() = default;
+    tlsf_allocator(cc::span<std::byte> buffer) { initialize(buffer); }
+    ~tlsf_allocator() { destroy(); }
+
+    void initialize(cc::span<std::byte> buffer);
+    void destroy();
+
+    std::byte* alloc(size_t size, size_t align = alignof(std::max_align_t)) override;
+
+    void free(void* ptr) override;
+
+    std::byte* realloc(void* ptr, size_t old_size, size_t new_size, size_t align = alignof(std::max_align_t)) override;
+
+    tlsf_allocator(tlsf_allocator&& rhs) noexcept : _tlsf(rhs._tlsf) { rhs._tlsf = nullptr; }
+    tlsf_allocator& operator==(tlsf_allocator&& rhs) noexcept
+    {
+        destroy();
+        _tlsf = rhs._tlsf;
+        rhs._tlsf = nullptr;
+        return *this;
+    }
+
+private:
+    void* _tlsf = nullptr;
+};
+
 //
 // templated virtual allocator interface implementation below
 
@@ -191,6 +246,8 @@ template <class T>
 void allocator::delete_t(T* ptr)
 {
     static_assert(sizeof(T) > 0, "cannot destruct incomplete type");
+    static_assert(!std::is_const_v<T>, "cannot delete pointer-to-const");
+
     if (ptr == nullptr)
         return;
 
@@ -222,6 +279,8 @@ template <class T>
 void allocator::delete_array(T* ptr)
 {
     static_assert(sizeof(T) > 0, "cannot destruct incomplete type");
+    static_assert(!std::is_const_v<T>, "cannot delete pointer-to-const");
+
     if (ptr == nullptr)
         return;
 
@@ -253,6 +312,8 @@ template <class T>
 void allocator::delete_array_sized(T* ptr, size_t num_elems)
 {
     static_assert(sizeof(T) > 0, "cannot destruct incomplete type");
+    static_assert(!std::is_const_v<T>, "cannot delete pointer-to-const");
+
     if (ptr == nullptr)
         return;
 
@@ -260,5 +321,20 @@ void allocator::delete_array_sized(T* ptr, size_t num_elems)
         for (auto i = 0u; i < num_elems; ++i)
             (ptr + i)->~T();
     this->free(ptr);
+}
+
+template <class T>
+T* allocator::alloc_data_copy(cc::span<T const> data)
+{
+    static_assert(sizeof(T) > 0, "T must be complete");
+    static_assert(std::is_trivially_copyable_v<T>, "T must be memcpyable");
+
+    T* const res = reinterpret_cast<T*>(this->alloc(data.size_bytes(), alignof(T)));
+
+    if (!res)
+        return nullptr;
+
+    std::memcpy(res, data.data(), data.size_bytes());
+    return res;
 }
 }
