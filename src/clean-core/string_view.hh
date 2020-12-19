@@ -292,6 +292,12 @@ public:
     friend constexpr bool operator==(string_view lhs, string_view rhs);
     friend constexpr bool operator!=(string_view lhs, string_view rhs);
 
+    friend constexpr bool operator==(string_view lhs, char c) { return lhs.size() == 1 && lhs._data[0] == c; }
+    friend constexpr bool operator!=(string_view lhs, char c) { return !operator==(lhs, c); }
+
+    friend constexpr bool operator==(char c, string_view rhs) { return rhs.size() == 1 && rhs._data[0] == c; }
+    friend constexpr bool operator!=(char c, string_view rhs) { return !operator==(c, rhs); }
+
 private:
     char const* _data = nullptr;
     size_t _size = 0;
