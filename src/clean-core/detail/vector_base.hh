@@ -289,10 +289,21 @@ public:
         for (size_t i = 0; i < _size; ++i)
             if (cc::invoke(pred, _data[i]))
             {
-                for (size_t j = i + 1; j < _size; ++j)
-                    _data[j - 1] = cc::move(_data[j]);
-                --_size;
-                _data[_size].~T();
+                this->remove_at(i);
+                return true;
+            }
+        return false;
+    }
+
+    /// removes the first entry where cc::invoke(pred, entry) is true without preserving order
+    /// returns true iff any element was removed
+    template <class Predicate>
+    bool remove_first_unsorted(Predicate&& pred)
+    {
+        for (size_t i = 0; i < _size; ++i)
+            if (cc::invoke(pred, _data[i]))
+            {
+                this->remove_at_unsorted(i);
                 return true;
             }
         return false;
@@ -330,6 +341,14 @@ public:
             _data[i - 1] = cc::move(_data[i]);
         --_size;
         _data[_size].~T();
+    }
+
+    /// removes the element at the given index without preserving order
+    void remove_at_unsorted(size_t idx)
+    {
+        CC_CONTRACT(idx < _size);
+        cc::swap(_data[idx], this->back());
+        this->pop_back();
     }
 
     /// returns true iff any entry is == value
