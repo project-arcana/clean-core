@@ -1,6 +1,5 @@
 #include <clean-core/assert.hh>
 
-#include <clean-core/breakpoint.hh>
 #include <clean-core/macros.hh>
 
 #ifdef CC_OS_WINDOWS
@@ -51,10 +50,6 @@ protected:
 
 #endif
 
-struct assertion_not_handled
-{
-};
-
 using assertion_handler_t = void (*)(cc::detail::assertion_info const&);
 
 thread_local assertion_handler_t s_current_handler = nullptr;
@@ -76,24 +71,19 @@ void default_assertion_handler(cc::detail::assertion_info const& info)
 
     CC_PRINT_STACK_TRACE();
     fflush(stderr);
-
-#if !defined(CC_RELEASE) && !defined(CC_OS_WINDOWS)
-    // on win32, this suppresses the CRT abort/retry debugger attach message
-    cc::breakpoint();
-#endif
-
-    std::abort();
 }
 } // namespace
 
 void cc::detail::assertion_failed(assertion_info const& info)
 {
     if (s_current_handler)
+    {
         s_current_handler(info);
+    }
     else
+    {
         default_assertion_handler(info);
-
-    throw assertion_not_handled{};
+    }
 }
 
 void cc::set_assertion_handler(void (*handler)(detail::assertion_info const&)) { s_current_handler = handler; }
