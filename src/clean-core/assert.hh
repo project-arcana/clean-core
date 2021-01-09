@@ -22,8 +22,10 @@
 
 #ifdef CC_COMPILER_MSVC
 #define CC_BREAK_AND_ABORT() (__debugbreak(), std::abort())
-#elif
+#elif defined(CC_COMPILER_POSIX)
 #define CC_BREAK_AND_ABORT() (__builtin_trap(), std::abort())
+#else
+#define CC_BREAK_AND_ABORT() std::abort()
 #endif
 
 // least overhead assertion macros
