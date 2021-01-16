@@ -86,4 +86,6 @@ void cc::detail::assertion_failed(assertion_info const& info)
     }
 }
 
+void cc::detail::perform_abort() { std::abort(); }
+
 void cc::set_assertion_handler(void (*handler)(detail::assertion_info const&)) { s_current_handler = handler; }

@@ -1,12 +1,6 @@
 #pragma once
 
-#include <cstdlib> // std::abort
-
 #include <clean-core/macros.hh>
-
-#ifdef CC_COMPILER_MSVC
-#include <intrin.h> // __debugbreak
-#endif
 
 // CC_ASSERT(cond) aborts if `cond` is false
 // CC_BOUND_CHECK(var, lb, ub) asserts `lb <= var && var < ub`
@@ -21,17 +15,15 @@
 // comma expression: abort must still be called (if no debugger is attached), and do/while(0) doesn't work in the ternary
 
 #ifdef CC_COMPILER_MSVC
-#define CC_BREAK_AND_ABORT() (__debugbreak(), std::abort())
+#define CC_BREAK_AND_ABORT() (__debugbreak(), ::cc::detail::perform_abort())
 #elif defined(CC_COMPILER_POSIX)
-#define CC_BREAK_AND_ABORT() (__builtin_trap(), std::abort())
+#define CC_BREAK_AND_ABORT() (__builtin_trap(), ::cc::detail::perform_abort())
 #else
-#define CC_BREAK_AND_ABORT() std::abort()
+#define CC_BREAK_AND_ABORT() ::cc::detail::perform_abort()
 #endif
 
 // least overhead assertion macros
-// see https://godbolt.org/z/BvF_yn
-// [[unlikely]] produces more code in O0 so it is only used outside of debug
-// decltype(...) is an unevaluated context, thus eliminating any potential side effect
+// see https://godbolt.org/z/aWW1f8
 // assertion handler is customizable
 
 #define CC_DETAIL_EXECUTE_ASSERT(condition, msg) \
@@ -97,7 +89,10 @@ struct assertion_info
     int line;
 };
 
-[[noreturn]] CC_COLD_FUNC CC_DONT_INLINE void assertion_failed(assertion_info const& info);
+CC_COLD_FUNC CC_DONT_INLINE void assertion_failed(assertion_info const& info);
+
+/// calls std::abort(), avoids includes
+[[noreturn]] CC_COLD_FUNC CC_DONT_INLINE void perform_abort();
 }
 
 namespace cc
