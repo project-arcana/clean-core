@@ -2,6 +2,7 @@
 
 #include <clean-core/allocate.hh>
 #include <clean-core/forward.hh>
+#include <clean-core/fwd.hh>
 #include <clean-core/move.hh>
 #include <clean-core/sentinel.hh>
 
@@ -198,5 +199,9 @@ private:
 
 private:
     node* _first = nullptr;
+
+    // to guarantee pointer stability, map currently needs unexposed internal access
+    template <class KeyT, class ValueT, class HashT, class EqualT>
+    friend struct map;
 };
 }
