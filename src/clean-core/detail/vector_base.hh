@@ -298,12 +298,12 @@ public:
     /// removes the first entry where cc::invoke(pred, entry) is true without preserving order
     /// returns true iff any element was removed
     template <class Predicate>
-    bool remove_first_unsorted(Predicate&& pred)
+    bool remove_first_unordered(Predicate&& pred)
     {
         for (size_t i = 0; i < _size; ++i)
             if (cc::invoke(pred, _data[i]))
             {
-                this->remove_at_unsorted(i);
+                this->remove_at_unordered(i);
                 return true;
             }
         return false;
@@ -344,7 +344,7 @@ public:
     }
 
     /// removes the element at the given index without preserving order
-    void remove_at_unsorted(size_t idx)
+    void remove_at_unordered(size_t idx)
     {
         CC_CONTRACT(idx < _size);
         cc::swap(_data[idx], this->back());
