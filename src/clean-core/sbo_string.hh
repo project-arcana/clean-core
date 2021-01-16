@@ -110,7 +110,8 @@ public:
             _data = new char[_size + 1];
         }
 
-        std::memcpy(_data, s, _size);
+        if (_size > 0)
+            std::memcpy(_data, s, _size);
         _data[_size] = '\0';
     }
     sbo_string(string_view s) : sbo_string(s.data(), s.size()) {}
