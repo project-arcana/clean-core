@@ -42,7 +42,6 @@ std::byte* align_up_with_header(std::byte* head, size_t align, size_t header_siz
 }
 
 
-
 cc::byte* cc::stack_allocator::alloc(cc::size_t size, cc::size_t align)
 {
     CC_ASSERT(_buffer_begin != nullptr && "stack_allocator uninitialized");
