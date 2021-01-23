@@ -348,11 +348,23 @@ private:
         auto old_entries = cc::move(_entries);
         _entries = cc::array<cc::forward_list<entry>>::defaulted(new_cap);
         for (auto& l : old_entries)
-            for (auto& e : l)
+        {
+            auto n = l._first;
+            while (n)
             {
-                auto idx = this->_get_location(e.key);
-                _entries[idx].emplace_front(cc::move(e.key), cc::move(e.value));
+                auto nn = n->next;
+
+                // add to new loc
+                auto idx = this->_get_location(n->value.key);
+                auto& nl = _entries[idx];
+                n->next = nl._first;
+                nl._first = n;
+
+                n = nn;
             }
+
+            l._first = nullptr; // all added to new lists, make sure they are not deleted
+        }
     }
 
     // member
