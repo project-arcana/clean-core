@@ -154,6 +154,14 @@ public:
     /// adds an element at the end
     T& push_back(T&& value) { return emplace_back(cc::move(value)); }
 
+    /// creates a new element at the end without growing
+    template <class... Args>
+    T& stable_emplace_back(Args&&... args)
+    {
+        CC_ASSERT(_size < _capacity && "At capacity");
+        return *(new (placement_new, &_data[_size++]) T(cc::forward<Args>(args)...));
+    }
+
     /// adds all elements of the range
     template <class Range>
     void push_back_range(Range&& range)
