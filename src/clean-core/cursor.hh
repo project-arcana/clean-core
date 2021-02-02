@@ -2,13 +2,10 @@
 
 #include <clean-core/assert.hh>
 #include <clean-core/move.hh>
+#include <clean-core/sentinel.hh>
 
 namespace cc
 {
-struct end_cursor
-{
-};
-
 /**
  * cursor-based container facade:
  *   struct my_cursor : cc::cursor<my_cursor>
@@ -30,12 +27,12 @@ struct cursor
     void operator++(int) { static_cast<this_t*>(this)->advance(); }
     explicit operator bool() const { return static_cast<this_t const*>(this)->is_valid(); }
 
-    [[nodiscard]] bool operator==(end_cursor) const { return !static_cast<this_t const*>(this)->is_valid(); }
-    [[nodiscard]] bool operator!=(end_cursor) const { return static_cast<this_t const*>(this)->is_valid(); }
+    [[nodiscard]] bool operator==(sentinel) const { return !static_cast<this_t const*>(this)->is_valid(); }
+    [[nodiscard]] bool operator!=(sentinel) const { return static_cast<this_t const*>(this)->is_valid(); }
 
     // TODO: can we prevent the copy?
     [[nodiscard]] this_t begin() const { return *static_cast<this_t const*>(this); }
-    [[nodiscard]] end_cursor end() const { return {}; }
+    [[nodiscard]] sentinel end() const { return {}; }
 };
 
 // adaptor for legacy begin/end iterators
