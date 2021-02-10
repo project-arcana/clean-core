@@ -28,6 +28,7 @@ template <class T>
 struct unique_ptr
 {
     unique_ptr() = default;
+    unique_ptr(nullptr_t) {}
 
     unique_ptr(unique_ptr const&) = delete;
     unique_ptr& operator=(unique_ptr const&) = delete;
