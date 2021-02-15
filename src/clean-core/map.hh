@@ -81,7 +81,10 @@ public:
     template <class T = KeyT>
     ValueT& operator[](T const& key)
     {
-        if (_size >= _entries.size())
+        // Note: if _size == _entries.size(), we don't want to reserve
+        //       because if the key is found in the next step, it would be waste
+        //       especially the pattern "reserve(n)" followed by n times op[] is dangerous then
+        if (_entries.empty() || _size > _entries.size())
             _reserve(_size == 0 ? 4 : _size * 2);
 
         auto idx = this->_get_location(key);
