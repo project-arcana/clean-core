@@ -25,8 +25,11 @@ struct alloc_array
         _size = size;
         _data = _alloc(size);
 
-        for (size_t i = 0; i < size; ++i)
-            new (placement_new, &this->_data[i]) T();
+        if constexpr (!std::is_trivially_constructible_v<T>)
+        {
+            for (size_t i = 0; i < size; ++i)
+                new (placement_new, &this->_data[i]) T();
+        }
     }
 
     [[nodiscard]] static alloc_array defaulted(size_t size, cc::allocator* allocator = cc::system_allocator) { return alloc_array(size, allocator); }
