@@ -6,3 +6,5 @@
 
 // usage: CC_ASSERTF(a == b, "{} is not {}", a, b);
 #define CC_ASSERTF(cond, ...) CC_ASSERT_MSG(cond, ::cc::format(__VA_ARGS__).c_str())
+
+#define CC_RUNTIME_ASSERTF(cond, ...) CC_RUNTIME_ASSERT_MSG(cond, ::cc::format(__VA_ARGS__).c_str())
