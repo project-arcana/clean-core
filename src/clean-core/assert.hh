@@ -15,12 +15,14 @@
 // comma expression: abort must still be called (if no debugger is attached), and do/while(0) doesn't work in the ternary
 
 #ifdef CC_COMPILER_MSVC
-#define CC_BREAK_AND_ABORT() (__debugbreak(), ::cc::detail::perform_abort())
+#define CC_BREAK() __debugbreak()
 #elif defined(CC_COMPILER_POSIX)
-#define CC_BREAK_AND_ABORT() (__builtin_trap(), ::cc::detail::perform_abort())
+#define CC_BREAK() __builtin_trap()
 #else
-#define CC_BREAK_AND_ABORT() ::cc::detail::perform_abort()
+#define CC_BREAK() (void)0
 #endif
+
+#define CC_BREAK_AND_ABORT() (CC_BREAK(), ::cc::detail::perform_abort())
 
 // least overhead assertion macros
 // see https://godbolt.org/z/aWW1f8
