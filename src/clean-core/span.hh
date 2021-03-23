@@ -31,7 +31,7 @@ public:
 
     /// generic span constructor from contiguous_range
     /// CAUTION: container MUST outlive the span!
-    template <class Container, cc::enable_if<is_contiguous_range<Container, T>> = true>
+    template <class Container, cc::enable_if<is_contiguous_range<Container, T> && !std::is_same_v<std::decay_t<Container>, span>> = true>
     CC_FORCE_INLINE constexpr span(Container&& c) : _data(c.data()), _size(c.size())
     {
     }
