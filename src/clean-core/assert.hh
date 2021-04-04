@@ -11,15 +11,16 @@
 // CC_ENABLE_BOUND_CHECKING enables bound checking
 
 
-// the debugger should break on-site, so this cannot hide in a function call
-// comma expression: abort must still be called (if no debugger is attached), and do/while(0) doesn't work in the ternary
+// the debugger should break right in the assert macro, so this cannot hide in a function call
 
 #ifdef CC_COMPILER_MSVC
-#define CC_BREAK() __debugbreak()
+// __debugbreak() terminates immediately without an attached debugger
+#define CC_BREAK() (::cc::detail::is_debugger_connected() ? __debugbreak() : void(0))
 #elif defined(CC_COMPILER_POSIX)
-#define CC_BREAK() __builtin_trap()
+// __builtin_trap() causes an illegal instruction and crashes without an attached debugger
+#define CC_BREAK() (::cc::detail::is_debugger_connected() ? __builtin_trap() : void(0))
 #else
-#define CC_BREAK() (void)0
+#define CC_BREAK() void(0)
 #endif
 
 #define CC_BREAK_AND_ABORT() (CC_BREAK(), ::cc::detail::perform_abort())
@@ -93,8 +94,10 @@ struct assertion_info
 
 CC_COLD_FUNC CC_DONT_INLINE void assertion_failed(assertion_info const& info);
 
+CC_COLD_FUNC CC_DONT_INLINE bool is_debugger_connected();
+
 /// calls std::abort(), avoids includes
-[[noreturn]] CC_COLD_FUNC CC_DONT_INLINE void perform_abort();
+CC_COLD_FUNC CC_DONT_INLINE void perform_abort();
 }
 
 namespace cc

@@ -88,7 +88,7 @@ cc::byte* cc::scratch_allocator::alloc(cc::size_t size, cc::size_t align)
     if (p > _buffer_end)
     {
         // write wraparound marker to the header
-        CC_ASSERT(reinterpret_cast<byte*>(h) < _buffer_end && "programmer error");
+        CC_ASSERT(reinterpret_cast<byte*>(h) + sizeof(scratch_alloc_header) <= _buffer_end && "programmer error");
         uint32_t const num_bytes_until_end = uint32_t(_buffer_end - reinterpret_cast<byte*>(h));
 
         CC_DTRACE_ALLOC_PRINTF("    [alloc]    %zu bytes would wrap, writing %u to wraparound header [%u]\n", size, num_bytes_until_end, get_ptr_offset(h));
