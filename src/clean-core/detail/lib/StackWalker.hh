@@ -45,9 +45,7 @@
 // so we need not to check the version (because we only support _MSC_VER >= 1100)!
 #pragma once
 
-// windows headers are required here, but not included,
-// because headers beyond Windows.h are used in assert.cc and surrounded by the sanitize before/after.inl
-//#include <clean-core/native/win32_sanitized.hh>
+#include <Windows.h>
 
 #if _MSC_VER >= 1900
 #pragma warning(disable : 4091)

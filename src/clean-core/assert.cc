@@ -9,10 +9,12 @@
 #include <clean-core/native/detail/win32_sanitize_before.inl>
 #include <Windows.h> // required for stackwalker
 #include <crtdbg.h> // _CrtDebugReport
+
+#include <clean-core/detail/lib/StackWalker.hh>
+
 #include <clean-core/native/detail/win32_sanitize_after.inl>
 // clang-format on
 
-#include <clean-core/detail/lib/StackWalker.hh>
 #endif
 
 #include <cstdio>
