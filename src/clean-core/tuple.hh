@@ -13,6 +13,7 @@ namespace detail
 {
 template <class... Ts>
 struct tuple_impl;
+
 template <>
 struct tuple_impl<>
 {
@@ -22,6 +23,7 @@ struct tuple_impl<>
         static_assert(cc::always_false<I>, "cannot get element of empty tuple");
     }
 };
+
 template <class T>
 struct tuple_impl<T>
 {
@@ -43,6 +45,7 @@ struct tuple_impl<T>
         return value;
     }
 };
+
 template <class T, class U, class... Ts>
 struct tuple_impl<T, U, Ts...> : tuple_impl<U, Ts...>
 {
