@@ -1,7 +1,5 @@
 #include <clean-core/assert.hh>
 
-#include <csignal>
-
 #include <clean-core/macros.hh>
 
 #ifdef CC_OS_WINDOWS
