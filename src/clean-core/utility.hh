@@ -89,11 +89,29 @@ template <class T>
     return (T)(((size_t)value + mask) & ~mask);
 }
 
+/// decrement the value (pointer or integer) to align to the given mask
+template <class T>
+[[nodiscard]] T align_down_masked(T value, size_t mask)
+{
+    return (T)((size_t)value & ~mask);
+}
+
 /// increment the value (pointer or integer) to align at the given boundary
+/// use with ints: align_up(300, 16) = 304
+/// or with ptrs: align_up(0x5ACE, 256) = 0x5B00
 template <class T>
 [[nodiscard]] T align_up(T value, size_t alignment)
 {
     return align_up_masked(value, alignment - 1);
+}
+
+/// decrement the value (pointer or integer) to align at the given boundary
+/// use with ints: align_down(300, 16) = 288
+/// or with ptrs: align_down(0x5ACE, 256) = 0x5A00
+template <class T>
+[[nodiscard]] T align_down(T value, size_t alignment)
+{
+    return align_down_masked(value, alignment - 1);
 }
 
 /// returns true if the value (pointer or integer) is aligned at the given boundary

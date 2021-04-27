@@ -137,6 +137,14 @@ struct atomic_linear_allocator final : allocator
     atomic_linear_allocator() = default;
     atomic_linear_allocator(span<byte> buffer) : _buffer_begin(buffer.data()), _offset(0), _buffer_end(buffer.data() + buffer.size()) {}
 
+    void initialize(span<byte> buffer)
+    {
+        // atomics cant be moved, making this necessary
+        _buffer_begin = buffer.data();
+        _offset = 0;
+        _buffer_end = buffer.data() + buffer.size();
+    }
+
 private:
     byte* _buffer_begin = nullptr;
     std::atomic<std::size_t> _offset = {0};

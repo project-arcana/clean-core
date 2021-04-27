@@ -1,60 +1,92 @@
 #include "from_string.hh"
 
-#include <sstream>
-#include <string>
+#include <cstdio>
+#include <cstdlib>
 
-// NOTE: this is just to get the API and basic functionality up
-//       <charconv> still has spotty support and is thus not an option
-namespace
+#include <clean-core/macros.hh>
+#include <clean-core/string_view.hh>
+
+#ifdef CC_OS_WINDOWS
+// clang-format off
+#include <clean-core/native/detail/win32_sanitize_before.inl>
+#include <Windows.h>
+#include <Shlwapi.h>
+#include <clean-core/native/detail/win32_sanitize_after.inl>
+// clang-format on
+#pragma comment(lib, "Shlwapi.lib")
+#else
+#include <cerrno>
+#endif
+
+bool cc::from_string(char const* c_str, int32& out_value)
 {
-template <class T>
-bool parse(cc::string_view s, T& v)
-{
-    std::istringstream ss(std::string(s.data(), s.size()));
-    ss >> v;
-    return bool(ss) && ss.eof();
+#ifdef CC_OS_WINDOWS
+    return ::StrToIntExA(c_str, STIF_DEFAULT, &out_value);
+#else
+    char* end;
+    errno = 0;
+    out_value = int32(std::strtol(c_str, &end, 10));
+    // end == str: parse error, no conversion done
+    // errno != 0: range violation
+    return end != c_str && errno == 0;
+#endif
 }
 
-bool parse(cc::string_view s, unsigned char& v)
+bool cc::from_string(char const* c_str, int64& out_value)
 {
-    unsigned int i;
-    bool parsed_as_int = parse(s, i);
-    v = static_cast<unsigned char>(i);
-    return parsed_as_int && (i <= 255);
+#ifdef CC_OS_WINDOWS
+    return ::StrToInt64ExA(c_str, STIF_DEFAULT, &out_value);
+#else
+    char* end;
+    errno = 0;
+    out_value = int64(std::strtoll(c_str, &end, 10));
+    // end == str: parse error, no conversion done
+    // errno != 0: range violation
+    return end != c_str && errno == 0;
+#endif
 }
 
-bool parse(cc::string_view s, signed char& v)
+bool cc::from_string(char const* c_str, float& out_value)
 {
-    int i;
-    bool parsed_as_int = parse(s, i);
-    v = static_cast<signed char>(i);
-    return parsed_as_int && (-128 <= i && i <= 127);
-}
+    char* end;
+    out_value = std::strtof(c_str, &end);
+    return end != c_str;
 }
 
-bool cc::from_string(cc::string_view s, signed char& v) { return parse(s, v); }
+bool cc::from_string(char const* c_str, double& out_value)
+{
+    char* end;
+    out_value = std::strtod(c_str, &end);
+    return end != c_str;
+}
 
-bool cc::from_string(cc::string_view s, signed short& v) { return parse(s, v); }
+bool cc::from_string(cc::string_view s, int32& out_value)
+{
+    char c_str_buf[256];
+    std::snprintf(c_str_buf, sizeof(c_str_buf), "%.*s", int(s.size()), s.data());
+    return from_string(c_str_buf, out_value);
+}
 
-bool cc::from_string(cc::string_view s, signed int& v) { return parse(s, v); }
+bool cc::from_string(cc::string_view s, int64& out_value)
+{
+    char c_str_buf[256];
+    std::snprintf(c_str_buf, sizeof(c_str_buf), "%.*s", int(s.size()), s.data());
+    return from_string(c_str_buf, out_value);
+}
 
-bool cc::from_string(cc::string_view s, signed long& v) { return parse(s, v); }
+bool cc::from_string(cc::string_view s, float& out_value)
+{
+    char c_str_buf[256];
+    std::snprintf(c_str_buf, sizeof(c_str_buf), "%.*s", int(s.size()), s.data());
+    return from_string(c_str_buf, out_value);
+}
 
-bool cc::from_string(cc::string_view s, signed long long& v) { return parse(s, v); }
-
-bool cc::from_string(cc::string_view s, unsigned char& v) { return parse(s, v); }
-
-bool cc::from_string(cc::string_view s, unsigned short& v) { return parse(s, v); }
-
-bool cc::from_string(cc::string_view s, unsigned int& v) { return parse(s, v); }
-
-bool cc::from_string(cc::string_view s, unsigned long& v) { return parse(s, v); }
-
-bool cc::from_string(cc::string_view s, unsigned long long& v) { return parse(s, v); }
-
-bool cc::from_string(cc::string_view s, float& v) { return parse(s, v); }
-
-bool cc::from_string(cc::string_view s, double& v) { return parse(s, v); }
+bool cc::from_string(cc::string_view s, double& out_value)
+{
+    char c_str_buf[256];
+    std::snprintf(c_str_buf, sizeof(c_str_buf), "%.*s", int(s.size()), s.data());
+    return from_string(c_str_buf, out_value);
+}
 
 bool cc::from_string(cc::string_view s, char& v)
 {
