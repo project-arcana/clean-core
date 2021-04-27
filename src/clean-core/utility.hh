@@ -95,6 +95,8 @@ template <class T>
 }
 
 /// increment the value (pointer or integer) to align at the given boundary
+/// use with ints: align_up(300, 16) = 304
+/// or with ptrs: align_up(0x5ACE, 256) = 0x5B00
 template <class T>
 [[nodiscard]] T align_up(T value, size_t alignment)
 {
@@ -102,6 +104,8 @@ template <class T>
 }
 
 /// decrement the value (pointer or integer) to align at the given boundary
+/// use with ints: align_down(300, 16) = 288
+/// or with ptrs: align_down(0x5ACE, 256) = 0x5A00
 template <class T>
 [[nodiscard]] T align_down(T value, size_t alignment)
 {
