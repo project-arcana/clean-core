@@ -15,15 +15,15 @@
 
 #ifdef CC_COMPILER_MSVC
 // __debugbreak() terminates immediately without an attached debugger
-#define CC_BREAK() (::cc::detail::is_debugger_connected() ? __debugbreak() : void(0))
+#define CC_DEBUG_BREAK() (::cc::detail::is_debugger_connected() ? __debugbreak() : void(0))
 #elif defined(CC_COMPILER_POSIX)
 // __builtin_trap() causes an illegal instruction and crashes without an attached debugger
-#define CC_BREAK() (::cc::detail::is_debugger_connected() ? __builtin_trap() : void(0))
+#define CC_DEBUG_BREAK() (::cc::detail::is_debugger_connected() ? __builtin_trap() : void(0))
 #else
-#define CC_BREAK() void(0)
+#define CC_DEBUG_BREAK() void(0)
 #endif
 
-#define CC_BREAK_AND_ABORT() (CC_BREAK(), ::cc::detail::perform_abort())
+#define CC_BREAK_AND_ABORT() (CC_DEBUG_BREAK(), ::cc::detail::perform_abort())
 
 // least overhead assertion macros
 // see https://godbolt.org/z/aWW1f8
