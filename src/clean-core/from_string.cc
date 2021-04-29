@@ -29,8 +29,9 @@ bool cc::from_string(char const* c_str, int32& out_value)
     errno = 0;
     out_value = int32(std::strtol(c_str, &end, 10));
     // end == str: parse error, no conversion done
+    // end[0] = '\0': entire string read
     // errno != 0: range violation
-    return end != c_str && errno == 0;
+    return end != c_str && end[0] == '\0' && errno == 0;
 }
 
 bool cc::from_string(char const* c_str, int64& out_value)
@@ -38,9 +39,7 @@ bool cc::from_string(char const* c_str, int64& out_value)
     char* end;
     errno = 0;
     out_value = int64(std::strtoll(c_str, &end, 10));
-    // end == str: parse error, no conversion done
-    // errno != 0: range violation
-    return end != c_str && errno == 0;
+    return end != c_str && end[0] == '\0' && errno == 0;
 }
 
 bool cc::from_string(char const* c_str, uint8& out_value)
@@ -64,9 +63,7 @@ bool cc::from_string(char const* c_str, uint32& out_value)
     char* end;
     errno = 0;
     out_value = uint32(std::strtoul(c_str, &end, 10));
-    // end == str: parse error, no conversion done
-    // errno != 0: range violation
-    return end != c_str && errno == 0;
+    return end != c_str && end[0] == '\0' && errno == 0;
 }
 
 bool cc::from_string(char const* c_str, uint64& out_value)
@@ -74,23 +71,23 @@ bool cc::from_string(char const* c_str, uint64& out_value)
     char* end;
     errno = 0;
     out_value = uint64(std::strtoull(c_str, &end, 10));
-    // end == str: parse error, no conversion done
-    // errno != 0: range violation
-    return end != c_str && errno == 0;
+    return end != c_str && end[0] == '\0' && errno == 0;
 }
 
 bool cc::from_string(char const* c_str, float& out_value)
 {
     char* end;
+    errno = 0;
     out_value = std::strtof(c_str, &end);
-    return end != c_str;
+    return end != c_str && end[0] == '\0' && errno == 0;
 }
 
 bool cc::from_string(char const* c_str, double& out_value)
 {
     char* end;
+    errno = 0;
     out_value = std::strtod(c_str, &end);
-    return end != c_str;
+    return end != c_str && end[0] == '\0' && errno == 0;
 }
 
 bool cc::from_string(cc::string_view str, int8& out_value)
