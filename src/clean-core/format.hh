@@ -10,6 +10,7 @@
 #include <clean-core/stream_ref.hh>
 #include <clean-core/string_stream.hh>
 #include <clean-core/string_view.hh>
+#include <clean-core/to_string.hh>
 
 namespace cc
 {

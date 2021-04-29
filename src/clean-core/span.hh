@@ -129,6 +129,7 @@ public:
             for (size_t i = 0; i < _size; ++i)
                 target._data[i] = _data[i];
     }
+    constexpr void copy_to(span target) const { this->copy_to<T>(target); }
 
     /// copies all elements from the source to this span
     /// NOTE: sizes must match
@@ -145,6 +146,7 @@ public:
             for (size_t i = 0; i < _size; ++i)
                 _data[i] = source._data[i];
     }
+    constexpr void copy_from(span target) const { this->copy_from<T>(target); }
 
 private:
     T* _data = nullptr;

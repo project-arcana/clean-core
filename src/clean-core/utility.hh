@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstddef> // size_t
+
 #include <clean-core/assert.hh>
 
 namespace _external_cc_detail

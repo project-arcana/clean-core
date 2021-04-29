@@ -28,6 +28,7 @@ template <class T>
 struct poly_unique_ptr
 {
     poly_unique_ptr() = default;
+    poly_unique_ptr(nullptr_t) {}
 
     poly_unique_ptr(poly_unique_ptr const&) = delete;
     poly_unique_ptr& operator=(poly_unique_ptr const&) = delete;
