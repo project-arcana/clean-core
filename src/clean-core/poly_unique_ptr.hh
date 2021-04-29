@@ -28,7 +28,7 @@ template <class T>
 struct poly_unique_ptr
 {
     poly_unique_ptr() = default;
-    poly_unique_ptr(nullptr_t) {}
+    poly_unique_ptr(std::nullptr_t) {}
 
     poly_unique_ptr(poly_unique_ptr const&) = delete;
     poly_unique_ptr& operator=(poly_unique_ptr const&) = delete;
@@ -105,8 +105,8 @@ struct poly_unique_ptr
 
     friend bool operator==(T const* lhs, poly_unique_ptr const& rhs) { return lhs == rhs.get(); }
     friend bool operator!=(T const* lhs, poly_unique_ptr const& rhs) { return lhs != rhs.get(); }
-    friend bool operator==(nullptr_t, poly_unique_ptr const& rhs) { return rhs.get() == nullptr; }
-    friend bool operator!=(nullptr_t, poly_unique_ptr const& rhs) { return rhs.get() != nullptr; }
+    friend bool operator==(std::nullptr_t, poly_unique_ptr const& rhs) { return rhs.get() == nullptr; }
+    friend bool operator!=(std::nullptr_t, poly_unique_ptr const& rhs) { return rhs.get() != nullptr; }
 
 private:
     template <class U>

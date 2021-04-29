@@ -29,7 +29,7 @@ template <class T>
 struct unique_ptr
 {
     unique_ptr() = default;
-    unique_ptr(nullptr_t) {}
+    unique_ptr(std::nullptr_t) {}
 
     unique_ptr(unique_ptr const&) = delete;
     unique_ptr& operator=(unique_ptr const&) = delete;
@@ -80,8 +80,8 @@ struct unique_ptr
 
     friend bool operator==(T const* lhs, unique_ptr const& rhs) { return lhs == rhs.get(); }
     friend bool operator!=(T const* lhs, unique_ptr const& rhs) { return lhs != rhs.get(); }
-    friend bool operator==(nullptr_t, unique_ptr const& rhs) { return rhs.get() == nullptr; }
-    friend bool operator!=(nullptr_t, unique_ptr const& rhs) { return rhs.get() != nullptr; }
+    friend bool operator==(std::nullptr_t, unique_ptr const& rhs) { return rhs.get() == nullptr; }
+    friend bool operator!=(std::nullptr_t, unique_ptr const& rhs) { return rhs.get() != nullptr; }
 
 private:
     T* _ptr = nullptr;
