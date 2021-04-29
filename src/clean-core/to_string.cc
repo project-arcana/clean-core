@@ -5,6 +5,7 @@
 #include <cwchar>
 #include <type_traits>
 
+
 #include <clean-core/always_false.hh>
 #include <clean-core/assert.hh>
 #include <clean-core/char_predicates.hh>
@@ -13,7 +14,6 @@
 #include <clean-core/string.hh>
 #include <clean-core/string_stream.hh>
 #include <clean-core/string_view.hh>
-#include <clean-core/typedefs.hh>
 
 cc::string cc::to_string(char value) { return string::filled(1, value); }
 cc::string cc::to_string(bool value) { return value ? "true" : "false"; }
@@ -45,7 +45,7 @@ cc::string cc::to_string(void const* value)
     return string_view(buffer, res);
 }
 
-cc::string cc::to_string(int8 value)
+cc::string cc::to_string(signed char value)
 {
     char buffer[3 + 1 + 1];
     auto res = std::snprintf(buffer, sizeof(buffer), "%hhd", value);
@@ -53,7 +53,7 @@ cc::string cc::to_string(int8 value)
     return string_view(buffer, res);
 }
 
-cc::string cc::to_string(int16 value)
+cc::string cc::to_string(short value)
 {
     char buffer[6 + 1 + 1];
     auto res = std::snprintf(buffer, sizeof(buffer), "%hd", value);
@@ -61,7 +61,7 @@ cc::string cc::to_string(int16 value)
     return string_view(buffer, res);
 }
 
-cc::string cc::to_string(int32 value)
+cc::string cc::to_string(int value)
 {
     char buffer[10 + 1 + 1];
     auto res = std::snprintf(buffer, sizeof(buffer), "%d", value);
@@ -69,7 +69,15 @@ cc::string cc::to_string(int32 value)
     return string_view(buffer, res);
 }
 
-cc::string cc::to_string(int64 value)
+cc::string cc::to_string(long value)
+{
+    char buffer[19 + 1 + 1];
+    auto res = std::snprintf(buffer, sizeof(buffer), "%ld", value);
+    CC_ASSERT(res >= 0);
+    return string_view(buffer, res);
+}
+
+cc::string cc::to_string(long long value)
 {
     char buffer[19 + 1 + 1];
     auto res = std::snprintf(buffer, sizeof(buffer), "%lld", value);
@@ -77,7 +85,7 @@ cc::string cc::to_string(int64 value)
     return string_view(buffer, res);
 }
 
-cc::string cc::to_string(uint16 value)
+cc::string cc::to_string(unsigned short value)
 {
     char buffer[6 + 1 + 1];
     auto res = std::snprintf(buffer, sizeof(buffer), "%hu", value);
@@ -85,7 +93,7 @@ cc::string cc::to_string(uint16 value)
     return string_view(buffer, res);
 }
 
-cc::string cc::to_string(uint8 value)
+cc::string cc::to_string(unsigned char value)
 {
     char buffer[3 + 1];
     auto res = std::snprintf(buffer, sizeof(buffer), "%hhu", value);
@@ -93,7 +101,7 @@ cc::string cc::to_string(uint8 value)
     return string_view(buffer, res);
 }
 
-cc::string cc::to_string(uint32 value)
+cc::string cc::to_string(unsigned int value)
 {
     char buffer[10 + 1];
     auto res = std::snprintf(buffer, sizeof(buffer), "%u", value);
@@ -101,7 +109,15 @@ cc::string cc::to_string(uint32 value)
     return string_view(buffer, res);
 }
 
-cc::string cc::to_string(uint64 value)
+cc::string cc::to_string(unsigned long value)
+{
+    char buffer[20 + 1];
+    auto res = std::snprintf(buffer, sizeof(buffer), "%lu", value);
+    CC_ASSERT(res >= 0);
+    return string_view(buffer, res);
+}
+
+cc::string cc::to_string(unsigned long long value)
 {
     char buffer[20 + 1];
     auto res = std::snprintf(buffer, sizeof(buffer), "%llu", value);
@@ -194,49 +210,61 @@ cc::string cc::to_string(std::byte value, cc::string_view fmt_str)
     return s;
 }
 
-cc::string cc::to_string(int8 value, cc::string_view fmt_str)
+cc::string cc::to_string(signed char value, cc::string_view fmt_str)
 {
     cc::string s;
     to_string([&s](cc::span<char const> ss) { s += cc::string_view(ss); }, value, fmt_str);
     return s;
 }
-cc::string cc::to_string(int16 value, cc::string_view fmt_str)
+cc::string cc::to_string(short value, cc::string_view fmt_str)
 {
     cc::string s;
     to_string([&s](cc::span<char const> ss) { s += cc::string_view(ss); }, value, fmt_str);
     return s;
 }
-cc::string cc::to_string(int32 value, cc::string_view fmt_str)
+cc::string cc::to_string(int value, cc::string_view fmt_str)
 {
     cc::string s;
     to_string([&s](cc::span<char const> ss) { s += cc::string_view(ss); }, value, fmt_str);
     return s;
 }
-cc::string cc::to_string(int64 value, cc::string_view fmt_str)
+cc::string cc::to_string(long value, cc::string_view fmt_str)
 {
     cc::string s;
     to_string([&s](cc::span<char const> ss) { s += cc::string_view(ss); }, value, fmt_str);
     return s;
 }
-cc::string cc::to_string(uint8 value, cc::string_view fmt_str)
+cc::string cc::to_string(long long value, cc::string_view fmt_str)
 {
     cc::string s;
     to_string([&s](cc::span<char const> ss) { s += cc::string_view(ss); }, value, fmt_str);
     return s;
 }
-cc::string cc::to_string(uint16 value, cc::string_view fmt_str)
+cc::string cc::to_string(unsigned char value, cc::string_view fmt_str)
 {
     cc::string s;
     to_string([&s](cc::span<char const> ss) { s += cc::string_view(ss); }, value, fmt_str);
     return s;
 }
-cc::string cc::to_string(uint32 value, cc::string_view fmt_str)
+cc::string cc::to_string(unsigned short value, cc::string_view fmt_str)
 {
     cc::string s;
     to_string([&s](cc::span<char const> ss) { s += cc::string_view(ss); }, value, fmt_str);
     return s;
 }
-cc::string cc::to_string(uint64 value, cc::string_view fmt_str)
+cc::string cc::to_string(unsigned int value, cc::string_view fmt_str)
+{
+    cc::string s;
+    to_string([&s](cc::span<char const> ss) { s += cc::string_view(ss); }, value, fmt_str);
+    return s;
+}
+cc::string cc::to_string(unsigned long value, cc::string_view fmt_str)
+{
+    cc::string s;
+    to_string([&s](cc::span<char const> ss) { s += cc::string_view(ss); }, value, fmt_str);
+    return s;
+}
+cc::string cc::to_string(unsigned long long value, cc::string_view fmt_str)
 {
     cc::string s;
     to_string([&s](cc::span<char const> ss) { s += cc::string_view(ss); }, value, fmt_str);
@@ -274,14 +302,16 @@ void cc::to_string(cc::string_stream_ref ss, void const* value) { to_string(ss, 
 
 void cc::to_string(cc::string_stream_ref ss, std::byte value) { to_string(ss, value, ""); }
 
-void cc::to_string(cc::string_stream_ref ss, int8 value) { to_string(ss, value, ""); }
-void cc::to_string(cc::string_stream_ref ss, int16 value) { to_string(ss, value, ""); }
-void cc::to_string(cc::string_stream_ref ss, int32 value) { to_string(ss, value, ""); }
-void cc::to_string(cc::string_stream_ref ss, int64 value) { to_string(ss, value, ""); }
-void cc::to_string(cc::string_stream_ref ss, uint8 value) { to_string(ss, value, ""); }
-void cc::to_string(cc::string_stream_ref ss, uint16 value) { to_string(ss, value, ""); }
-void cc::to_string(cc::string_stream_ref ss, uint32 value) { to_string(ss, value, ""); }
-void cc::to_string(cc::string_stream_ref ss, uint64 value) { to_string(ss, value, ""); }
+void cc::to_string(cc::string_stream_ref ss, signed char value) { to_string(ss, value, ""); }
+void cc::to_string(cc::string_stream_ref ss, short value) { to_string(ss, value, ""); }
+void cc::to_string(cc::string_stream_ref ss, int value) { to_string(ss, value, ""); }
+void cc::to_string(cc::string_stream_ref ss, long value) { to_string(ss, value, ""); }
+void cc::to_string(cc::string_stream_ref ss, long long value) { to_string(ss, value, ""); }
+void cc::to_string(cc::string_stream_ref ss, unsigned char value) { to_string(ss, value, ""); }
+void cc::to_string(cc::string_stream_ref ss, unsigned short value) { to_string(ss, value, ""); }
+void cc::to_string(cc::string_stream_ref ss, unsigned int value) { to_string(ss, value, ""); }
+void cc::to_string(cc::string_stream_ref ss, unsigned long value) { to_string(ss, value, ""); }
+void cc::to_string(cc::string_stream_ref ss, unsigned long long value) { to_string(ss, value, ""); }
 
 void cc::to_string(cc::string_stream_ref ss, float value) { to_string(ss, value, ""); }
 void cc::to_string(cc::string_stream_ref ss, double value) { to_string(ss, value, ""); }
@@ -464,7 +494,7 @@ void unsigned_to_string_impl(cc::string_stream_ref ss, IntType value, parsed_fmt
     case 'd': // default, decimal
     {
         char buffer[20 + 1]; // large enough to hold uint64_t decimals
-        int const length = std::snprintf(buffer, sizeof(buffer), args.sign_aware_zero_padding ? "%0llu" : "%llu", static_cast<cc::uint64>(value));
+        auto const length = std::snprintf(buffer, sizeof(buffer), args.sign_aware_zero_padding ? "%0llu" : "%llu", static_cast<unsigned long long>(value));
         add_fill(length);
         ss << cc::string_view(buffer, length);
     }
@@ -488,7 +518,7 @@ void unsigned_to_string_impl(cc::string_stream_ref ss, IntType value, parsed_fmt
         if (args.alternative_mode)
             ss << "0";
         char buffer[(sizeof(IntType) * 8) / 3 + 1 + 1];
-        auto const length = std::snprintf(buffer, sizeof(buffer), "%llo", static_cast<cc::uint64>(value));
+        auto const length = std::snprintf(buffer, sizeof(buffer), "%llo", static_cast<unsigned long long>(value));
         add_fill(length);
         ss << cc::string_view(buffer, length);
     }
@@ -497,7 +527,7 @@ void unsigned_to_string_impl(cc::string_stream_ref ss, IntType value, parsed_fmt
     {
         constexpr auto buffer_size = sizeof(IntType) * 2 + 1;
         char buffer[buffer_size];
-        auto const length = std::snprintf(buffer, sizeof(buffer), args.alternative_mode ? "%#llx" : "%llx", static_cast<cc::uint64>(value));
+        auto const length = std::snprintf(buffer, sizeof(buffer), args.alternative_mode ? "%#llx" : "%llx", static_cast<unsigned long long>(value));
         add_fill(length);
         ss << cc::string_view(buffer, length);
     }
@@ -506,7 +536,7 @@ void unsigned_to_string_impl(cc::string_stream_ref ss, IntType value, parsed_fmt
     {
         constexpr auto buffer_size = sizeof(IntType) * 2 + 1;
         char buffer[buffer_size];
-        auto const length = std::snprintf(buffer, sizeof(buffer), args.alternative_mode ? "%#llX" : "%llX", static_cast<cc::uint64>(value));
+        auto const length = std::snprintf(buffer, sizeof(buffer), args.alternative_mode ? "%#llX" : "%llX", static_cast<unsigned long long>(value));
         add_fill(length);
         ss << cc::string_view(buffer, length);
     }
@@ -705,42 +735,52 @@ void cc::to_string(cc::string_stream_ref ss, std::byte value, cc::string_view fm
     CC_ASSERT(fmt_str.empty()); // for now
     ss << cc::string_view(to_string(value));
 }
-void cc::to_string(cc::string_stream_ref ss, int8 value, cc::string_view fmt_str)
+void cc::to_string(cc::string_stream_ref ss, signed char value, cc::string_view fmt_str)
 {
     auto const args = parse_args(fmt_str);
     int_to_string_impl(ss, value, args);
 }
-void cc::to_string(cc::string_stream_ref ss, int16 value, cc::string_view fmt_str)
+void cc::to_string(cc::string_stream_ref ss, short value, cc::string_view fmt_str)
 {
     auto const args = parse_args(fmt_str);
     int_to_string_impl(ss, value, args);
 }
-void cc::to_string(cc::string_stream_ref ss, int32 value, cc::string_view fmt_str)
+void cc::to_string(cc::string_stream_ref ss, int value, cc::string_view fmt_str)
 {
     auto const args = parse_args(fmt_str);
     int_to_string_impl(ss, value, args);
 }
-void cc::to_string(cc::string_stream_ref ss, int64 value, cc::string_view fmt_str)
+void cc::to_string(cc::string_stream_ref ss, long value, cc::string_view fmt_str)
 {
     auto const args = parse_args(fmt_str);
     int_to_string_impl(ss, value, args);
 }
-void cc::to_string(cc::string_stream_ref ss, uint8 value, cc::string_view fmt_str)
+void cc::to_string(cc::string_stream_ref ss, long long value, cc::string_view fmt_str)
+{
+    auto const args = parse_args(fmt_str);
+    int_to_string_impl(ss, value, args);
+}
+void cc::to_string(cc::string_stream_ref ss, unsigned char value, cc::string_view fmt_str)
 {
     auto const args = parse_args(fmt_str);
     unsigned_to_string_impl(ss, value, args);
 }
-void cc::to_string(cc::string_stream_ref ss, uint16 value, cc::string_view fmt_str)
+void cc::to_string(cc::string_stream_ref ss, unsigned short value, cc::string_view fmt_str)
 {
     auto const args = parse_args(fmt_str);
     unsigned_to_string_impl(ss, value, args);
 }
-void cc::to_string(cc::string_stream_ref ss, uint32 value, cc::string_view fmt_str)
+void cc::to_string(cc::string_stream_ref ss, unsigned int value, cc::string_view fmt_str)
 {
     auto const args = parse_args(fmt_str);
     unsigned_to_string_impl(ss, value, args);
 }
-void cc::to_string(cc::string_stream_ref ss, uint64 value, cc::string_view fmt_str)
+void cc::to_string(cc::string_stream_ref ss, unsigned long value, cc::string_view fmt_str)
+{
+    auto const args = parse_args(fmt_str);
+    unsigned_to_string_impl(ss, value, args);
+}
+void cc::to_string(cc::string_stream_ref ss, unsigned long long value, cc::string_view fmt_str)
 {
     auto const args = parse_args(fmt_str);
     unsigned_to_string_impl(ss, value, args);
