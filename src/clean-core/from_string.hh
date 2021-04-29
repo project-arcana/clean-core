@@ -3,7 +3,7 @@
 #include <clean-core/fwd.hh>
 
 // converts strings to primitive types
-// returns true on success
+// returns true only if the string was successfully parsed and entirely consumed
 
 namespace cc
 {
