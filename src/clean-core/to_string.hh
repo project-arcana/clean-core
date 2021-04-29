@@ -6,6 +6,7 @@ namespace cc
 {
 //
 // integral types
+// these intentionally use int / long / long long instead of sized types
 //
 
 string to_string(bool value);
