@@ -715,7 +715,7 @@ void cc::to_string(cc::string_stream_ref ss, cc::string_view value, cc::string_v
         }
     }
 }
-void cc::to_string(cc::string_stream_ref ss, nullptr_t, cc::string_view fmt_str)
+void cc::to_string(cc::string_stream_ref ss, std::nullptr_t, cc::string_view fmt_str)
 {
     CC_ASSERT(fmt_str.empty()); // for now
     ss << "[nullptr]";
