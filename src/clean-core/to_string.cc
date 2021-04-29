@@ -1,8 +1,10 @@
 #include "to_string.hh"
 
 #include <cinttypes>
+#include <cstdint>
 #include <cstdio>
 #include <cwchar>
+
 #include <type_traits>
 
 #include <clean-core/always_false.hh>
@@ -14,6 +16,17 @@
 #include <clean-core/string_stream.hh>
 #include <clean-core/string_view.hh>
 #include <clean-core/typedefs.hh>
+
+// make sure the cc sized int types are correct
+static_assert(std::is_same_v<cc::uint8, uint8_t>, "cc sized integer types do not match cstdint");
+static_assert(std::is_same_v<cc::uint16, uint16_t>, "cc sized integer types do not match cstdint");
+static_assert(std::is_same_v<cc::uint32, uint32_t>, "cc sized integer types do not match cstdint");
+static_assert(std::is_same_v<cc::uint64, uint64_t>, "cc sized integer types do not match cstdint");
+
+static_assert(std::is_same_v<cc::int8, int8_t>, "cc sized integer types do not match cstdint");
+static_assert(std::is_same_v<cc::int16, int16_t>, "cc sized integer types do not match cstdint");
+static_assert(std::is_same_v<cc::int32, int32_t>, "cc sized integer types do not match cstdint");
+static_assert(std::is_same_v<cc::int64, int64_t>, "cc sized integer types do not match cstdint");
 
 cc::string cc::to_string(char value) { return string::filled(1, value); }
 cc::string cc::to_string(bool value) { return value ? "true" : "false"; }
@@ -48,7 +61,7 @@ cc::string cc::to_string(void const* value)
 cc::string cc::to_string(int8 value)
 {
     char buffer[3 + 1 + 1];
-    auto res = std::snprintf(buffer, sizeof(buffer), "%hhd", value);
+    auto res = std::snprintf(buffer, sizeof(buffer), "%" PRId8, value);
     CC_ASSERT(res >= 0);
     return string_view(buffer, res);
 }
@@ -56,7 +69,7 @@ cc::string cc::to_string(int8 value)
 cc::string cc::to_string(int16 value)
 {
     char buffer[6 + 1 + 1];
-    auto res = std::snprintf(buffer, sizeof(buffer), "%hd", value);
+    auto res = std::snprintf(buffer, sizeof(buffer), "%" PRId16, value);
     CC_ASSERT(res >= 0);
     return string_view(buffer, res);
 }
@@ -72,15 +85,7 @@ cc::string cc::to_string(int32 value)
 cc::string cc::to_string(int64 value)
 {
     char buffer[19 + 1 + 1];
-    auto res = std::snprintf(buffer, sizeof(buffer), "%lld", value);
-    CC_ASSERT(res >= 0);
-    return string_view(buffer, res);
-}
-
-cc::string cc::to_string(uint16 value)
-{
-    char buffer[6 + 1 + 1];
-    auto res = std::snprintf(buffer, sizeof(buffer), "%hu", value);
+    auto res = std::snprintf(buffer, sizeof(buffer), "%" PRId64, value);
     CC_ASSERT(res >= 0);
     return string_view(buffer, res);
 }
@@ -88,7 +93,15 @@ cc::string cc::to_string(uint16 value)
 cc::string cc::to_string(uint8 value)
 {
     char buffer[3 + 1];
-    auto res = std::snprintf(buffer, sizeof(buffer), "%hhu", value);
+    auto res = std::snprintf(buffer, sizeof(buffer), "%" PRIu8, value);
+    CC_ASSERT(res >= 0);
+    return string_view(buffer, res);
+}
+
+cc::string cc::to_string(uint16 value)
+{
+    char buffer[6 + 1 + 1];
+    auto res = std::snprintf(buffer, sizeof(buffer), "%" PRIu16, value);
     CC_ASSERT(res >= 0);
     return string_view(buffer, res);
 }
@@ -104,7 +117,7 @@ cc::string cc::to_string(uint32 value)
 cc::string cc::to_string(uint64 value)
 {
     char buffer[20 + 1];
-    auto res = std::snprintf(buffer, sizeof(buffer), "%llu", value);
+    auto res = std::snprintf(buffer, sizeof(buffer), "%" PRIu64, value);
     CC_ASSERT(res >= 0);
     return string_view(buffer, res);
 }
@@ -464,7 +477,7 @@ void unsigned_to_string_impl(cc::string_stream_ref ss, IntType value, parsed_fmt
     case 'd': // default, decimal
     {
         char buffer[20 + 1]; // large enough to hold uint64_t decimals
-        int const length = std::snprintf(buffer, sizeof(buffer), args.sign_aware_zero_padding ? "%0llu" : "%llu", static_cast<cc::uint64>(value));
+        int const length = std::snprintf(buffer, sizeof(buffer), args.sign_aware_zero_padding ? "%0" PRIu64 : "%" PRIu64, cc::uint64(value));
         add_fill(length);
         ss << cc::string_view(buffer, length);
     }
@@ -488,7 +501,7 @@ void unsigned_to_string_impl(cc::string_stream_ref ss, IntType value, parsed_fmt
         if (args.alternative_mode)
             ss << "0";
         char buffer[(sizeof(IntType) * 8) / 3 + 1 + 1];
-        auto const length = std::snprintf(buffer, sizeof(buffer), "%llo", static_cast<cc::uint64>(value));
+        auto const length = std::snprintf(buffer, sizeof(buffer), "%" PRIo64, cc::uint64(value));
         add_fill(length);
         ss << cc::string_view(buffer, length);
     }
@@ -497,7 +510,7 @@ void unsigned_to_string_impl(cc::string_stream_ref ss, IntType value, parsed_fmt
     {
         constexpr auto buffer_size = sizeof(IntType) * 2 + 1;
         char buffer[buffer_size];
-        auto const length = std::snprintf(buffer, sizeof(buffer), args.alternative_mode ? "%#llx" : "%llx", static_cast<cc::uint64>(value));
+        auto const length = std::snprintf(buffer, sizeof(buffer), args.alternative_mode ? "%#" PRIx64 : "%" PRIx64, cc::uint64(value));
         add_fill(length);
         ss << cc::string_view(buffer, length);
     }
@@ -506,7 +519,7 @@ void unsigned_to_string_impl(cc::string_stream_ref ss, IntType value, parsed_fmt
     {
         constexpr auto buffer_size = sizeof(IntType) * 2 + 1;
         char buffer[buffer_size];
-        auto const length = std::snprintf(buffer, sizeof(buffer), args.alternative_mode ? "%#llX" : "%llX", static_cast<cc::uint64>(value));
+        auto const length = std::snprintf(buffer, sizeof(buffer), args.alternative_mode ? "%#" PRIX64 : "%" PRIX64, cc::uint64(value));
         add_fill(length);
         ss << cc::string_view(buffer, length);
     }
