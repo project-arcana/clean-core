@@ -1,11 +1,12 @@
 #pragma once
 
+#include <cstdint>
+
 #include <clean-core/allocate.hh>
 #include <clean-core/always_false.hh>
 #include <clean-core/assert.hh>
 #include <clean-core/forward.hh>
 #include <clean-core/fwd.hh>
-#include <clean-core/typedefs.hh>
 
 namespace cc
 {
@@ -102,7 +103,7 @@ template <typename T, typename... Args>
 template <class T>
 struct hash<unique_ptr<T>>
 {
-    [[nodiscard]] hash_t operator()(unique_ptr<T> const& v) const noexcept { return hash_t(v.get()); }
+    [[nodiscard]] uint64_t operator()(unique_ptr<T> const& v) const noexcept { return uint64_t(v.get()); }
 };
 
 template <class T>

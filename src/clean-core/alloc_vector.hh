@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+
 #include <clean-core/detail/vector_base.hh>
 
 namespace cc
@@ -124,9 +126,9 @@ public:
 template <class T>
 struct hash<alloc_vector<T>>
 {
-    [[nodiscard]] constexpr hash_t operator()(alloc_vector<T> const& a) const noexcept
+    [[nodiscard]] constexpr uint64_t operator()(alloc_vector<T> const& a) const noexcept
     {
-        size_t h = 0;
+        uint64_t h = 0;
         for (auto const& v : a)
             h = cc::hash_combine(h, hash<T>{}(v));
         return h;

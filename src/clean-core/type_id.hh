@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+
 #include <clean-core/fwd.hh>
 
 namespace cc
@@ -43,10 +45,10 @@ type_id_t type_id()
 template <>
 struct hash<type_id_t>
 {
-    [[nodiscard]] hash_t operator()(type_id_t const& v) const noexcept
+    [[nodiscard]] uint64_t operator()(type_id_t const& v) const noexcept
     {
-        static_assert(sizeof(v) == sizeof(hash_t));
-        return reinterpret_cast<hash_t const&>(v);
+        static_assert(sizeof(v) == sizeof(uint64_t));
+        return reinterpret_cast<uint64_t const&>(v);
     }
 };
 }

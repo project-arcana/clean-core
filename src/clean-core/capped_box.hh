@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstring>
+
 #include <type_traits>
 
 #include <clean-core/enable_if.hh>
@@ -9,7 +10,6 @@
 #include <clean-core/fwd.hh>
 #include <clean-core/move.hh>
 #include <clean-core/new.hh>
-#include <clean-core/typedefs.hh>
 
 namespace cc
 {

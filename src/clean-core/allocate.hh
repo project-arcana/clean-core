@@ -6,7 +6,6 @@
 #include <clean-core/assert.hh>
 #include <clean-core/forward.hh>
 #include <clean-core/new.hh>
-#include <clean-core/typedefs.hh>
 
 namespace cc
 {

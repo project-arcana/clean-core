@@ -21,7 +21,7 @@ static int find_base64_char(unsigned char c)
 
 static bool is_base64(unsigned char c) { return (isalnum(c) || (c == '+') || (c == '/')); }
 
-cc::string cc::base64_encode(cc::span<cc::byte const> data)
+cc::string cc::base64_encode(cc::span<std::byte const> data)
 {
     cc::string ret;
     int i = 0;
@@ -64,14 +64,14 @@ cc::string cc::base64_encode(cc::span<cc::byte const> data)
 
     return ret;
 }
-cc::vector<cc::byte> cc::base64_decode(cc::string_view encoded_string)
+cc::vector<std::byte> cc::base64_decode(cc::string_view encoded_string)
 {
     int in_len = static_cast<int>(encoded_string.size());
     int i = 0;
     int j = 0;
     int in_ = 0;
     unsigned char char_array_4[4], char_array_3[3];
-    cc::vector<cc::byte> ret;
+    cc::vector<std::byte> ret;
 
     while (in_len-- && (encoded_string[in_] != '=') && is_base64(encoded_string[in_]))
     {

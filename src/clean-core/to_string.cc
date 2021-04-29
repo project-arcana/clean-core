@@ -31,7 +31,7 @@ cc::string cc::to_string(const wchar_t* value)
     return res;
 }
 
-cc::string cc::to_string(cc::nullptr_t) { return "[nullptr]"; }
+cc::string cc::to_string(std::nullptr_t) { return "[nullptr]"; }
 
 cc::string cc::to_string(void* value) { return cc::to_string((void const*)value); }
 cc::string cc::to_string(void const* value)

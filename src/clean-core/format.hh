@@ -1,5 +1,8 @@
 #pragma once
 
+#include <cstddef>
+#include <cstdint>
+
 #include <type_traits>
 
 #include <clean-core/function_ptr.hh>
@@ -7,7 +10,6 @@
 #include <clean-core/stream_ref.hh>
 #include <clean-core/string_stream.hh>
 #include <clean-core/string_view.hh>
-#include <clean-core/typedefs.hh>
 
 namespace cc
 {

@@ -1,12 +1,13 @@
 #pragma once
 
+#include <cstddef>
+
+#include <type_traits>
+
 #include <clean-core/always_false.hh>
 #include <clean-core/assert.hh>
 #include <clean-core/forward.hh>
 #include <clean-core/fwd.hh>
-#include <clean-core/typedefs.hh>
-
-#include <type_traits>
 
 namespace cc
 {
@@ -130,7 +131,7 @@ template <typename T, typename... Args>
 template <class T>
 struct hash<poly_unique_ptr<T>>
 {
-    [[nodiscard]] hash_t operator()(poly_unique_ptr<T> const& v) const noexcept { return hash_t(v.get()); }
+    [[nodiscard]] uint64_t operator()(poly_unique_ptr<T> const& v) const noexcept { return uint64_t(v.get()); }
 };
 
 template <class T>

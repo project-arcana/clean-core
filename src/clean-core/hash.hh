@@ -1,12 +1,13 @@
 #pragma once
 
+#include <cstdint>
+#include <cstring>
+
+#include <type_traits>
+
 #include <clean-core/enable_if.hh>
 #include <clean-core/fwd.hh>
 #include <clean-core/hash_combine.hh>
-#include <clean-core/typedefs.hh>
-
-#include <cstring>
-#include <type_traits>
 
 namespace cc
 {
@@ -15,35 +16,35 @@ template <class T, class>
 struct hash
 {
     // Custom hashes should specify:
-    // [[nodiscard]] constexpr hash_t operator()(T const& value) const noexcept { ... }
+    // [[nodiscard]] constexpr uint64_t operator()(T const& value) const noexcept { ... }
 
     template <class U = T, cc::enable_if<std::is_trivially_copyable_v<U> && std::has_unique_object_representations_v<U>> = true>
-    [[nodiscard]] hash_t operator()(T const& value) const noexcept
+    [[nodiscard]] uint64_t operator()(T const& value) const noexcept
     {
-        if constexpr (sizeof(T) <= sizeof(hash_t))
+        if constexpr (sizeof(T) <= sizeof(uint64_t))
         {
-            hash_t h = 0;
+            uint64_t h = 0;
             std::memcpy(&h, &value, sizeof(value));
             return h;
         }
         else
         {
             // full words
-            auto constexpr wcnt = sizeof(value) / sizeof(hash_t);
-            auto constexpr rest_size = sizeof(value) - wcnt * sizeof(hash_t);
-            static_assert(0 <= rest_size && rest_size < sizeof(hash_t));
+            auto constexpr wcnt = sizeof(value) / sizeof(uint64_t);
+            auto constexpr rest_size = sizeof(value) - wcnt * sizeof(uint64_t);
+            static_assert(0 <= rest_size && rest_size < sizeof(uint64_t));
 
-            auto h_ptr = reinterpret_cast<hash_t const*>(&value);
+            auto h_ptr = reinterpret_cast<uint64_t const*>(&value);
 
             // hash full words
-            hash_t r = 0;
+            uint64_t r = 0;
             for (size_t i = 0; i < wcnt; ++i)
                 r = cc::hash_combine(r, h_ptr[i]);
 
             // hash rest
             if constexpr (rest_size > 0)
             {
-                hash_t h = 0;
+                uint64_t h = 0;
                 std::memcpy(&h, h_ptr + wcnt, rest_size);
                 r = cc::hash_combine(r, h);
             }
@@ -58,7 +59,7 @@ template <>
 struct hash<void>
 {
     template <class T>
-    [[nodiscard]] constexpr hash_t operator()(T const& value) const noexcept
+    [[nodiscard]] constexpr uint64_t operator()(T const& value) const noexcept
     {
         return hash<T>{}(value);
     }
@@ -84,7 +85,7 @@ static constexpr bool can_hash = detail::can_hash_t<T, Hasher>::value;
 // ============== make_hash ==============
 
 template <class Hasher = hash<void>, class... Args>
-constexpr hash_t make_hash(Args const&... values) noexcept
+constexpr uint64_t make_hash(Args const&... values) noexcept
 {
     static_assert((can_hash<Args, Hasher> && ...), "argument not hashable");
     return cc::hash_combine(Hasher{}(values)...);
@@ -96,7 +97,7 @@ constexpr hash_t make_hash(Args const&... values) noexcept
 template <>
 struct hash<float>
 {
-    [[nodiscard]] hash_t operator()(float value) const noexcept
+    [[nodiscard]] uint64_t operator()(float value) const noexcept
     {
         // make sure +- 0 is the same
         if (value == 0)
@@ -107,7 +108,7 @@ struct hash<float>
             return 0xFFFF'FFFF'FFFF'1234uLL;
 
         // otherwise take the bits
-        hash_t h = 0;
+        uint64_t h = 0;
         std::memcpy(&h, &value, sizeof(value));
         return h;
     }
@@ -116,7 +117,7 @@ struct hash<float>
 template <>
 struct hash<double>
 {
-    [[nodiscard]] hash_t operator()(double value) const noexcept
+    [[nodiscard]] uint64_t operator()(double value) const noexcept
     {
         // make sure +- 0 is the same
         if (value == 0)
@@ -127,7 +128,7 @@ struct hash<double>
             return 0xFFFF'FFFF'FFFF'5678uLL;
 
         // otherwise take the bits
-        hash_t h = 0;
+        uint64_t h = 0;
         std::memcpy(&h, &value, sizeof(value));
         return h;
     }

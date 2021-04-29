@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstddef>
+
 #include <clean-core/fwd.hh>
 
 namespace cc

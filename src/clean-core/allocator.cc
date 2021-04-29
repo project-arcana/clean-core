@@ -42,7 +42,7 @@ std::byte* align_up_with_header(std::byte* head, size_t align, size_t header_siz
 }
 
 
-cc::byte* cc::stack_allocator::alloc(cc::size_t size, cc::size_t align)
+std::byte* cc::stack_allocator::alloc(size_t size, size_t align)
 {
     CC_ASSERT(_buffer_begin != nullptr && "stack_allocator uninitialized");
 
@@ -73,7 +73,7 @@ void cc::stack_allocator::free(void* ptr)
     _head = byte_ptr - alloc_header->padding;
 }
 
-cc::byte* cc::stack_allocator::realloc(void* ptr, cc::size_t old_size, cc::size_t new_size, cc::size_t align)
+std::byte* cc::stack_allocator::realloc(void* ptr, size_t old_size, size_t new_size, size_t align)
 {
     if (ptr == nullptr)
         return this->alloc(new_size, align);
@@ -90,12 +90,12 @@ cc::byte* cc::stack_allocator::realloc(void* ptr, cc::size_t old_size, cc::size_
     return byte_ptr;
 }
 
-cc::byte* cc::system_allocator_t::alloc(cc::size_t size, cc::size_t align)
+std::byte* cc::system_allocator_t::alloc(size_t size, size_t align)
 {
 #ifdef CC_OS_WINDOWS
-    return static_cast<cc::byte*>(::_aligned_malloc(size, align));
+    return static_cast<std::byte*>(::_aligned_malloc(size, align));
 #else
-    return static_cast<cc::byte*>(std::aligned_alloc(align, size));
+    return static_cast<std::byte*>(std::aligned_alloc(align, size));
 #endif
 }
 
@@ -108,20 +108,20 @@ void cc::system_allocator_t::free(void* ptr)
 #endif
 }
 
-cc::byte* cc::system_allocator_t::realloc(void* ptr, cc::size_t old_size, cc::size_t new_size, cc::size_t align)
+std::byte* cc::system_allocator_t::realloc(void* ptr, size_t old_size, size_t new_size, size_t align)
 {
 #ifdef CC_OS_WINDOWS
     (void)old_size;
-    return static_cast<cc::byte*>(::_aligned_realloc(ptr, new_size, align));
+    return static_cast<std::byte*>(::_aligned_realloc(ptr, new_size, align));
 #else
     if (align == alignof(std::max_align_t))
     {
-        return static_cast<cc::byte*>(std::realloc(ptr, new_size));
+        return static_cast<std::byte*>(std::realloc(ptr, new_size));
     }
     else
     {
         // there is no aligned_realloc equivalent on POSIX, we have to do it manually
-        cc::byte* res = nullptr;
+        std::byte* res = nullptr;
 
         if (new_size > 0)
         {
@@ -154,9 +154,9 @@ char* cc::allocator::alloc_string_copy(cc::string_view source)
     return res;
 }
 
-cc::byte* cc::allocator::realloc(void* ptr, cc::size_t old_size, cc::size_t new_size, cc::size_t align)
+std::byte* cc::allocator::realloc(void* ptr, size_t old_size, size_t new_size, size_t align)
 {
-    cc::byte* res = nullptr;
+    std::byte* res = nullptr;
 
     if (new_size > 0)
     {
@@ -172,14 +172,14 @@ cc::byte* cc::allocator::realloc(void* ptr, cc::size_t old_size, cc::size_t new_
     return res;
 }
 
-cc::byte* cc::allocator::alloc_request(cc::size_t min_size, cc::size_t request_size, cc::size_t& out_received_size, cc::size_t align)
+std::byte* cc::allocator::alloc_request(size_t min_size, size_t request_size, size_t& out_received_size, size_t align)
 {
     CC_UNUSED(request_size);
     out_received_size = min_size;
     return this->alloc(min_size, align);
 }
 
-cc::byte* cc::allocator::realloc_request(void* ptr, cc::size_t old_size, cc::size_t new_min_size, cc::size_t request_size, cc::size_t& out_received_size, cc::size_t align)
+std::byte* cc::allocator::realloc_request(void* ptr, size_t old_size, size_t new_min_size, size_t request_size, size_t& out_received_size, size_t align)
 {
     CC_UNUSED(request_size);
     out_received_size = new_min_size;

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+
 #include <type_traits>
 
 #include <clean-core/assert.hh>
@@ -7,7 +9,6 @@
 #include <clean-core/detail/compact_size_t.hh>
 #include <clean-core/explicit_bool.hh>
 #include <clean-core/fwd.hh>
-#include <clean-core/typedefs.hh>
 
 namespace cc
 {
@@ -176,7 +177,7 @@ constexpr auto make_flags(EnumT e, Args... args)
 template <class EnumT, size_t Bits>
 struct hash<flags<EnumT, Bits>>
 {
-    constexpr hash_t operator()(flags<EnumT, Bits> const& f) const noexcept { return hash_t(f.value()); }
+    constexpr uint64_t operator()(flags<EnumT, Bits> const& f) const noexcept { return uint64_t(f.value()); }
 };
 
 template <class EnumT, class ValueT>
