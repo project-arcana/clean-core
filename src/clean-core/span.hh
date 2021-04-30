@@ -156,9 +156,9 @@ private:
 
 // deduction guide for containers
 template <class Container, cc::enable_if<is_any_contiguous_range<Container>> = true>
-span(Container& c) -> span<std::remove_reference_t<decltype(*c.data())>>;
+span(Container& c)->span<std::remove_reference_t<decltype(*c.data())>>;
 template <class Container, cc::enable_if<is_any_contiguous_range<Container>> = true>
-span(Container&& c) -> span<std::remove_reference_t<decltype(*c.data())>>;
+span(Container&& c)->span<std::remove_reference_t<decltype(*c.data())>>;
 
 /// converts a triv. copyable value, or a container with triv. copyable elements to a cc::span<std::byte>
 template <class T>

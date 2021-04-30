@@ -132,7 +132,7 @@ private:
 
 // deduction guide for containers
 template <class Container, cc::enable_if<is_any_contiguous_range<Container>> = true>
-strided_span(Container& c) -> strided_span<std::remove_reference_t<decltype(*c.data())>>;
+strided_span(Container& c)->strided_span<std::remove_reference_t<decltype(*c.data())>>;
 template <class Container, cc::enable_if<is_any_contiguous_range<Container>> = true>
-strided_span(Container&& c) -> strided_span<std::remove_reference_t<decltype(*c.data())>>;
+strided_span(Container&& c)->strided_span<std::remove_reference_t<decltype(*c.data())>>;
 }
