@@ -771,8 +771,7 @@ private:
 
     char* _data;
     size_t _size;
-    union
-    {
+    union {
         size_t _capacity;
         char _sbo[sbo_capacity + 1];
         words _sbo_words;
