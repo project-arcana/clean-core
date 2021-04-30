@@ -93,7 +93,7 @@ struct tuple_helper
     };
 
     template <size_t... I>
-    static constexpr hash_t make_hash(tuple<Types...> const& v, std::index_sequence<I...>)
+    static constexpr uint64_t make_hash(tuple<Types...> const& v, std::index_sequence<I...>)
     {
         return cc::hash_combine(cc::hash<Types>{}(v.template get<I>())...);
     }
@@ -128,7 +128,7 @@ tuple(Types...)->tuple<Types...>;
 template <class... Ts>
 struct hash<tuple<Ts...>>
 {
-    [[nodiscard]] constexpr hash_t operator()(tuple<Ts...> const& v) const noexcept
+    [[nodiscard]] constexpr uint64_t operator()(tuple<Ts...> const& v) const noexcept
     {
         return cc::detail::tuple_helper<Ts...>::make_hash(v, std::index_sequence_for<Ts...>{});
     }

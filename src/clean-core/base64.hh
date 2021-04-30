@@ -28,11 +28,13 @@
    with modifications to fit better with clean-core
 */
 
+#include <cstddef>
+
 #include <clean-core/fwd.hh>
 #include <clean-core/span.hh>
 
 namespace cc
 {
-cc::string base64_encode(cc::span<cc::byte const> data);
-cc::vector<cc::byte> base64_decode(cc::string_view encoded_string);
+cc::string base64_encode(cc::span<std::byte const> data);
+cc::vector<std::byte> base64_decode(cc::string_view encoded_string);
 }

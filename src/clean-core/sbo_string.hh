@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <cstring>
 
 #include <clean-core/assert.hh>
@@ -7,7 +8,6 @@
 #include <clean-core/hash_combine.hh>
 #include <clean-core/macros.hh>
 #include <clean-core/string_view.hh>
-#include <clean-core/typedefs.hh>
 
 namespace cc
 {
@@ -771,7 +771,8 @@ private:
 
     char* _data;
     size_t _size;
-    union {
+    union
+    {
         size_t _capacity;
         char _sbo[sbo_capacity + 1];
         words _sbo_words;
@@ -782,10 +783,10 @@ private:
 template <size_t sbo_capacity>
 struct hash<sbo_string<sbo_capacity>>
 {
-    [[nodiscard]] constexpr hash_t operator()(sbo_string<sbo_capacity> const& a) const noexcept
+    [[nodiscard]] constexpr uint64_t operator()(sbo_string<sbo_capacity> const& a) const noexcept
     {
         // TODO: better string hash
-        size_t h = 0;
+        uint64_t h = 0;
         for (auto const& c : a)
             h = cc::hash_combine(h, c);
         return h;

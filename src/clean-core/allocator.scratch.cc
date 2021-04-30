@@ -73,23 +73,23 @@ void fill_in_header_value(scratch_alloc_header* header, void* associated_data_pt
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-cc::byte* cc::scratch_allocator::alloc(cc::size_t size, cc::size_t align)
+std::byte* cc::scratch_allocator::alloc(size_t size, size_t align)
 {
     CC_DTRACE_ALLOC_PRINTF("    [alloc]    call - size %zu, align %zu\n", size, align);
 
     size = int_ceil_to_multiple<size_t>(size, 4);
 
-    byte* p = _head;
+    std::byte* p = _head;
     scratch_alloc_header* h = reinterpret_cast<scratch_alloc_header*>(p);
-    byte* data = align_up_from_header(h, align); // points to after the header, aligned
-    p = data + size;                             // end of planned allocation
+    std::byte* data = align_up_from_header(h, align); // points to after the header, aligned
+    p = data + size;                                  // end of planned allocation
 
     // end would be OOB, wrap around to start of ring
     if (p > _buffer_end)
     {
         // write wraparound marker to the header
-        CC_ASSERT(reinterpret_cast<byte*>(h) + sizeof(scratch_alloc_header) <= _buffer_end && "programmer error");
-        uint32_t const num_bytes_until_end = uint32_t(_buffer_end - reinterpret_cast<byte*>(h));
+        CC_ASSERT(reinterpret_cast<std::byte*>(h) + sizeof(scratch_alloc_header) <= _buffer_end && "programmer error");
+        uint32_t const num_bytes_until_end = uint32_t(_buffer_end - reinterpret_cast<std::byte*>(h));
 
         CC_DTRACE_ALLOC_PRINTF("    [alloc]    %zu bytes would wrap, writing %u to wraparound header [%u]\n", size, num_bytes_until_end, get_ptr_offset(h));
 
@@ -109,7 +109,7 @@ cc::byte* cc::scratch_allocator::alloc(cc::size_t size, cc::size_t align)
     }
 
     // write size to the header
-    uint32 const allocsize = static_cast<uint32>(p - reinterpret_cast<byte*>(h));
+    uint32_t const allocsize = uint32_t(p - reinterpret_cast<std::byte*>(h));
     fill_in_header_value(h, data, allocsize);
     _head = p;
 
@@ -191,5 +191,5 @@ void cc::scratch_allocator::free(void* ptr)
 unsigned cc::scratch_allocator::get_ptr_offset(void const* ptr) const
 {
     CC_ASSERT(ptr >= _buffer_begin && "programmer error");
-    return unsigned(static_cast<byte const*>(ptr) - _buffer_begin);
+    return unsigned(static_cast<std::byte const*>(ptr) - _buffer_begin);
 }

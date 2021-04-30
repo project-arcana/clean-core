@@ -295,7 +295,7 @@ struct less<optional<T>>
 template <class T>
 struct hash<optional<T>>
 {
-    [[nodiscard]] constexpr hash_t operator()(optional<T> const& v) const noexcept
+    [[nodiscard]] constexpr uint64_t operator()(optional<T> const& v) const noexcept
     {
         if (v.has_value())
             return hash<T>{}(v.value());

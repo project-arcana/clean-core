@@ -1,6 +1,6 @@
 #pragma once
 
-#include <clean-core/typedefs.hh>
+#include <cstddef>
 
 namespace cc
 {

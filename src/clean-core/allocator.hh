@@ -1,10 +1,11 @@
 #pragma once
 
+#include <cstddef>
+
 #include <clean-core/forward.hh>
 #include <clean-core/fwd.hh>
 #include <clean-core/new.hh>
 #include <clean-core/span.hh>
-#include <clean-core/typedefs.hh>
 #include <clean-core/utility.hh>
 
 namespace cc
@@ -12,7 +13,7 @@ namespace cc
 struct allocator
 {
     /// allocate a buffer with specified size and alignment
-    [[nodiscard]] virtual byte* alloc(size_t size, size_t align = alignof(std::max_align_t)) = 0;
+    [[nodiscard]] virtual std::byte* alloc(size_t size, size_t align = alignof(std::max_align_t)) = 0;
 
     /// free a pointer previously received from alloc
     virtual void free(void* ptr) = 0;
@@ -51,13 +52,13 @@ struct allocator
     // specific interfaces which can be overriden by allocators to be more efficient, with fallback otherwise
 
     /// reallocate a buffer, behaves like std::realloc
-    virtual byte* realloc(void* ptr, size_t old_size, size_t new_size, size_t align = alignof(std::max_align_t));
+    virtual std::byte* realloc(void* ptr, size_t old_size, size_t new_size, size_t align = alignof(std::max_align_t));
 
     /// allocate a buffer with specified minimum size, will span up to request_size if possible
-    [[nodiscard]] virtual byte* alloc_request(size_t min_size, size_t request_size, size_t& out_received_size, size_t align = alignof(std::max_align_t));
+    [[nodiscard]] virtual std::byte* alloc_request(size_t min_size, size_t request_size, size_t& out_received_size, size_t align = alignof(std::max_align_t));
 
     /// reallocate a buffer with specified minimum size, will span up to request_size if possible
-    [[nodiscard]] virtual byte* realloc_request(
+    [[nodiscard]] virtual std::byte* realloc_request(
         void* ptr, size_t old_size, size_t new_min_size, size_t request_size, size_t& out_received_size, size_t align = alignof(std::max_align_t));
 
     // delete copy, default move
@@ -73,11 +74,11 @@ struct allocator
 /// system provided allocator (malloc / free)
 struct system_allocator_t final : allocator
 {
-    byte* alloc(size_t size, size_t align = alignof(std::max_align_t)) override;
+    std::byte* alloc(size_t size, size_t align = alignof(std::max_align_t)) override;
 
     void free(void* ptr) override;
 
-    byte* realloc(void* ptr, size_t old_size, size_t new_size, size_t align = alignof(std::max_align_t)) override;
+    std::byte* realloc(void* ptr, size_t old_size, size_t new_size, size_t align = alignof(std::max_align_t)) override;
 
     system_allocator_t() = default;
 };
@@ -92,7 +93,7 @@ extern system_allocator_t system_allocator_instance;
 /// cannot free individual allocations, only reset entirely
 struct linear_allocator final : allocator
 {
-    byte* alloc(size_t size, size_t align = alignof(std::max_align_t)) override
+    std::byte* alloc(size_t size, size_t align = alignof(std::max_align_t)) override
     {
         CC_ASSERT(_buffer_begin != nullptr && "linear_allocator uninitialized");
 
@@ -117,12 +118,12 @@ struct linear_allocator final : allocator
     float allocated_ratio() const { return allocated_size() / float(max_size()); }
 
     linear_allocator() = default;
-    linear_allocator(span<byte> buffer) : _buffer_begin(buffer.data()), _head(buffer.data()), _buffer_end(buffer.data() + buffer.size()) {}
+    linear_allocator(span<std::byte> buffer) : _buffer_begin(buffer.data()), _head(buffer.data()), _buffer_end(buffer.data() + buffer.size()) {}
 
 private:
-    byte* _buffer_begin = nullptr;
-    byte* _head = nullptr;
-    byte* _buffer_end = nullptr;
+    std::byte* _buffer_begin = nullptr;
+    std::byte* _head = nullptr;
+    std::byte* _buffer_end = nullptr;
 };
 
 
@@ -130,13 +131,13 @@ private:
 /// like a linear allocator, but can also free the most recent allocation
 struct stack_allocator final : allocator
 {
-    byte* alloc(size_t size, size_t align = alignof(std::max_align_t)) override;
+    std::byte* alloc(size_t size, size_t align = alignof(std::max_align_t)) override;
 
     /// NOTE: ptr must be the most recent allocation received
     void free(void* ptr) override;
 
     /// NOTE: ptr must be the most recent allocation received
-    byte* realloc(void* ptr, size_t old_size, size_t new_size, size_t align = alignof(std::max_align_t)) override;
+    std::byte* realloc(void* ptr, size_t old_size, size_t new_size, size_t align = alignof(std::max_align_t)) override;
 
     void reset()
     {
@@ -145,13 +146,13 @@ struct stack_allocator final : allocator
     }
 
     stack_allocator() = default;
-    stack_allocator(span<byte> buffer) : _buffer_begin(buffer.data()), _head(buffer.data()), _buffer_end(buffer.data() + buffer.size()) {}
+    stack_allocator(span<std::byte> buffer) : _buffer_begin(buffer.data()), _head(buffer.data()), _buffer_end(buffer.data() + buffer.size()) {}
 
 private:
-    byte* _buffer_begin = nullptr;
-    byte* _head = nullptr;
-    byte* _buffer_end = nullptr;
-    byte* _last_alloc = nullptr;
+    std::byte* _buffer_begin = nullptr;
+    std::byte* _head = nullptr;
+    std::byte* _buffer_end = nullptr;
+    std::byte* _last_alloc = nullptr;
 };
 
 
@@ -160,12 +161,12 @@ private:
 struct scratch_allocator final : allocator
 {
     scratch_allocator() = default;
-    scratch_allocator(span<byte> buffer, allocator* backing = nullptr)
+    scratch_allocator(span<std::byte> buffer, allocator* backing = nullptr)
       : _buffer_begin(buffer.data()), _head(buffer.data()), _tail(buffer.data()), _buffer_end(buffer.data() + buffer.size()), _backing_alloc(backing)
     {
     }
 
-    byte* alloc(size_t size, size_t align = alignof(std::max_align_t)) override;
+    std::byte* alloc(size_t size, size_t align = alignof(std::max_align_t)) override;
 
     void free(void* ptr) override;
 
@@ -184,10 +185,10 @@ private:
     unsigned get_ptr_offset(void const* ptr) const;
 
 private:
-    byte* _buffer_begin = nullptr;
-    byte* _head = nullptr;
-    byte* _tail = nullptr;
-    byte* _buffer_end = nullptr;
+    std::byte* _buffer_begin = nullptr;
+    std::byte* _head = nullptr;
+    std::byte* _tail = nullptr;
+    std::byte* _buffer_end = nullptr;
 
     allocator* _backing_alloc = nullptr;
 };
@@ -286,7 +287,7 @@ void allocator::delete_array(T* ptr)
 
     constexpr size_t padding = detail::get_array_padding(sizeof(T));
 
-    byte* const original_buf = reinterpret_cast<byte*>(ptr) - padding;
+    std::byte* const original_buf = reinterpret_cast<std::byte*>(ptr) - padding;
     size_t const num_elems = *reinterpret_cast<size_t*>(original_buf);
 
     if constexpr (!std::is_trivially_destructible_v<T>)
