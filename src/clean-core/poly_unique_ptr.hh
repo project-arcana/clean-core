@@ -1,12 +1,13 @@
 #pragma once
 
+#include <cstddef>
+
+#include <type_traits>
+
 #include <clean-core/always_false.hh>
 #include <clean-core/assert.hh>
 #include <clean-core/forward.hh>
 #include <clean-core/fwd.hh>
-#include <clean-core/typedefs.hh>
-
-#include <type_traits>
 
 namespace cc
 {
@@ -27,7 +28,7 @@ template <class T>
 struct poly_unique_ptr
 {
     poly_unique_ptr() = default;
-    poly_unique_ptr(nullptr_t) {}
+    poly_unique_ptr(std::nullptr_t) {}
 
     poly_unique_ptr(poly_unique_ptr const&) = delete;
     poly_unique_ptr& operator=(poly_unique_ptr const&) = delete;
@@ -104,8 +105,8 @@ struct poly_unique_ptr
 
     friend bool operator==(T const* lhs, poly_unique_ptr const& rhs) { return lhs == rhs.get(); }
     friend bool operator!=(T const* lhs, poly_unique_ptr const& rhs) { return lhs != rhs.get(); }
-    friend bool operator==(nullptr_t, poly_unique_ptr const& rhs) { return rhs.get() == nullptr; }
-    friend bool operator!=(nullptr_t, poly_unique_ptr const& rhs) { return rhs.get() != nullptr; }
+    friend bool operator==(std::nullptr_t, poly_unique_ptr const& rhs) { return rhs.get() == nullptr; }
+    friend bool operator!=(std::nullptr_t, poly_unique_ptr const& rhs) { return rhs.get() != nullptr; }
 
 private:
     template <class U>
@@ -131,7 +132,7 @@ template <typename T, typename... Args>
 template <class T>
 struct hash<poly_unique_ptr<T>>
 {
-    [[nodiscard]] hash_t operator()(poly_unique_ptr<T> const& v) const noexcept { return hash_t(v.get()); }
+    [[nodiscard]] uint64_t operator()(poly_unique_ptr<T> const& v) const noexcept { return uint64_t(v.get()); }
 };
 
 template <class T>

@@ -1,78 +1,182 @@
 #include "from_string.hh"
 
-#include <sstream>
-#include <string>
+#include <cerrno>
+#include <cstdio>
+#include <cstdlib>
 
-// NOTE: this is just to get the API and basic functionality up
-//       <charconv> still has spotty support and is thus not an option
-namespace
+#include <clean-core/macros.hh>
+#include <clean-core/string_view.hh>
+
+bool cc::from_string(char const* c_str, int8_t& out_value)
 {
-template <class T>
-bool parse(cc::string_view s, T& v)
-{
-    std::istringstream ss(std::string(s.data(), s.size()));
-    ss >> v;
-    return bool(ss) && ss.eof();
+    int32_t full_int = 0;
+    bool success = cc::from_string(c_str, full_int);
+    out_value = int8_t(full_int);
+    return success && full_int == int32_t(out_value);
 }
 
-bool parse(cc::string_view s, unsigned char& v)
+bool cc::from_string(char const* c_str, int16_t& out_value)
 {
-    unsigned int i;
-    bool parsed_as_int = parse(s, i);
-    v = static_cast<unsigned char>(i);
-    return parsed_as_int && (i <= 255);
+    int32_t full_int = 0;
+    bool success = cc::from_string(c_str, full_int);
+    out_value = int16_t(full_int);
+    return success && full_int == int32_t(out_value);
 }
 
-bool parse(cc::string_view s, signed char& v)
+bool cc::from_string(char const* c_str, int32_t& out_value)
 {
-    int i;
-    bool parsed_as_int = parse(s, i);
-    v = static_cast<signed char>(i);
-    return parsed_as_int && (-128 <= i && i <= 127);
+    char* end;
+    errno = 0;
+    out_value = int32_t(std::strtol(c_str, &end, 10));
+    // end == str: parse error, no conversion done
+    // end[0] = '\0': entire string read
+    // errno != 0: range violation
+    return end != c_str && end[0] == '\0' && errno == 0;
 }
-}
 
-bool cc::from_string(cc::string_view s, signed char& v) { return parse(s, v); }
-
-bool cc::from_string(cc::string_view s, signed short& v) { return parse(s, v); }
-
-bool cc::from_string(cc::string_view s, signed int& v) { return parse(s, v); }
-
-bool cc::from_string(cc::string_view s, signed long& v) { return parse(s, v); }
-
-bool cc::from_string(cc::string_view s, signed long long& v) { return parse(s, v); }
-
-bool cc::from_string(cc::string_view s, unsigned char& v) { return parse(s, v); }
-
-bool cc::from_string(cc::string_view s, unsigned short& v) { return parse(s, v); }
-
-bool cc::from_string(cc::string_view s, unsigned int& v) { return parse(s, v); }
-
-bool cc::from_string(cc::string_view s, unsigned long& v) { return parse(s, v); }
-
-bool cc::from_string(cc::string_view s, unsigned long long& v) { return parse(s, v); }
-
-bool cc::from_string(cc::string_view s, float& v) { return parse(s, v); }
-
-bool cc::from_string(cc::string_view s, double& v) { return parse(s, v); }
-
-bool cc::from_string(cc::string_view s, char& v)
+bool cc::from_string(char const* c_str, int64_t& out_value)
 {
-    if (s.size() != 1)
+    char* end;
+    errno = 0;
+    out_value = int64_t(std::strtoll(c_str, &end, 10));
+    return end != c_str && end[0] == '\0' && errno == 0;
+}
+
+bool cc::from_string(char const* c_str, uint8_t& out_value)
+{
+    uint32_t full_int = 0;
+    bool success = cc::from_string(c_str, full_int);
+    out_value = uint8_t(full_int);
+    return success && full_int == uint32_t(out_value);
+}
+
+bool cc::from_string(char const* c_str, uint16_t& out_value)
+{
+    uint32_t full_int = 0;
+    bool success = cc::from_string(c_str, full_int);
+    out_value = uint16_t(full_int);
+    return success && full_int == uint32_t(out_value);
+}
+
+bool cc::from_string(char const* c_str, uint32_t& out_value)
+{
+    char* end;
+    errno = 0;
+    out_value = uint32_t(std::strtoul(c_str, &end, 10));
+    return end != c_str && end[0] == '\0' && errno == 0;
+}
+
+bool cc::from_string(char const* c_str, uint64_t& out_value)
+{
+    char* end;
+    errno = 0;
+    out_value = uint64_t(std::strtoull(c_str, &end, 10));
+    return end != c_str && end[0] == '\0' && errno == 0;
+}
+
+bool cc::from_string(char const* c_str, float& out_value)
+{
+    char* end;
+    errno = 0;
+    out_value = std::strtof(c_str, &end);
+    return end != c_str && end[0] == '\0' && errno == 0;
+}
+
+bool cc::from_string(char const* c_str, double& out_value)
+{
+    char* end;
+    errno = 0;
+    out_value = std::strtod(c_str, &end);
+    return end != c_str && end[0] == '\0' && errno == 0;
+}
+
+bool cc::from_string(cc::string_view str, int8_t& out_value)
+{
+    char c_str_buf[256];
+    std::snprintf(c_str_buf, sizeof(c_str_buf), "%.*s", int(str.size()), str.data());
+    return from_string(c_str_buf, out_value);
+}
+
+bool cc::from_string(cc::string_view str, int16_t& out_value)
+{
+    char c_str_buf[256];
+    std::snprintf(c_str_buf, sizeof(c_str_buf), "%.*s", int(str.size()), str.data());
+    return from_string(c_str_buf, out_value);
+}
+
+bool cc::from_string(cc::string_view str, int32_t& out_value)
+{
+    char c_str_buf[256];
+    std::snprintf(c_str_buf, sizeof(c_str_buf), "%.*s", int(str.size()), str.data());
+    return from_string(c_str_buf, out_value);
+}
+
+bool cc::from_string(cc::string_view str, int64_t& out_value)
+{
+    char c_str_buf[256];
+    std::snprintf(c_str_buf, sizeof(c_str_buf), "%.*s", int(str.size()), str.data());
+    return from_string(c_str_buf, out_value);
+}
+
+bool cc::from_string(cc::string_view str, uint8_t& out_value)
+{
+    char c_str_buf[256];
+    std::snprintf(c_str_buf, sizeof(c_str_buf), "%.*s", int(str.size()), str.data());
+    return from_string(c_str_buf, out_value);
+}
+
+bool cc::from_string(cc::string_view str, uint16_t& out_value)
+{
+    char c_str_buf[256];
+    std::snprintf(c_str_buf, sizeof(c_str_buf), "%.*s", int(str.size()), str.data());
+    return from_string(c_str_buf, out_value);
+}
+
+bool cc::from_string(cc::string_view str, uint32_t& out_value)
+{
+    char c_str_buf[256];
+    std::snprintf(c_str_buf, sizeof(c_str_buf), "%.*s", int(str.size()), str.data());
+    return from_string(c_str_buf, out_value);
+}
+
+bool cc::from_string(cc::string_view str, uint64_t& out_value)
+{
+    char c_str_buf[256];
+    std::snprintf(c_str_buf, sizeof(c_str_buf), "%.*s", int(str.size()), str.data());
+    return from_string(c_str_buf, out_value);
+}
+
+bool cc::from_string(cc::string_view str, float& out_value)
+{
+    char c_str_buf[256];
+    std::snprintf(c_str_buf, sizeof(c_str_buf), "%.*s", int(str.size()), str.data());
+    return from_string(c_str_buf, out_value);
+}
+
+bool cc::from_string(cc::string_view str, double& out_value)
+{
+    char c_str_buf[256];
+    std::snprintf(c_str_buf, sizeof(c_str_buf), "%.*s", int(str.size()), str.data());
+    return from_string(c_str_buf, out_value);
+}
+
+bool cc::from_string(cc::string_view str, char& v)
+{
+    if (str.size() != 1)
         return false;
 
-    v = s[0];
+    v = str[0];
     return true;
 }
 
-bool cc::from_string(cc::string_view s, bool& v)
+bool cc::from_string(cc::string_view str, bool& v)
 {
-    if (s == "true")
+    if (str == "true")
     {
         v = true;
         return true;
     }
-    else if (s == "false")
+    else if (str == "false")
     {
         v = false;
         return true;

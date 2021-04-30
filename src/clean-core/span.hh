@@ -1,12 +1,13 @@
 #pragma once
 
+#include <cstddef>
 #include <cstring> // memcpy
+
 #include <type_traits>
 
 #include <clean-core/assert.hh>
 #include <clean-core/enable_if.hh>
 #include <clean-core/is_contiguous_range.hh>
-#include <clean-core/typedefs.hh>
 
 namespace cc
 {
@@ -31,7 +32,7 @@ public:
 
     /// generic span constructor from contiguous_range
     /// CAUTION: container MUST outlive the span!
-    template <class Container, cc::enable_if<is_contiguous_range<Container, T>> = true>
+    template <class Container, cc::enable_if<is_contiguous_range<Container, T> && !std::is_same_v<std::decay_t<Container>, span>> = true>
     CC_FORCE_INLINE constexpr span(Container&& c) : _data(c.data()), _size(c.size())
     {
     }
@@ -94,11 +95,11 @@ public:
         return {_data + offset, _size - offset};
     }
 
-    span<byte const> as_bytes() const { return {reinterpret_cast<byte const*>(_data), _size * sizeof(T)}; }
+    span<std::byte const> as_bytes() const { return {reinterpret_cast<std::byte const*>(_data), _size * sizeof(T)}; }
     template <class U = T, cc::enable_if<!std::is_const_v<U>> = true>
-    span<byte> as_writable_bytes() const
+    span<std::byte> as_writable_bytes() const
     {
-        return {reinterpret_cast<byte*>(_data), _size * sizeof(T)};
+        return {reinterpret_cast<std::byte*>(_data), _size * sizeof(T)};
     }
 
     template <class U>
@@ -155,9 +156,9 @@ private:
 
 // deduction guide for containers
 template <class Container, cc::enable_if<is_any_contiguous_range<Container>> = true>
-span(Container& c)->span<std::remove_reference_t<decltype(*c.data())>>;
+span(Container& c) -> span<std::remove_reference_t<decltype(*c.data())>>;
 template <class Container, cc::enable_if<is_any_contiguous_range<Container>> = true>
-span(Container&& c)->span<std::remove_reference_t<decltype(*c.data())>>;
+span(Container&& c) -> span<std::remove_reference_t<decltype(*c.data())>>;
 
 /// converts a triv. copyable value, or a container with triv. copyable elements to a cc::span<std::byte>
 template <class T>
@@ -168,26 +169,26 @@ auto as_byte_span(T&& value)
         // container of some type
         using ElementT = std::remove_reference_t<decltype(value.data()[0])>;
         static_assert(std::is_trivially_copyable_v<ElementT>, "cannot convert range of non-trivially copyable elements to byte span");
-        return span<byte>{reinterpret_cast<byte*>(value.data()), sizeof(ElementT) * value.size()};
+        return span<std::byte>{reinterpret_cast<std::byte*>(value.data()), sizeof(ElementT) * value.size()};
     }
     else if constexpr (is_contiguous_range<T, void const>)
     {
         // container of some type
         using ElementT = std::remove_reference_t<decltype(value.data()[0])>;
         static_assert(std::is_trivially_copyable_v<ElementT>, "cannot convert range of non-trivially copyable elements to byte span");
-        return span<byte const>{reinterpret_cast<byte const*>(value.data()), sizeof(ElementT) * value.size()};
+        return span<std::byte const>{reinterpret_cast<std::byte const*>(value.data()), sizeof(ElementT) * value.size()};
     }
     else if constexpr (std::is_const_v<std::remove_reference_t<T>>)
     {
         // single POD type
         static_assert(std::is_trivially_copyable_v<std::remove_reference_t<T>>, "cannot convert non-trivially copyable element to byte span");
-        return span<byte const>{reinterpret_cast<byte const*>(&value), sizeof(T)};
+        return span<std::byte const>{reinterpret_cast<std::byte const*>(&value), sizeof(T)};
     }
     else
     {
         // single POD type
         static_assert(std::is_trivially_copyable_v<std::remove_reference_t<T>>, "cannot convert non-trivially copyable element to byte span");
-        return span<byte>{reinterpret_cast<byte*>(&value), sizeof(T)};
+        return span<std::byte>{reinterpret_cast<std::byte*>(&value), sizeof(T)};
     }
 }
 

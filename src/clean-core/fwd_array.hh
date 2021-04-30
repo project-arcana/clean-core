@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstddef>
+
 #include <initializer_list>
 
 #include <clean-core/algorithms.hh>
@@ -10,7 +12,6 @@
 #include <clean-core/fwd.hh>
 #include <clean-core/has_operator.hh>
 #include <clean-core/span.hh>
-#include <clean-core/typedefs.hh>
 
 namespace cc
 {

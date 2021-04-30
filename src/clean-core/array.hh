@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+
 #include <initializer_list>
 #include <utility> // for tuple_size
 
@@ -10,7 +12,6 @@
 #include <clean-core/fwd.hh>
 #include <clean-core/hash_combine.hh>
 #include <clean-core/span.hh>
-#include <clean-core/typedefs.hh>
 
 namespace cc
 {
@@ -232,9 +233,9 @@ template <class T, class... Args>
 template <class T, size_t N>
 struct hash<array<T, N>>
 {
-    [[nodiscard]] constexpr hash_t operator()(array<T, N> const& a) const noexcept
+    [[nodiscard]] constexpr uint64_t operator()(array<T, N> const& a) const noexcept
     {
-        size_t h = 0;
+        uint64_t h = 0;
         for (auto const& v : a)
             h = cc::hash_combine(h, hash<T>{}(v));
         return h;

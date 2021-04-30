@@ -1,5 +1,8 @@
 #pragma once
 
+#include <cstddef>
+#include <cstdint>
+
 #include <type_traits>
 
 #include <clean-core/assert.hh>
@@ -7,7 +10,6 @@
 #include <clean-core/fwd.hh>
 #include <clean-core/is_contiguous_range.hh>
 #include <clean-core/sentinel.hh>
-#include <clean-core/typedefs.hh>
 
 namespace cc
 {
@@ -24,7 +26,7 @@ struct strided_span
     // ctors
 public:
     constexpr strided_span() = default;
-    constexpr strided_span(T* data, size_t size, int64 stride = sizeof(T)) : _data(reinterpret_cast<byte_t*>(data)), _size(size), _stride(stride) {}
+    constexpr strided_span(T* data, size_t size, int64_t stride = sizeof(T)) : _data(reinterpret_cast<byte_t*>(data)), _size(size), _stride(stride) {}
     constexpr strided_span(T* d_begin, T* d_end) : strided_span(d_begin, d_end - d_begin) {}
     template <size_t N>
     constexpr strided_span(T (&data)[N]) : strided_span(data, N)
@@ -101,7 +103,7 @@ public:
     {
         byte_t* ptr;
         size_t size;
-        int64 stride;
+        int64_t stride;
 
         T& operator*()
         {
@@ -125,12 +127,12 @@ public:
 private:
     byte_t* _data = nullptr;
     size_t _size = 0;
-    int64 _stride = 0;
+    int64_t _stride = 0;
 };
 
 // deduction guide for containers
 template <class Container, cc::enable_if<is_any_contiguous_range<Container>> = true>
-strided_span(Container& c)->strided_span<std::remove_reference_t<decltype(*c.data())>>;
+strided_span(Container& c) -> strided_span<std::remove_reference_t<decltype(*c.data())>>;
 template <class Container, cc::enable_if<is_any_contiguous_range<Container>> = true>
-strided_span(Container&& c)->strided_span<std::remove_reference_t<decltype(*c.data())>>;
+strided_span(Container&& c) -> strided_span<std::remove_reference_t<decltype(*c.data())>>;
 }

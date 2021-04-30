@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+
 #include <clean-core/fwd.hh>
 #include <clean-core/hash_combine.hh>
 #include <clean-core/move.hh>
@@ -30,7 +32,7 @@ struct pair
 template <class A, class B>
 struct hash<pair<A, B>>
 {
-    [[nodiscard]] constexpr hash_t operator()(pair<A, B> const& v) const noexcept
+    [[nodiscard]] constexpr uint64_t operator()(pair<A, B> const& v) const noexcept
     {
         return cc::hash_combine(hash<A>{}(v.first), hash<B>{}(v.second));
     }

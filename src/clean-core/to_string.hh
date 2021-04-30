@@ -1,11 +1,14 @@
 #pragma once
 
+#include <cstddef>
+
 #include <clean-core/fwd.hh>
 
 namespace cc
 {
 //
 // integral types
+// these intentionally use int / long / long long instead of sized types
 //
 
 string to_string(bool value);

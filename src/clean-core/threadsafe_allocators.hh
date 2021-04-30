@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstddef>
+
 #include <atomic>
 #include <mutex>
 
@@ -14,7 +16,7 @@ namespace cc
 /// provided buffer and block size must be aligned to a multiple of all requests (this is verified)
 struct atomic_pool_allocator final : allocator
 {
-    byte* alloc(size_t size, size_t align = alignof(std::max_align_t)) override
+    std::byte* alloc(size_t size, size_t align = alignof(std::max_align_t)) override
     {
         if (size > _block_size)
             return nullptr;
@@ -23,13 +25,13 @@ struct atomic_pool_allocator final : allocator
 
         // CAS-loop to acquire a free node and write the matching next pointer
         bool cas_success = false;
-        byte* acquired_node = nullptr;
+        std::byte* acquired_node = nullptr;
         do
         {
             // acquire-candidate: the current value of _first_free_node
             acquired_node = _first_free_node.load(std::memory_order_acquire);
             // read the in-place next pointer of this node
-            byte* const next_pointer_of_acquired = *reinterpret_cast<byte**>(acquired_node);
+            std::byte* const next_pointer_of_acquired = *reinterpret_cast<std::byte**>(acquired_node);
 
             // compare-exchange these two - spurious failure if raced
             cas_success = std::atomic_compare_exchange_weak_explicit(&_first_free_node, &acquired_node, next_pointer_of_acquired,
@@ -45,7 +47,7 @@ struct atomic_pool_allocator final : allocator
         if (!ptr)
             return;
 
-        byte* const freed_node = static_cast<byte*>(ptr);
+        std::byte* const freed_node = static_cast<std::byte*>(ptr);
         CC_ASSERT(freed_node >= _buffer_begin && freed_node - _buffer_begin <= ptrdiff_t(_buffer_size) && "pointer in pool_allocator::free is not part of the buffer");
         CC_ASSERT((freed_node - _buffer_begin) % _block_size == 0 && "freed pointer is not on a node boundary");
 
@@ -53,10 +55,10 @@ struct atomic_pool_allocator final : allocator
         bool cas_success = false;
         do
         {
-            byte* expected_first_free = _first_free_node.load(std::memory_order_acquire);
+            std::byte* expected_first_free = _first_free_node.load(std::memory_order_acquire);
 
             // write the in-place next pointer of this node provisionally
-            new (cc::placement_new, freed_node) byte*(expected_first_free);
+            new (cc::placement_new, freed_node) std::byte*(expected_first_free);
 
             // CAS write the newly released node if the expected wasn't raced
             cas_success = std::atomic_compare_exchange_weak_explicit(&_first_free_node, &expected_first_free, freed_node, std::memory_order_seq_cst,
@@ -67,7 +69,7 @@ struct atomic_pool_allocator final : allocator
     /// returns the offset of a node to the buffer start in bytes
     size_t get_node_offset_bytes(void const* ptr) const
     {
-        byte const* const node = static_cast<byte const*>(ptr);
+        std::byte const* const node = static_cast<std::byte const*>(ptr);
         CC_ASSERT(node >= _buffer_begin && node - _buffer_begin <= ptrdiff_t(_buffer_size)
                   && "pointer in pool_allocator::get_node_offset_bytes is not part of the buffer");
         CC_ASSERT((node - _buffer_begin) % _block_size == 0 && "pointer is not on a node boundary");
@@ -86,9 +88,9 @@ struct atomic_pool_allocator final : allocator
     size_t max_num_blocks() const { return _buffer_size / _block_size; }
 
     atomic_pool_allocator() = default;
-    atomic_pool_allocator(span<byte> buffer, size_t block_size);
+    atomic_pool_allocator(span<std::byte> buffer, size_t block_size);
 
-    void initialize(span<byte> buffer, size_t block_size);
+    void initialize(span<std::byte> buffer, size_t block_size);
 
     template <class T>
     void initialize_from_array(span<T> elements, size_t block_size_in_elements = 1)
@@ -97,8 +99,8 @@ struct atomic_pool_allocator final : allocator
     }
 
 private:
-    byte* _buffer_begin = nullptr;
-    std::atomic<byte*> _first_free_node = nullptr;
+    std::byte* _buffer_begin = nullptr;
+    std::atomic<std::byte*> _first_free_node = nullptr;
     size_t _buffer_size = 0;
     size_t _block_size = 0;
 };
@@ -106,7 +108,7 @@ private:
 /// thread safe version of cc::linear_allocator
 struct atomic_linear_allocator final : allocator
 {
-    byte* alloc(size_t size, size_t align = alignof(std::max_align_t)) override
+    std::byte* alloc(size_t size, size_t align = alignof(std::max_align_t)) override
     {
         CC_ASSERT(_buffer_begin != nullptr && "atomic_linear_allocator unintialized");
 
@@ -135,12 +137,20 @@ struct atomic_linear_allocator final : allocator
     float allocated_ratio() const { return allocated_size() / float(max_size()); }
 
     atomic_linear_allocator() = default;
-    atomic_linear_allocator(span<byte> buffer) : _buffer_begin(buffer.data()), _offset(0), _buffer_end(buffer.data() + buffer.size()) {}
+    atomic_linear_allocator(span<std::byte> buffer) : _buffer_begin(buffer.data()), _offset(0), _buffer_end(buffer.data() + buffer.size()) {}
+
+    void initialize(span<std::byte> buffer)
+    {
+        // atomics cant be moved, making this necessary
+        _buffer_begin = buffer.data();
+        _offset = 0;
+        _buffer_end = buffer.data() + buffer.size();
+    }
 
 private:
-    byte* _buffer_begin = nullptr;
+    std::byte* _buffer_begin = nullptr;
     std::atomic<std::size_t> _offset = {0};
-    byte* _buffer_end = nullptr;
+    std::byte* _buffer_end = nullptr;
 };
 
 

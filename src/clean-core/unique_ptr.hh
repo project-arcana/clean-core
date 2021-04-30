@@ -1,11 +1,12 @@
 #pragma once
 
+#include <cstdint>
+
 #include <clean-core/allocate.hh>
 #include <clean-core/always_false.hh>
 #include <clean-core/assert.hh>
 #include <clean-core/forward.hh>
 #include <clean-core/fwd.hh>
-#include <clean-core/typedefs.hh>
 
 namespace cc
 {
@@ -28,7 +29,7 @@ template <class T>
 struct unique_ptr
 {
     unique_ptr() = default;
-    unique_ptr(nullptr_t) {}
+    unique_ptr(std::nullptr_t) {}
 
     unique_ptr(unique_ptr const&) = delete;
     unique_ptr& operator=(unique_ptr const&) = delete;
@@ -79,8 +80,8 @@ struct unique_ptr
 
     friend bool operator==(T const* lhs, unique_ptr const& rhs) { return lhs == rhs.get(); }
     friend bool operator!=(T const* lhs, unique_ptr const& rhs) { return lhs != rhs.get(); }
-    friend bool operator==(nullptr_t, unique_ptr const& rhs) { return rhs.get() == nullptr; }
-    friend bool operator!=(nullptr_t, unique_ptr const& rhs) { return rhs.get() != nullptr; }
+    friend bool operator==(std::nullptr_t, unique_ptr const& rhs) { return rhs.get() == nullptr; }
+    friend bool operator!=(std::nullptr_t, unique_ptr const& rhs) { return rhs.get() != nullptr; }
 
 private:
     T* _ptr = nullptr;
@@ -103,7 +104,7 @@ template <typename T, typename... Args>
 template <class T>
 struct hash<unique_ptr<T>>
 {
-    [[nodiscard]] hash_t operator()(unique_ptr<T> const& v) const noexcept { return hash_t(v.get()); }
+    [[nodiscard]] uint64_t operator()(unique_ptr<T> const& v) const noexcept { return uint64_t(v.get()); }
 };
 
 template <class T>

@@ -1,5 +1,8 @@
 #pragma once
 
+#include <cstddef>
+#include <cstdint>
+
 #include <clean-core/assert.hh>
 #include <clean-core/char_predicates.hh>
 #include <clean-core/enable_if.hh>
@@ -8,7 +11,6 @@
 #include <clean-core/is_contiguous_range.hh>
 #include <clean-core/move.hh>
 #include <clean-core/sentinel.hh>
-#include <clean-core/typedefs.hh>
 
 namespace cc
 {
@@ -118,16 +120,16 @@ public:
     }
 
     /// returns the index of the first occurrence of the character (or -1 if not found)
-    constexpr int64 index_of(char c) const
+    constexpr int64_t index_of(char c) const
     {
         for (size_t i = 0; i < _size; ++i)
             if (_data[i] == c)
-                return int64(i);
+                return int64_t(i);
         return -1;
     }
 
     /// returns the index of the start of the first occurrence of the character sequence (or -1 if not found)
-    constexpr int64 index_of(string_view s) const
+    constexpr int64_t index_of(string_view s) const
     {
         CC_CONTRACT(!s.empty() && "search string must not be empty!");
         if (s.size() > _size)
@@ -139,23 +141,23 @@ public:
                 if (_data[i + j] != s[j])
                     break;
                 if (j == s.size() - 1)
-                    return int64(i);
+                    return int64_t(i);
             }
         }
         return -1;
     }
 
     /// returns the index of the last occurrence of the character (or -1 if not found)
-    constexpr int64 last_index_of(char c) const
+    constexpr int64_t last_index_of(char c) const
     {
-        for (auto i = int64(_size) - 1; i >= 0; --i)
+        for (auto i = int64_t(_size) - 1; i >= 0; --i)
             if (_data[i] == c)
-                return int64(i);
+                return int64_t(i);
         return -1;
     }
 
     /// returns the index of the start of the last occurrence of the character sequence (or -1 if not found)
-    constexpr int64 last_index_of(string_view s) const
+    constexpr int64_t last_index_of(string_view s) const
     {
         CC_CONTRACT(!s.empty() && "search string must not be empty!");
         if (s.size() > _size)
@@ -167,7 +169,7 @@ public:
                 if (_data[_size - (i + j + 1)] != s[s.size() - (j + 1)])
                     break;
                 if (j == s.size() - 1)
-                    return int64(_size - (i + s.size()));
+                    return int64_t(_size - (i + s.size()));
             }
         }
         return -1;
@@ -382,7 +384,7 @@ private:
         size_t _size;
         char const* _sdata;
         size_t _ssize;
-        int64 _idx = -1;
+        int64_t _idx = -1;
 
         constexpr string_indices_of_iterator(char const* data, size_t size, char const* sdata, size_t ssize)
           : _data(data), _size(size), _sdata(sdata), _ssize(ssize)
@@ -391,11 +393,11 @@ private:
         }
 
         constexpr void operator++() { _idx = next_idx(_idx + 1); }
-        constexpr int64 operator*() const { return _idx; }
+        constexpr int64_t operator*() const { return _idx; }
         constexpr bool operator!=(cc::sentinel) const { return _idx >= 0; }
 
     private:
-        constexpr int64 next_idx(int64 start) const
+        constexpr int64_t next_idx(int64_t start) const
         {
             if (_ssize > (_size - start))
                 return -1;
@@ -406,7 +408,7 @@ private:
                     if (_data[i + j] != _sdata[j])
                         break;
                     if (j == _ssize - 1)
-                        return int64(i);
+                        return int64_t(i);
                 }
             }
             return -1;
