@@ -54,7 +54,15 @@ public:
     constexpr capped_array(size_t size) : _size(compact_size_t(size))
     {
         CC_CONTRACT(size <= N);
-        new (placement_new, &_u.value[0]) T[size]();
+
+        if constexpr (!std::is_trivially_constructible_v<T>)
+        {
+            // NOTE: DO NOT use array-placement new!
+            // it stores the array size in the first 8 bytes
+            // (at least on MSVC, the standard simply allows a padding on the return value)
+            for (compact_size_t i = 0; i < _size; ++i)
+                new (placement_new, &_u.value[i]) T();
+        }
     }
 
     constexpr capped_array(std::initializer_list<T> data)
@@ -72,7 +80,7 @@ public:
         CC_CONTRACT(size <= N);
         capped_array a;
         a._size = static_cast<compact_size_t>(size);
-        new (&a._u.value[0]) T[size];
+        // no ctors called
         return a;
     }
 
