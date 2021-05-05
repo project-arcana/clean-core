@@ -17,7 +17,7 @@ namespace cc
 {
 /// Array type with compile time memory footprint but runtime size
 template <class T, size_t N>
-struct capped_array
+struct [[deprecated("deprecated container type, consider capped_vector (2021-05-05)")]] capped_array
 {
     // properties
 public:
