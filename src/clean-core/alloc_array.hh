@@ -105,8 +105,12 @@ struct alloc_array
         if (new_size > 0)
         {
             _data = _alloc(new_size);
-            for (size_t i = 0; i < new_size; ++i)
-                new (placement_new, &_data[i]) T();
+
+            if constexpr (!std::is_trivially_constructible_v<T>)
+            {
+                for (size_t i = 0; i < new_size; ++i)
+                    new (placement_new, &_data[i]) T();
+            }
         }
         else
         {
