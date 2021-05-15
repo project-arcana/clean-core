@@ -60,6 +60,17 @@ CC_FORCE_INLINE int64_t intrin_atomic_add(int64_t volatile* counter, int64_t val
 #endif
 }
 
+// approximate inverse square root
+CC_FORCE_INLINE float intrin_rsqrt(float x)
+{
+    // comparisons vs 1.f/sqrt(x) and carmack:
+    // https://godbolt.org/z/GhxG6fo3j
+    // https://quick-bench.com/q/_YlmyvyGpu4zb9lavwzsDy8VqWk
+    __m128 temp = _mm_set_ss(x);
+    temp = _mm_rsqrt_ss(temp);
+    return _mm_cvtss_f32(temp);
+}
+
 inline bool test_cpuid_register(int level, int register_index, int bit_index)
 {
 #ifdef CC_COMPILER_MSVC
