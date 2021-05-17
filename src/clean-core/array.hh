@@ -1,10 +1,12 @@
 #pragma once
 
 #include <cstdint>
+#include <cstring>
 
 #include <initializer_list>
 #include <utility> // for tuple_size
 
+#include <clean-core/allocator.hh>
 #include <clean-core/always_false.hh>
 #include <clean-core/assert.hh>
 #include <clean-core/detail/container_impl_util.hh>
@@ -87,14 +89,24 @@ struct array
 template <class T>
 struct array<T, dynamic_size>
 {
-    static_assert(sizeof(T) > 0, "cannot make array of incomplete object");
-
-    array() = default;
+    array() { static_assert(sizeof(T) > 0, "cannot make array of incomplete object"); }
 
     explicit array(size_t size)
     {
+        static_assert(sizeof(T) > 0, "cannot make array of incomplete object");
+
         _size = size;
-        _data = new T[_size](); // default ctor!
+        _data = _alloc(size);
+
+        if constexpr (!std::is_trivially_constructible_v<T>)
+        {
+            for (size_t i = 0; i < size; ++i)
+                new (placement_new, &this->_data[i]) T();
+        }
+        else
+        {
+            std::memset(_data, 0, _size * sizeof(T));
+        }
     }
 
     [[nodiscard]] static array defaulted(size_t size) { return array(size); }
@@ -103,7 +115,7 @@ struct array<T, dynamic_size>
     {
         array a;
         a._size = size;
-        a._data = new T[size];
+        a._data = a._alloc(a._size);
         return a;
     }
 
@@ -111,37 +123,37 @@ struct array<T, dynamic_size>
     {
         array a;
         a._size = size;
-        a._data = new T[size];
+        a._data = a._alloc(a._size);
         detail::container_copy_construct_fill(value, size, a._data);
         return a;
     }
 
     void resize(size_t new_size, T const& value = {})
     {
-        delete[] _data;
+        _destroy();
         _size = new_size;
-        _data = new T[new_size];
+        _data = _alloc(_size);
         detail::container_copy_construct_fill(value, _size, _data);
     }
 
     array(std::initializer_list<T> data)
     {
         _size = data.size();
-        _data = new T[_size];
+        _data = _alloc(_size);
         detail::container_copy_construct_range<T>(data.begin(), _size, _data);
     }
 
     array(span<T const> data)
     {
         _size = data.size();
-        _data = new T[_size];
+        _data = _alloc(_size);
         detail::container_copy_construct_range<T>(data.data(), _size, _data);
     }
 
     array(array const& a)
     {
         _size = a._size;
-        _data = new T[a._size];
+        _data = _alloc(_size);
         detail::container_copy_construct_range<T>(a.data(), _size, _data);
     }
     array(array&& a) noexcept
@@ -155,23 +167,27 @@ struct array<T, dynamic_size>
     {
         if (&a != this)
         {
-            delete[] _data;
+            _destroy();
             _size = a._size;
-            _data = new T[a._size];
+            _data = _alloc(_size);
             detail::container_copy_construct_range<T>(a.data(), _size, _data);
         }
         return *this;
     }
     array& operator=(array&& a) noexcept
     {
-        delete[] _data;
+        _destroy();
         _data = a._data;
         _size = a._size;
         a._data = nullptr;
         a._size = 0;
         return *this;
     }
-    ~array() { delete[] _data; }
+    ~array()
+    {
+        static_assert(sizeof(T) > 0, "array destructor requires complete type");
+        _destroy();
+    }
 
     constexpr T* begin() { return _data; }
     constexpr T* end() { return _data + _size; }
@@ -215,13 +231,23 @@ struct array<T, dynamic_size>
     }
 
 private:
+    T* _alloc(size_t size) { return reinterpret_cast<T*>(cc::system_allocator->alloc(size * sizeof(T), alignof(T))); }
+    void _free(T* p) { cc::system_allocator->free(p); }
+
+    void _destroy()
+    {
+        detail::container_destroy_reverse<T>(_data, _size);
+        _free(_data);
+    }
+
+private:
     T* _data = nullptr;
     size_t _size = 0;
 };
 
 // deduction guides
 template <class T, class... U>
-array(T, U...)->array<T, 1 + sizeof...(U)>;
+array(T, U...) -> array<T, 1 + sizeof...(U)>;
 
 template <class T, class... Args>
 [[nodiscard]] array<T, 1 + sizeof...(Args)> make_array(T&& v0, Args&&... rest)

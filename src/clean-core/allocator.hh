@@ -117,6 +117,8 @@ struct linear_allocator final : allocator
     size_t max_size() const { return _buffer_end - _buffer_begin; }
     float allocated_ratio() const { return allocated_size() / float(max_size()); }
 
+    std::byte* buffer() const { return _buffer_begin; }
+
     linear_allocator() = default;
     linear_allocator(span<std::byte> buffer) : _buffer_begin(buffer.data()), _head(buffer.data()), _buffer_end(buffer.data() + buffer.size()) {}
 
