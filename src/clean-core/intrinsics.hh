@@ -61,13 +61,65 @@ CC_FORCE_INLINE int64_t intrin_atomic_add(int64_t volatile* counter, int64_t val
 }
 
 // approximate inverse square root
+// maximum relative error < 0.000366
+// about 5x faster than 1.f / std::sqrt(x)
 CC_FORCE_INLINE float intrin_rsqrt(float x)
 {
-    // comparisons vs 1.f/sqrt(x) and carmack:
+    // docs:
+    // https://software.intel.com/sites/landingpage/IntrinsicsGuide/#text=_mm_rsqrt_ss&expand=4805
+
+    // performance and codegen vs full computation:
     // https://godbolt.org/z/GhxG6fo3j https://quick-bench.com/q/_YlmyvyGpu4zb9lavwzsDy8VqWk
+
     __m128 temp = _mm_set_ss(x);
     temp = _mm_rsqrt_ss(temp);
     return _mm_cvtss_f32(temp);
+}
+
+// approximate inverse square root with one Newton-Raphson iteration
+// about 2.5x faster than 1.f / std::sqrt(x)
+CC_FORCE_INLINE float intrin_rsqrt_nr1(float x)
+{
+    const __m128 const_one_half = _mm_set_ss(0.5f);
+    __m128 y_0, x_0, x_1, x_half;
+    float temp;
+    y_0 = _mm_set_ss(x);
+    x_0 = _mm_rsqrt_ss(y_0);
+    x_half = _mm_mul_ss(y_0, const_one_half);
+
+    // doing the following in SSE regs as well gives slightly better codegen
+    // Newton-Raphson iteration
+    x_1 = _mm_mul_ss(x_0, x_0);
+    x_1 = _mm_sub_ss(const_one_half, _mm_mul_ss(x_half, x_1));
+    x_1 = _mm_add_ss(x_0, _mm_mul_ss(x_0, x_1));
+    _mm_store_ss(&temp, x_1);
+    return temp;
+}
+
+// approximate inverse square root with two Newton-Raphson iterations
+// about 1.5x faster than 1.f / std::sqrt(x)
+CC_FORCE_INLINE float intrin_rsqrt_nr2(float x)
+{
+    const __m128 const_one_half = _mm_set_ss(0.5f);
+    __m128 y_0, x_0, x_1, x_2, x_half;
+    float temp;
+    y_0 = _mm_set_ss(x);
+    x_0 = _mm_rsqrt_ss(y_0);
+    x_half = _mm_mul_ss(y_0, const_one_half);
+
+    // doing the following in SSE regs as well gives slightly better codegen
+    // Newton-Raphson iteration 1
+    x_1 = _mm_mul_ss(x_0, x_0);
+    x_1 = _mm_sub_ss(const_one_half, _mm_mul_ss(x_half, x_1));
+    x_1 = _mm_add_ss(x_0, _mm_mul_ss(x_0, x_1));
+
+    // Newton-Raphson iteration 2
+    x_2 = _mm_mul_ss(x_1, x_1);
+    x_2 = _mm_sub_ss(const_one_half, _mm_mul_ss(x_half, x_2));
+    x_2 = _mm_add_ss(x_1, _mm_mul_ss(x_1, x_2));
+
+    _mm_store_ss(&temp, x_2);
+    return temp;
 }
 
 inline bool test_cpuid_register(int level, int register_index, int bit_index)
