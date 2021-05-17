@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <cstring>
 
 #include <initializer_list>
 #include <utility> // for tuple_size
@@ -101,6 +102,10 @@ struct array<T, dynamic_size>
         {
             for (size_t i = 0; i < size; ++i)
                 new (placement_new, &this->_data[i]) T();
+        }
+        else
+        {
+            std::memset(_data, 0, _size * sizeof(T));
         }
     }
 
