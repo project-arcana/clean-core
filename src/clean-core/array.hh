@@ -1,11 +1,11 @@
 #pragma once
 
 #include <cstdint>
-#include <cstdlib>
 
 #include <initializer_list>
 #include <utility> // for tuple_size
 
+#include <clean-core/allocator.hh>
 #include <clean-core/always_false.hh>
 #include <clean-core/assert.hh>
 #include <clean-core/detail/container_impl_util.hh>
@@ -226,8 +226,8 @@ struct array<T, dynamic_size>
     }
 
 private:
-    T* _alloc(size_t size) { return reinterpret_cast<T*>(std::malloc(size * sizeof(T))); }
-    void _free(T* p) { std::free(p); }
+    T* _alloc(size_t size) { return reinterpret_cast<T*>(cc::system_allocator->alloc(size * sizeof(T), alignof(T))); }
+    void _free(T* p) { cc::system_allocator->free(p); }
 
     void _destroy()
     {
