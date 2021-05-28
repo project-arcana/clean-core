@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cstddef> // size_t
-#include <utility> // swap
 
 #include <clean-core/assert.hh>
 
