@@ -150,9 +150,9 @@ struct atomic_linked_pool
         // "hard enabled" generational checks via the template arguments (as it would otherwise fail in release)
         if constexpr (GenCheckEnabled)
         {
-            CC_ASSERT(handle != uint32_t(-1) && "accessed null handle");
+            CC_ASSERT(handle != 0 && "accessed null handle");
             internal_handle_t const parsed_handle = cc::bit_cast<internal_handle_t>(handle);
-            return (parsed_handle.generation == _generation[parsed_handle.index].generation);
+            return (parsed_handle.generation == _generation[parsed_handle.index_plus_one - 1].generation);
         }
         else
         {
@@ -291,7 +291,8 @@ private:
 
     struct internal_handle_t
     {
-        uint32_t index : sc_num_index_bits; // least significant
+        // stores the real index +1 (because 0 is the invalid handle and we never want to hit that)
+        uint32_t index_plus_one : sc_num_index_bits; // least significant
         uint32_t generation : sc_num_generation_bits;
         uint32_t padding : sc_num_padding_bits; // most significant
     };
@@ -328,13 +329,13 @@ private:
         {
             internal_handle_t res;
             res.padding = 0;
-            res.index = real_index;
+            res.index_plus_one = real_index + 1;
             res.generation = _generation[real_index].generation;
             return cc::bit_cast<uint32_t>(res);
         }
         else
         {
-            return real_index;
+            return real_index + 1;
         }
     }
 
@@ -342,16 +343,16 @@ private:
     {
         if constexpr (sc_enable_gen_check)
         {
-            CC_ASSERT(handle != uint32_t(-1) && "accessed null handle");
+            CC_ASSERT(handle != 0u && "accessed null handle");
             internal_handle_t const parsed_handle = cc::bit_cast<internal_handle_t>(handle);
-            uint32_t const real_index = parsed_handle.index;
+            uint32_t const real_index = parsed_handle.index_plus_one - 1;
             CC_ASSERT(parsed_handle.generation == _generation[real_index].generation && "accessed a stale handle");
             return real_index;
         }
         else
         {
-            // we use the handle as-is, but mask out the padding
-            return handle & sc_padding_mask;
+            // we use the handle as-is, but mask out the padding and subtract one
+            return (handle & sc_padding_mask) - 1u;
         }
     }
 
