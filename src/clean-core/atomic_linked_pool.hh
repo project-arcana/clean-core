@@ -284,7 +284,8 @@ private:
         // 0b000 <..#sc_num_padding_bits..> 000111 <..rest of uint32..> 111
         sc_padding_mask = ((uint32_t(1) << (32 - sc_num_padding_bits)) - 1),
 
-        // largest possible index that can be stored in the handle
+        // amount of distinct indices that can be stored in the handle
+        // -1 because zero is reserved as invalid
         sc_max_size_with_gen_check = (1u << sc_num_index_bits) - 1,
         sc_max_size_without_gen_check = (1u << (32 - sc_num_padding_bits)) - 1
     };
