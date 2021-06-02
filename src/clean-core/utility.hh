@@ -62,6 +62,7 @@ template <class T>
 template <class T>
 [[nodiscard]] constexpr T int_div_ceil(T nom, T denom)
 {
+    CC_CONTRACT(nom > 0 && denom > 0);
     return 1 + ((nom - 1) / denom);
 }
 
