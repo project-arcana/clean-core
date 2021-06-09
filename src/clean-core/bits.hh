@@ -135,8 +135,8 @@ inline uint32_t bit_log2(uint32_t v) { return uint32_t(8 * sizeof(uint32_t) - co
 inline uint64_t bit_log2(uint64_t v) { return uint64_t(8 * sizeof(uint64_t) - count_leading_zeros(v) - 1); }
 
 // ceils to the nearest power of 2
-inline uint32_t ceil_pow2(uint32_t v) { return uint32_t(1) << (bit_log2(v - uint32_t(1)) + 1); }
-inline uint64_t ceil_pow2(uint64_t v) { return uint64_t(1) << (bit_log2(v - uint64_t(1)) + 1); }
+inline uint32_t ceil_pow2(uint32_t v) { return uint32_t(1) << ((bit_log2(v - uint32_t(1)) + 1) & 31); }
+inline uint64_t ceil_pow2(uint64_t v) { return uint64_t(1) << ((bit_log2(v - uint64_t(1)) + 1) & 63); }
 
 // returns true if v is a power of 2
 constexpr bool is_pow2(uint32_t v) { return ((v & (v - uint32_t(1))) == 0); }
