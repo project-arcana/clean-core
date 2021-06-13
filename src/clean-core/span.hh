@@ -107,30 +107,14 @@ public:
     {
         static_assert(std::is_trivially_copyable_v<T>, "only works if source type is trivially copyable");
         static_assert(std::is_trivially_copyable_v<U>, "only works if target type is trivially copyable");
-        CC_CONTRACT(size_bytes() % sizeof(U) == 0 && "target size must be integer");
         static_assert(std::is_const_v<U> || !std::is_const_v<T>, "cannot break const-correctness with reinterpret_as<U>");
+
+        CC_CONTRACT(size_bytes() % sizeof(U) == 0 && "target size must be integer");
         return {reinterpret_cast<U*>(_data), _size * sizeof(T) / sizeof(U)};
     }
 
     // operations
 public:
-    /// copies all elements from this span to a target
-    /// NOTE: sizes must match
-    /// NOTE: target and this must not overlap!
-    /// NOTE: uses std::memcpy for trivially copyable types
-    /// TODO: versions with offset + count?
-    template <class U = std::remove_const_t<T>, enable_if<std::is_assignable_v<U&, T>> = true>
-    constexpr void copy_to(span<U> target) const
-    {
-        CC_CONTRACT(target.size() == _size);
-        if constexpr (std::is_same_v<std::decay_t<T>, std::decay_t<U>> && std::is_trivially_copyable_v<T>)
-            std::memcpy(target.data(), _data, size_bytes());
-        else
-            for (size_t i = 0; i < _size; ++i)
-                target._data[i] = _data[i];
-    }
-    constexpr void copy_to(span target) const { this->copy_to<T>(target); }
-
     /// copies all elements from the source to this span
     /// NOTE: sizes must match
     /// NOTE: target and this must not overlap!
@@ -140,13 +124,43 @@ public:
     constexpr void copy_from(span<U> source) const
     {
         CC_CONTRACT(source.size() == _size);
+
         if constexpr (std::is_same_v<std::decay_t<T>, std::decay_t<U>> && std::is_trivially_copyable_v<T>)
-            std::memcpy(_data, source._data, size_bytes());
+        {
+            if (_size > 0)
+            {
+                std::memcpy(_data, source._data, size_bytes());
+            }
+        }
         else
+        {
             for (size_t i = 0; i < _size; ++i)
+            {
                 _data[i] = source._data[i];
+            }
+        }
     }
-    constexpr void copy_from(span target) const { this->copy_from<T>(target); }
+    constexpr void copy_from(span source) const { this->copy_from<T>(source); }
+
+    /// copies all elements from this span to a target
+    template <class U = std::remove_const_t<T>, enable_if<std::is_assignable_v<U&, T>> = true>
+    constexpr void copy_to(span<U> target) const
+    {
+        target.copy_from<T>(*this);
+    }
+    constexpr void copy_to(span target) const { target.copy_from<T>(*this); }
+
+    /// fills this span with elements from the source up until capacity
+    /// returns amount of elements in source
+    constexpr size_t fill_from(span<T const> source) const
+    {
+        this->copy_from(source.subspan(0, cc::min(source._size, _size)));
+        return source._size;
+    }
+
+    // allow access to private fields across template instantiations
+    template <class U>
+    friend struct span;
 
 private:
     T* _data = nullptr;
@@ -156,9 +170,9 @@ private:
 
 // deduction guide for containers
 template <class Container, cc::enable_if<is_any_contiguous_range<Container>> = true>
-span(Container& c)->span<std::remove_reference_t<decltype(*c.data())>>;
+span(Container& c) -> span<std::remove_reference_t<decltype(*c.data())>>;
 template <class Container, cc::enable_if<is_any_contiguous_range<Container>> = true>
-span(Container&& c)->span<std::remove_reference_t<decltype(*c.data())>>;
+span(Container&& c) -> span<std::remove_reference_t<decltype(*c.data())>>;
 
 /// converts a triv. copyable value, or a container with triv. copyable elements to a cc::span<std::byte>
 template <class T>
