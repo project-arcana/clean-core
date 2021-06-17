@@ -33,7 +33,7 @@ using compact_size_t_typed = compact_size_t_for<N, alignof(T)>;
 template <size_t bits>
 struct compact_size_t_by_bits_impl
 {
-    static_assert(always_false<bits>, "bit size not supported");
+    static_assert(always_false_v<bits>, "bit size not supported");
 };
 template <>
 struct compact_size_t_by_bits_impl<8>

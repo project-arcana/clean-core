@@ -20,7 +20,7 @@ struct tuple_impl<>
     template <size_t I>
     constexpr void get() const
     {
-        static_assert(cc::always_false<I>, "cannot get element of empty tuple");
+        static_assert(cc::always_false_v<I>, "cannot get element of empty tuple");
     }
 };
 
