@@ -8,6 +8,7 @@
 #include <clean-core/assert.hh>
 #include <clean-core/enable_if.hh>
 #include <clean-core/is_contiguous_range.hh>
+#include <clean-core/utility.hh>
 
 namespace cc
 {
@@ -128,27 +129,23 @@ public:
         if constexpr (std::is_same_v<std::decay_t<T>, std::decay_t<U>> && std::is_trivially_copyable_v<T>)
         {
             if (_size > 0)
-            {
                 std::memcpy(_data, source._data, size_bytes());
-            }
         }
         else
         {
             for (size_t i = 0; i < _size; ++i)
-            {
                 _data[i] = source._data[i];
-            }
         }
     }
-    constexpr void copy_from(span source) const { this->copy_from<T>(source); }
+    constexpr void copy_from(span<T const> source) const { this->copy_from<T const>(source); }
 
     /// copies all elements from this span to a target
     template <class U = std::remove_const_t<T>, enable_if<std::is_assignable_v<U&, T>> = true>
     constexpr void copy_to(span<U> target) const
     {
-        target.copy_from<T>(*this);
+        target.copy_from(*this);
     }
-    constexpr void copy_to(span target) const { target.copy_from<T>(*this); }
+    constexpr void copy_to(span<std::remove_const_t<T>> target) const { target.copy_from(*this); }
 
     /// fills this span with elements from the source up until capacity
     /// returns amount of elements in source
@@ -170,9 +167,9 @@ private:
 
 // deduction guide for containers
 template <class Container, cc::enable_if<is_any_contiguous_range<Container>> = true>
-span(Container& c) -> span<std::remove_reference_t<decltype(*c.data())>>;
+span(Container& c)->span<std::remove_reference_t<decltype(*c.data())>>;
 template <class Container, cc::enable_if<is_any_contiguous_range<Container>> = true>
-span(Container&& c) -> span<std::remove_reference_t<decltype(*c.data())>>;
+span(Container&& c)->span<std::remove_reference_t<decltype(*c.data())>>;
 
 /// converts a triv. copyable value, or a container with triv. copyable elements to a cc::span<std::byte>
 template <class T>
