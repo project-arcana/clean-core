@@ -59,6 +59,7 @@ public:
         //       it stores the array size in the first 8 bytes
         //       (at least on MSVC, the standard simply allows a padding on the return value)
         // NOTE: default constructor default-initializes all members
+        //       this means zero-init if no user ctor is provided
         //       if the overhead is too big, use capped_array::uninitialized
         for (compact_size_t i = 0; i < _size; ++i)
             new (placement_new, &_u.value[i]) T();
