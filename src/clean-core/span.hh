@@ -151,7 +151,22 @@ public:
     /// returns amount of elements in source
     constexpr size_t fill_from(span<T const> source) const
     {
-        this->copy_from(source.subspan(0, cc::min(source._size, _size)));
+        size_t const num_elements_written = cc::min(source._size, _size);
+        if constexpr (std::is_trivially_copyable_v<T>)
+        {
+            if (num_elements_written > 0)
+            {
+                std::memcpy(_data, source._data, num_elements_written * sizeof(T));
+            }
+        }
+        else
+        {
+            for (size_t i = 0; i < num_elements_written; ++i)
+            {
+                _data[i] = source._data[i];
+            }
+        }
+
         return source._size;
     }
 
