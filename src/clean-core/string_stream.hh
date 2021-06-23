@@ -12,6 +12,9 @@ struct string_stream
 public: // methods
     string_stream& operator<<(string_view sv)
     {
+        if (sv.empty())
+            return *this; // memcpy must not receive nullptr (even for size 0)
+
         reserve(sv.size());
         std::memcpy(m_curr, sv.data(), sv.size());
         m_curr += sv.size();
@@ -29,7 +32,8 @@ public: // methods
     [[nodiscard]] string to_string() const
     {
         if (empty())
-            return {};
+            return {}; // memcpy must not be empty
+
         string s = string::uninitialized(size());
         std::memcpy(s.data(), m_data, size());
         return s;
@@ -95,7 +99,8 @@ public: // assignment
                 m_data = new char[rhs.size()];
                 m_capacity = rhs.size();
             }
-            std::memcpy(m_data, rhs.m_data, rhs.size());
+            if (!rhs.empty())
+                std::memcpy(m_data, rhs.m_data, rhs.size());
             m_curr = m_data + rhs.size();
         }
         return *this;
