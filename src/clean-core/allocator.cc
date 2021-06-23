@@ -139,8 +139,23 @@ std::byte* cc::system_allocator_t::realloc(void* ptr, size_t old_size, size_t ne
 #endif
 }
 
-cc::system_allocator_t cc::system_allocator_instance = {};
-cc::allocator* const cc::system_allocator = &cc::system_allocator_instance;
+/*
+ * we must make sure that cc::system_allocator is valid during complete init and shutdown
+ * this is not given if a "static cc::system_allocator" instance is used
+ * in this version, the union is statically initialized and gcc and clang store the cc::system_allocator in the binary
+ * the dtor does nothing, so that the vtable ptr of the allocator stays valid
+ * also, as this is static data, it does not count as a memory leak
+ */
+static union sys_alloc_union_t {
+    cc::system_allocator_t alloc;
+
+    sys_alloc_union_t() : alloc() {}
+    ~sys_alloc_union_t()
+    { /* nothing */
+    }
+} sys_alloc_instance;
+
+cc::allocator* const cc::system_allocator = &sys_alloc_instance.alloc;
 
 char* cc::allocator::alloc_string_copy(cc::string_view source)
 {
