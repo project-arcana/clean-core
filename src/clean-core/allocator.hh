@@ -86,8 +86,6 @@ struct system_allocator_t final : allocator
 
 /// global instance of the system allocator (malloc / free) (thread safe)
 extern allocator* const system_allocator;
-extern system_allocator_t system_allocator_instance;
-
 
 /// trivial linear allocator operating in a given buffer
 /// cannot free individual allocations, only reset entirely
