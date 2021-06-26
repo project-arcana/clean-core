@@ -90,53 +90,63 @@ std::byte* cc::stack_allocator::realloc(void* ptr, size_t old_size, size_t new_s
     return byte_ptr;
 }
 
-std::byte* cc::system_allocator_t::alloc(size_t size, size_t align)
+namespace
 {
-#ifdef CC_OS_WINDOWS
-    return static_cast<std::byte*>(::_aligned_malloc(size, align));
-#else
-    return static_cast<std::byte*>(std::aligned_alloc(align, size));
-#endif
-}
-
-void cc::system_allocator_t::free(void* ptr)
+/// system provided allocator (malloc / free)
+struct system_allocator_t final : cc::allocator
 {
-#ifdef CC_OS_WINDOWS
-    ::_aligned_free(ptr);
-#else
-    std::free(ptr);
-#endif
-}
-
-std::byte* cc::system_allocator_t::realloc(void* ptr, size_t old_size, size_t new_size, size_t align)
-{
-#ifdef CC_OS_WINDOWS
-    (void)old_size;
-    return static_cast<std::byte*>(::_aligned_realloc(ptr, new_size, align));
-#else
-    if (align == alignof(std::max_align_t))
+    std::byte* alloc(size_t size, size_t align = alignof(std::max_align_t)) override
     {
-        return static_cast<std::byte*>(std::realloc(ptr, new_size));
+#ifdef CC_OS_WINDOWS
+        return static_cast<std::byte*>(::_aligned_malloc(size, align));
+#else
+        return static_cast<std::byte*>(std::aligned_alloc(align, size));
+#endif
     }
-    else
-    {
-        // there is no aligned_realloc equivalent on POSIX, we have to do it manually
-        std::byte* res = nullptr;
 
-        if (new_size > 0)
+    void free(void* ptr) override
+    {
+#ifdef CC_OS_WINDOWS
+        ::_aligned_free(ptr);
+#else
+        std::free(ptr);
+#endif
+    }
+
+    std::byte* realloc(void* ptr, size_t old_size, size_t new_size, size_t align = alignof(std::max_align_t)) override
+    {
+#ifdef CC_OS_WINDOWS
+        (void)old_size;
+        return static_cast<std::byte*>(::_aligned_realloc(ptr, new_size, align));
+#else
+        if (align == alignof(std::max_align_t))
         {
-            res = this->alloc(new_size, align);
-
-            if (ptr != nullptr)
-            {
-                std::memcpy(res, ptr, cc::min(old_size, new_size));
-            }
+            return static_cast<std::byte*>(std::realloc(ptr, new_size));
         }
+        else
+        {
+            // there is no aligned_realloc equivalent on POSIX, we have to do it manually
+            std::byte* res = nullptr;
 
-        this->free(ptr);
-        return res;
-    }
+            if (new_size > 0)
+            {
+                res = this->alloc(new_size, align);
+
+                if (ptr != nullptr)
+                {
+                    std::memcpy(res, ptr, cc::min(old_size, new_size));
+                }
+            }
+
+            this->free(ptr);
+            return res;
+        }
 #endif
+    }
+
+    constexpr system_allocator_t() = default;
+};
+
 }
 
 /*
@@ -145,11 +155,13 @@ std::byte* cc::system_allocator_t::realloc(void* ptr, size_t old_size, size_t ne
  * in this version, the union is statically initialized and gcc and clang store the cc::system_allocator in the binary
  * the dtor does nothing, so that the vtable ptr of the allocator stays valid
  * also, as this is static data, it does not count as a memory leak
+ *
+ * NOTE: system_allocator_t and sys_alloc_union_t must have constexpr ctors for this to work somewhat reliably
  */
 static union sys_alloc_union_t {
-    cc::system_allocator_t alloc;
+    system_allocator_t alloc;
 
-    sys_alloc_union_t() : alloc() {}
+    constexpr sys_alloc_union_t() : alloc() {}
     ~sys_alloc_union_t()
     { /* nothing */
     }
