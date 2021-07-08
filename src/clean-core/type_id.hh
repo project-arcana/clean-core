@@ -36,6 +36,8 @@ struct type_id_impl
 };
 }
 
+// provides a unique ID for the type
+// WARNING: Not consistent across DLLs!
 template <class T>
 type_id_t type_id()
 {
