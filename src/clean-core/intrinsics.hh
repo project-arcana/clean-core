@@ -24,21 +24,63 @@ CC_FORCE_INLINE uint64_t intrin_rdtsc()
 #endif
 }
 
-CC_FORCE_INLINE uint32_t intrin_cas(uint32_t volatile* dst, uint32_t cmp, uint32_t exc)
+CC_FORCE_INLINE int32_t intrin_cas(int32_t volatile* destination, int32_t comparand, int32_t exchange)
 {
 #ifdef CC_COMPILER_MSVC
-    return _InterlockedCompareExchange((volatile long*)dst, exc, cmp);
+    return _InterlockedCompareExchange((long volatile*)destination, exchange, comparand);
 #else
-    return __sync_val_compare_and_swap(dst, cmp, exc);
+    return __sync_val_compare_and_swap(destination, comparand, exchange);
 #endif
 }
 
-CC_FORCE_INLINE uint64_t intrin_cas(uint64_t volatile* dst, uint64_t cmp, uint64_t exc)
+CC_FORCE_INLINE int64_t intrin_cas(int64_t volatile* destination, int64_t comparand, int64_t exchange)
 {
 #ifdef CC_COMPILER_MSVC
-    return _InterlockedCompareExchange64((volatile long long*)dst, exc, cmp);
+    return _InterlockedCompareExchange64(destination, exchange, comparand);
 #else
-    return __sync_val_compare_and_swap(dst, cmp, exc);
+    return __sync_val_compare_and_swap(destination, comparand, exchange);
+#endif
+}
+
+CC_FORCE_INLINE void* intrin_cas_pointer(void* volatile* destination, void* comparand, void* exchange)
+{
+#ifdef CC_COMPILER_MSVC
+    return _InterlockedCompareExchangePointer(destination, exchange, comparand);
+#else
+    return __sync_val_compare_and_swap(destination, comparand, exchange);
+#endif
+}
+
+CC_FORCE_INLINE int32_t intrin_atomic_swap(int32_t volatile* destination, int32_t value)
+{
+#ifdef CC_COMPILER_MSVC
+    return _InterlockedExchange((long volatile*)destination, value);
+#else
+    int32_t res;
+    __atomic_exchange(destination, &value, &res, __ATOMIC_SEQ_CST);
+    return res;
+#endif
+}
+
+CC_FORCE_INLINE int64_t intrin_atomic_swap(int64_t volatile* destination, int64_t value)
+{
+#ifdef CC_COMPILER_MSVC
+    return _InterlockedExchange64(destination, value);
+#else
+    int64_t res;
+    __atomic_exchange(destination, &value, &res, __ATOMIC_SEQ_CST);
+    return res;
+#endif
+}
+
+CC_FORCE_INLINE void* intrin_atomic_swap_pointer(void* volatile* destination, void* value)
+{
+#ifdef CC_COMPILER_MSVC
+    return _InterlockedExchangePointer(destination, value);
+#else
+    void* res;
+    __atomic_exchange(destination, &value, &res, __ATOMIC_SEQ_CST);
+    return res;
 #endif
 }
 
@@ -59,6 +101,21 @@ CC_FORCE_INLINE int64_t intrin_atomic_add(int64_t volatile* counter, int64_t val
     return __sync_fetch_and_add(counter, value);
 #endif
 }
+
+template <class T>
+CC_FORCE_INLINE T* intrin_cas_pointer_t(T* volatile* destination, T* comparand, T* exchange)
+{
+    return static_cast<T*>(intrin_cas_pointer(reinterpret_cast<void* volatile*>(destination), comparand, exchange));
+}
+
+template <class T>
+CC_FORCE_INLINE T* intrin_atomic_swap_pointer_t(T* volatile* destination, T* value)
+{
+    return static_cast<T*>(intrin_atomic_swap_pointer(reinterpret_cast<void* volatile*>(destination), value));
+}
+
+// x86 PAUSE to signal spin-wait, improve interleaving
+CC_FORCE_INLINE void intrin_pause() { _mm_pause(); }
 
 // approximate inverse square root
 // maximum relative error < 0.000366
