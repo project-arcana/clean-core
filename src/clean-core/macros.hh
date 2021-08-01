@@ -77,7 +77,10 @@
 #define CC_FORCE_INLINE __forceinline
 #define CC_DONT_INLINE __declspec(noinline)
 
-// only way of reproducing these is using C++20 [[likely]] / [[unlikely]]
+// since March 21 there is [[msvc::likely]] and [[msvc::unlikely]] as custom attributes (c++14 and up)
+// however this is not immediately usable here because the syntax would have to change:
+// if (cond) [[msvc::likely]]
+// { /*...*/ }
 #define CC_LIKELY(x) x
 #define CC_UNLIKELY(x) x
 #define CC_COLD_FUNC
