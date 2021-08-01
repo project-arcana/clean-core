@@ -142,7 +142,7 @@ struct stack_allocator final : allocator
     void reset()
     {
         _head = _buffer_begin;
-        _last_alloc = nullptr;
+        _last_alloc_id = 0;
     }
 
     stack_allocator() = default;
@@ -152,45 +152,78 @@ private:
     std::byte* _buffer_begin = nullptr;
     std::byte* _head = nullptr;
     std::byte* _buffer_end = nullptr;
-    std::byte* _last_alloc = nullptr;
+    int32_t _last_alloc_id = 0;
 };
 
-
-/// for short lived allocations serviced from a ring buffer
-/// can optionally fall back to an external allocator if overcommited
-struct scratch_allocator final : allocator
+/// stack allocator operating in virtual memory
+/// reserves pages on init, commits pages on demand
+/// only frees pages if explicitly called
+struct virtual_stack_allocator final : allocator
 {
-    scratch_allocator() = default;
-    scratch_allocator(span<std::byte> buffer, allocator* backing = nullptr)
-      : _buffer_begin(buffer.data()), _head(buffer.data()), _tail(buffer.data()), _buffer_end(buffer.data() + buffer.size()), _backing_alloc(backing)
-    {
-    }
+    virtual_stack_allocator() = default;
+
+    // max_size_bytes: amount of contiguous virtual memory being reserved
+    // chunk_size_bytes: increment of physical memory being committed whenever more is required
+    // note there is a lower limit on virtual allocation granularity (Win32: 64K = 16 pages)
+    virtual_stack_allocator(size_t max_size_bytes, size_t chunk_size_bytes = 65536);
+
+    ~virtual_stack_allocator();
 
     std::byte* alloc(size_t size, size_t align = alignof(std::max_align_t)) override;
 
     void free(void* ptr) override;
 
-    bool in_use(void const* ptr) const
-    {
-        if (_head == _tail)
-            return false;
-        if (_head > _tail)
-            return ptr >= _tail && ptr < _head;
-        return ptr >= _tail || ptr < _head;
-    }
+    std::byte* realloc(void* ptr, size_t old_size, size_t new_size, size_t align = alignof(std::max_align_t)) override;
 
-    bool is_empty() const { return _head == _tail; }
+    // free all current allocations
+    // does not decommit any memory!
+    size_t reset();
+
+    // decommit the physical memory of all pages not currently required
+    // returns amount of bytes decommitted
+    size_t decommit_idle_memory();
+
+    // amount of bytes in the virtual address range
+    size_t get_virtual_size_bytes() const { return _virtual_end - _virtual_begin; }
+
+    // amount of bytes in the physically committed memory
+    size_t get_physical_size_bytes() const { return _physical_end - _virtual_begin; }
+
+    // amount of bytes in the physically committed and allocated memory
+    size_t get_allocated_size_bytes() const { return _physical_current - _virtual_begin; }
+
+    // returns wether free and realloc were strictly called in LIFO fashion since the last reset
+    // allocations can only be freed or grown (with realloc) while the LIFO order is intact
+    bool is_lifo_intact() const { return _is_lifo_intact; }
+
+    // returns whether the given ptr is the latest allocation, meaning it would keep LIFO intact
+    bool is_latest_allocation(void* ptr) const;
 
 private:
-    unsigned get_ptr_offset(void const* ptr) const;
+    void grow_physical(size_t num_bytes);
 
 private:
-    std::byte* _buffer_begin = nullptr;
-    std::byte* _head = nullptr;
-    std::byte* _tail = nullptr;
-    std::byte* _buffer_end = nullptr;
+    // reserves a range of pages in virtual memory
+    static std::byte* vmem_reserve_virtual(size_t size_bytes);
 
-    allocator* _backing_alloc = nullptr;
+    // frees a virtual memory range, the result of vmem_reserve_virtual
+    // also decommits all physical regions inside
+    static void vmem_free_virtual(std::byte* ptr, size_t size_bytes);
+
+    // commits a region of pages inside a reserved, virtual memory range
+    static void vmem_commmit_physical(std::byte* ptr, size_t size_bytes);
+
+    // decommits a region of pages inside a reserved, virtual memory range
+    static void vmem_decommit_physical(std::byte* ptr, size_t size_bytes);
+
+private:
+    std::byte* _virtual_begin = nullptr;
+    std::byte* _virtual_end = nullptr;
+    std::byte* _physical_current = nullptr;
+    std::byte* _physical_end = nullptr;
+    int32_t _last_alloc_id = 0;
+    bool _is_lifo_intact = false;
+    size_t _chunk_size_bytes = 0;
 };
 
 /// Two Level Segregated Fit allocator

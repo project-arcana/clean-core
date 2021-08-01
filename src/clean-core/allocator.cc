@@ -13,7 +13,8 @@ namespace
 {
 struct stack_alloc_header
 {
-    size_t padding;
+    uint32_t padding;
+    int32_t alloc_id;
 };
 
 // [... pad ...] [header] [data]
@@ -50,13 +51,14 @@ std::byte* cc::stack_allocator::alloc(size_t size, size_t align)
 
     CC_ASSERT(padded_res + size <= _buffer_end && "stack_allocator overcommitted");
 
+    ++_last_alloc_id;
     stack_alloc_header header = {};
-    header.padding = size_t(padded_res - _head);
+    header.padding = uint32_t(padded_res - _head);
+    header.alloc_id = _last_alloc_id;
 
     std::memcpy(padded_res - sizeof(header), &header, sizeof(header));
 
     _head = padded_res + size;
-    _last_alloc = padded_res;
     return padded_res;
 }
 
@@ -65,10 +67,11 @@ void cc::stack_allocator::free(void* ptr)
     if (ptr == nullptr)
         return;
 
-    CC_ASSERT(ptr == _last_alloc && "argument to stack_allocator::free was not the most recent allocation");
-
     std::byte* const byte_ptr = static_cast<std::byte*>(ptr);
     stack_alloc_header const* const alloc_header = (stack_alloc_header*)(byte_ptr - sizeof(stack_alloc_header));
+
+    CC_ASSERT(alloc_header->alloc_id == _last_alloc_id && "freed ptr was not the most recent allocation");
+    --_last_alloc_id;
 
     _head = byte_ptr - alloc_header->padding;
 }
@@ -78,12 +81,13 @@ std::byte* cc::stack_allocator::realloc(void* ptr, size_t old_size, size_t new_s
     if (ptr == nullptr)
         return this->alloc(new_size, align);
 
-    CC_ASSERT(ptr == _last_alloc && "argument to stack_allocator::realloc was not the most recent allocation");
     (void)old_size;
     (void)align;
     // no need to memcpy, the memory remains the same
     std::byte* const byte_ptr = static_cast<std::byte*>(ptr);
+    stack_alloc_header const* const alloc_header = (stack_alloc_header*)(byte_ptr - sizeof(stack_alloc_header));
 
+    CC_ASSERT(alloc_header->alloc_id == _last_alloc_id && "realloc ptr was not the most recent allocation");
     CC_ASSERT(byte_ptr + new_size <= _buffer_end && "stack_allocator overcommitted");
 
     _head = byte_ptr + new_size;
@@ -146,7 +150,8 @@ std::byte* cc::system_allocator_t::realloc(void* ptr, size_t old_size, size_t ne
  * the dtor does nothing, so that the vtable ptr of the allocator stays valid
  * also, as this is static data, it does not count as a memory leak
  */
-static union sys_alloc_union_t {
+static union sys_alloc_union_t
+{
     cc::system_allocator_t alloc;
 
     sys_alloc_union_t() : alloc() {}
