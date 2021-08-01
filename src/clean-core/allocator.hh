@@ -182,13 +182,15 @@ private:
 struct virtual_linear_allocator final : allocator
 {
     virtual_linear_allocator() = default;
+    virtual_linear_allocator(size_t max_size_bytes, size_t chunk_size_bytes = 65536) { initialize(max_size_bytes, chunk_size_bytes); }
+    ~virtual_linear_allocator() { destroy(); }
 
     // max_size_bytes: amount of contiguous virtual memory being reserved
     // chunk_size_bytes: increment of physical memory being committed whenever more is required
     // note there is a lower limit on virtual allocation granularity (Win32: 64K = 16 pages)
-    virtual_linear_allocator(size_t max_size_bytes, size_t chunk_size_bytes = 65536);
+    void initialize(size_t max_size_bytes, size_t chunk_size_bytes = 65536);
 
-    ~virtual_linear_allocator();
+    void destroy();
 
     std::byte* alloc(size_t size, size_t align = alignof(std::max_align_t)) override;
 
@@ -234,13 +236,15 @@ private:
 struct virtual_stack_allocator final : allocator
 {
     virtual_stack_allocator() = default;
+    virtual_stack_allocator(size_t max_size_bytes, size_t chunk_size_bytes = 65536) { initialize(max_size_bytes, chunk_size_bytes); }
+    ~virtual_stack_allocator() { destroy(); }
 
     // max_size_bytes: amount of contiguous virtual memory being reserved
     // chunk_size_bytes: increment of physical memory being committed whenever more is required
     // note there is a lower limit on virtual allocation granularity (Win32: 64K = 16 pages)
-    virtual_stack_allocator(size_t max_size_bytes, size_t chunk_size_bytes = 65536);
+    void initialize(size_t max_size_bytes, size_t chunk_size_bytes = 65536);
 
-    ~virtual_stack_allocator();
+    void destroy();
 
     std::byte* alloc(size_t size, size_t align = alignof(std::max_align_t)) override;
 

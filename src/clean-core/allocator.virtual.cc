@@ -54,23 +54,25 @@ std::byte* grow_physical_memory(std::byte* physical_current, std::byte* physical
 }
 }
 
-cc::virtual_linear_allocator::virtual_linear_allocator(size_t max_size_bytes, size_t chunk_size_bytes)
-  : _virtual_begin(reserve_virtual_memory(max_size_bytes)),
-    _virtual_end(_virtual_begin + max_size_bytes),
-    _physical_current(_virtual_begin),
-    _physical_end(_virtual_begin),
-    _chunk_size_bytes(chunk_size_bytes)
+void cc::virtual_linear_allocator::initialize(size_t max_size_bytes, size_t chunk_size_bytes)
 {
+    _virtual_begin = reserve_virtual_memory(max_size_bytes);
+    _virtual_end = _virtual_begin + max_size_bytes;
+    _physical_current = _virtual_begin;
+    _physical_end = _virtual_begin;
+    _chunk_size_bytes = chunk_size_bytes;
+
     CC_ASSERT(max_size_bytes > 0 && chunk_size_bytes > 0 && "invalid sizes");
     CC_ASSERT(is_pow2(chunk_size_bytes) && "Chunk size must be a power of 2");
     CC_ASSERT(_virtual_begin != nullptr && "virtual reserve failed");
 }
 
-cc::virtual_linear_allocator::~virtual_linear_allocator()
+void cc::virtual_linear_allocator::destroy()
 {
     if (_virtual_begin)
     {
         free_virtual_memory(_virtual_begin, _virtual_end - _virtual_begin);
+        _virtual_begin = nullptr;
     }
 }
 
@@ -126,24 +128,26 @@ size_t cc::virtual_linear_allocator::decommit_idle_memory()
     return size_to_free;
 }
 
-cc::virtual_stack_allocator::virtual_stack_allocator(size_t max_size_bytes, size_t chunk_size_bytes)
-  : _virtual_begin(reserve_virtual_memory(max_size_bytes)),
-    _virtual_end(_virtual_begin + max_size_bytes),
-    _physical_current(_virtual_begin),
-    _physical_end(_virtual_begin),
-    _last_alloc_id(0),
-    _chunk_size_bytes(chunk_size_bytes)
+void cc::virtual_stack_allocator::initialize(size_t max_size_bytes, size_t chunk_size_bytes)
 {
+    _virtual_begin = reserve_virtual_memory(max_size_bytes);
+    _virtual_end = _virtual_begin + max_size_bytes;
+    _physical_current = _virtual_begin;
+    _physical_end = _virtual_begin;
+    _last_alloc_id = 0;
+    _chunk_size_bytes = chunk_size_bytes;
+
     CC_ASSERT(max_size_bytes > 0 && chunk_size_bytes > 0 && "invalid sizes");
     CC_ASSERT(is_pow2(chunk_size_bytes) && "Chunk size must be a power of 2");
     CC_ASSERT(_virtual_begin != nullptr && "virtual reserve failed");
 }
 
-cc::virtual_stack_allocator::~virtual_stack_allocator()
+void cc::virtual_stack_allocator::destroy()
 {
     if (_virtual_begin)
     {
         free_virtual_memory(_virtual_begin, _virtual_end - _virtual_begin);
+        _virtual_begin = nullptr;
     }
 }
 
