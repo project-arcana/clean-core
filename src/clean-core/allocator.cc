@@ -79,7 +79,7 @@ void cc::stack_allocator::free(void* ptr)
 std::byte* cc::stack_allocator::realloc(void* ptr, size_t old_size, size_t new_size, size_t align)
 {
     if (ptr == nullptr)
-        return this->alloc(new_size, align);
+        return new_size > 0 ? this->alloc(new_size, align) : nullptr;
 
     (void)old_size;
     (void)align;
@@ -89,6 +89,7 @@ std::byte* cc::stack_allocator::realloc(void* ptr, size_t old_size, size_t new_s
 
     CC_ASSERT(alloc_header->alloc_id == _last_alloc_id && "realloc ptr was not the most recent allocation");
     CC_ASSERT(byte_ptr + new_size <= _buffer_end && "stack_allocator overcommitted");
+    CC_ASSERT(old_size == _head - byte_ptr && "incorrect old size");
 
     _head = byte_ptr + new_size;
     return byte_ptr;
