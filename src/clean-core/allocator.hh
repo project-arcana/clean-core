@@ -99,6 +99,7 @@ struct linear_allocator final : allocator
         CC_ASSERT(padded_res + size <= _buffer_end && "linear_allocator overcommitted");
         _head = padded_res + size;
 
+        _latest_allocation = padded_res;
         return padded_res;
     }
 
@@ -108,7 +109,26 @@ struct linear_allocator final : allocator
         (void)ptr;
     }
 
-    void reset() { _head = _buffer_begin; }
+    std::byte* realloc(void* ptr, size_t old_size, size_t new_size, size_t align = alignof(std::max_align_t)) override
+    {
+        if (!ptr || ptr != _latest_allocation)
+        {
+            return new_size > 0 ? this->alloc(new_size, align) : nullptr;
+        }
+
+        std::byte* const ptr_byte = static_cast<std::byte*>(ptr);
+        CC_ASSERT(old_size == _head - ptr_byte && "old_size incorrect");
+        CC_ASSERT(ptr_byte + new_size <= _buffer_end && "linear_allocator overcommitted");
+
+        _head = ptr_byte + new_size;
+        return ptr_byte;
+    }
+
+    void reset()
+    {
+        _head = _buffer_begin;
+        _latest_allocation = nullptr;
+    }
 
     size_t allocated_size() const { return _head - _buffer_begin; }
     size_t remaining_size() const { return _buffer_end - _head; }
@@ -124,6 +144,7 @@ private:
     std::byte* _buffer_begin = nullptr;
     std::byte* _head = nullptr;
     std::byte* _buffer_end = nullptr;
+    std::byte* _latest_allocation = nullptr;
 };
 
 
@@ -155,6 +176,58 @@ private:
     int32_t _last_alloc_id = 0;
 };
 
+/// linear allocator operating in virtual memory
+/// reserves pages on init, commits pages on demand
+/// only frees pages if explicitly called
+struct virtual_linear_allocator final : allocator
+{
+    virtual_linear_allocator() = default;
+
+    // max_size_bytes: amount of contiguous virtual memory being reserved
+    // chunk_size_bytes: increment of physical memory being committed whenever more is required
+    // note there is a lower limit on virtual allocation granularity (Win32: 64K = 16 pages)
+    virtual_linear_allocator(size_t max_size_bytes, size_t chunk_size_bytes = 65536);
+
+    ~virtual_linear_allocator();
+
+    std::byte* alloc(size_t size, size_t align = alignof(std::max_align_t)) override;
+
+    void free(void* ptr) override { (void)ptr; }
+
+    std::byte* realloc(void* ptr, size_t old_size, size_t new_size, size_t align = alignof(std::max_align_t)) override;
+
+    // free all current allocations
+    // does not decommit any memory!
+    size_t reset()
+    {
+        size_t const num_bytes_allocated = _physical_current - _virtual_begin;
+        _physical_current = _virtual_begin;
+        _last_allocation = nullptr;
+        return num_bytes_allocated;
+    }
+
+    // decommit the physical memory of all pages not currently required
+    // returns amount of bytes decommitted
+    size_t decommit_idle_memory();
+
+    // amount of bytes in the virtual address range
+    size_t get_virtual_size_bytes() const { return _virtual_end - _virtual_begin; }
+
+    // amount of bytes in the physically committed memory
+    size_t get_physical_size_bytes() const { return _physical_end - _virtual_begin; }
+
+    // amount of bytes in the physically committed and allocated memory
+    size_t get_allocated_size_bytes() const { return _physical_current - _virtual_begin; }
+
+private:
+    std::byte* _virtual_begin = nullptr;
+    std::byte* _virtual_end = nullptr;
+    std::byte* _physical_current = nullptr;
+    std::byte* _physical_end = nullptr;
+    std::byte* _last_allocation = nullptr;
+    size_t _chunk_size_bytes = 0;
+};
+
 /// stack allocator operating in virtual memory
 /// reserves pages on init, commits pages on demand
 /// only frees pages if explicitly called
@@ -171,8 +244,10 @@ struct virtual_stack_allocator final : allocator
 
     std::byte* alloc(size_t size, size_t align = alignof(std::max_align_t)) override;
 
+    /// NOTE: ptr must be the most recent allocation received
     void free(void* ptr) override;
 
+    /// NOTE: ptr must be the most recent allocation received
     std::byte* realloc(void* ptr, size_t old_size, size_t new_size, size_t align = alignof(std::max_align_t)) override;
 
     // free all current allocations
@@ -192,29 +267,8 @@ struct virtual_stack_allocator final : allocator
     // amount of bytes in the physically committed and allocated memory
     size_t get_allocated_size_bytes() const { return _physical_current - _virtual_begin; }
 
-    // returns wether free and realloc were strictly called in LIFO fashion since the last reset
-    // allocations can only be freed or grown (with realloc) while the LIFO order is intact
-    bool is_lifo_intact() const { return _is_lifo_intact; }
-
     // returns whether the given ptr is the latest allocation, meaning it would keep LIFO intact
     bool is_latest_allocation(void* ptr) const;
-
-private:
-    void grow_physical(size_t num_bytes);
-
-private:
-    // reserves a range of pages in virtual memory
-    static std::byte* vmem_reserve_virtual(size_t size_bytes);
-
-    // frees a virtual memory range, the result of vmem_reserve_virtual
-    // also decommits all physical regions inside
-    static void vmem_free_virtual(std::byte* ptr, size_t size_bytes);
-
-    // commits a region of pages inside a reserved, virtual memory range
-    static void vmem_commmit_physical(std::byte* ptr, size_t size_bytes);
-
-    // decommits a region of pages inside a reserved, virtual memory range
-    static void vmem_decommit_physical(std::byte* ptr, size_t size_bytes);
 
 private:
     std::byte* _virtual_begin = nullptr;
@@ -222,7 +276,6 @@ private:
     std::byte* _physical_current = nullptr;
     std::byte* _physical_end = nullptr;
     int32_t _last_alloc_id = 0;
-    bool _is_lifo_intact = false;
     size_t _chunk_size_bytes = 0;
 };
 
