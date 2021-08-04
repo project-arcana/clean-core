@@ -165,13 +165,15 @@ cc::allocator* const cc::system_allocator = &sys_alloc_instance.alloc;
 
 char* cc::allocator::alloc_string_copy(cc::string_view source)
 {
-    char* const res = reinterpret_cast<char*>(alloc(source.size() + 1));
-#ifdef CC_OS_WINDOWS
-    ::strncpy_s(res, source.size() + 1, source.data(), source.size());
-#else
-    std::strncpy(res, source.data(), source.size());
-#endif
-    res[source.size()] = '\0';
+    size_t const source_length = source.length();
+    char* const res = reinterpret_cast<char*>(alloc(source_length + 1));
+
+    // check because empty source is a legitimate case (allocates a single 0 char)
+    if (source_length > 0)
+    {
+        std::memcpy(res, source.data(), source_length);
+    }
+    res[source_length] = '\0';
     return res;
 }
 

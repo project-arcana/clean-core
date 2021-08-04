@@ -271,7 +271,7 @@ struct virtual_stack_allocator final : allocator
     // amount of bytes in the physically committed and allocated memory
     size_t get_allocated_size_bytes() const { return _physical_current - _virtual_begin; }
 
-    // returns whether the given ptr is the latest allocation, meaning it would keep LIFO intact
+    // returns whether the given ptr is the latest allocation, meaning it can be freed or reallocated
     bool is_latest_allocation(void* ptr) const;
 
 private:
@@ -294,6 +294,12 @@ struct tlsf_allocator final : allocator
 
     void initialize(cc::span<std::byte> buffer);
     void destroy();
+
+    // provide an additional memory to the TLSF (can be done multiple times)
+    void add_pool(cc::span<std::byte> buffer);
+
+    // returns false if internal consistency checks fail
+    bool check_consistency();
 
     std::byte* alloc(size_t size, size_t align = alignof(std::max_align_t)) override;
 
@@ -360,8 +366,11 @@ T* allocator::new_array(size_t num_elems)
 
     T* const res_array_ptr = reinterpret_cast<T*>(original_buf + padding);
 
-    for (auto i = 0u; i < num_elems; ++i)
-        new (placement_new, res_array_ptr + i) T();
+    if constexpr (!std::is_trivially_constructible_v<T>)
+    {
+        for (auto i = 0u; i < num_elems; ++i)
+            new (placement_new, res_array_ptr + i) T();
+    }
 
     return res_array_ptr;
 }
@@ -381,8 +390,10 @@ void allocator::delete_array(T* ptr)
     size_t const num_elems = *reinterpret_cast<size_t*>(original_buf);
 
     if constexpr (!std::is_trivially_destructible_v<T>)
+    {
         for (auto i = 0u; i < num_elems; ++i)
             (ptr + i)->~T();
+    }
 
     this->free(original_buf);
 }
@@ -393,8 +404,13 @@ T* allocator::new_array_sized(size_t num_elems)
 {
     static_assert(sizeof(T) > 0, "cannot construct incomplete type");
     T* const res_array_ptr = reinterpret_cast<T*>(this->alloc(sizeof(T) * num_elems, alignof(T)));
-    for (auto i = 0u; i < num_elems; ++i)
-        new (placement_new, res_array_ptr + i) T();
+
+    if constexpr (!std::is_trivially_constructible_v<T>)
+    {
+        for (auto i = 0u; i < num_elems; ++i)
+            new (placement_new, res_array_ptr + i) T();
+    }
+
     return res_array_ptr;
 }
 
@@ -409,8 +425,11 @@ void allocator::delete_array_sized(T* ptr, size_t num_elems)
         return;
 
     if constexpr (!std::is_trivially_destructible_v<T>)
+    {
         for (auto i = 0u; i < num_elems; ++i)
             (ptr + i)->~T();
+    }
+
     this->free(ptr);
 }
 
