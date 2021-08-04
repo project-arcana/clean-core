@@ -78,8 +78,17 @@ void cc::stack_allocator::free(void* ptr)
 
 std::byte* cc::stack_allocator::realloc(void* ptr, size_t old_size, size_t new_size, size_t align)
 {
-    if (ptr == nullptr)
-        return new_size > 0 ? this->alloc(new_size, align) : nullptr;
+    if (new_size == 0)
+    {
+        // free case
+        free(ptr);
+        return nullptr;
+    }
+    else if (ptr == nullptr)
+    {
+        // malloc case
+        return this->alloc(new_size, align);
+    }
 
     (void)old_size;
     (void)align;
