@@ -138,7 +138,9 @@ struct linear_allocator final : allocator
     std::byte* buffer() const { return _buffer_begin; }
 
     linear_allocator() = default;
-    linear_allocator(span<std::byte> buffer) : _buffer_begin(buffer.data()), _head(buffer.data()), _buffer_end(buffer.data() + buffer.size()) {}
+    explicit linear_allocator(span<std::byte> buffer) : _buffer_begin(buffer.data()), _head(buffer.data()), _buffer_end(buffer.data() + buffer.size())
+    {
+    }
 
 private:
     std::byte* _buffer_begin = nullptr;
@@ -167,7 +169,9 @@ struct stack_allocator final : allocator
     }
 
     stack_allocator() = default;
-    stack_allocator(span<std::byte> buffer) : _buffer_begin(buffer.data()), _head(buffer.data()), _buffer_end(buffer.data() + buffer.size()) {}
+    explicit stack_allocator(span<std::byte> buffer) : _buffer_begin(buffer.data()), _head(buffer.data()), _buffer_end(buffer.data() + buffer.size())
+    {
+    }
 
 private:
     std::byte* _buffer_begin = nullptr;
@@ -182,7 +186,7 @@ private:
 struct virtual_linear_allocator final : allocator
 {
     virtual_linear_allocator() = default;
-    virtual_linear_allocator(size_t max_size_bytes, size_t chunk_size_bytes = 65536) { initialize(max_size_bytes, chunk_size_bytes); }
+    explicit virtual_linear_allocator(size_t max_size_bytes, size_t chunk_size_bytes = 65536) { initialize(max_size_bytes, chunk_size_bytes); }
     ~virtual_linear_allocator() { destroy(); }
 
     // max_size_bytes: amount of contiguous virtual memory being reserved
@@ -236,7 +240,7 @@ private:
 struct virtual_stack_allocator final : allocator
 {
     virtual_stack_allocator() = default;
-    virtual_stack_allocator(size_t max_size_bytes, size_t chunk_size_bytes = 65536) { initialize(max_size_bytes, chunk_size_bytes); }
+    explicit virtual_stack_allocator(size_t max_size_bytes, size_t chunk_size_bytes = 65536) { initialize(max_size_bytes, chunk_size_bytes); }
     ~virtual_stack_allocator() { destroy(); }
 
     // max_size_bytes: amount of contiguous virtual memory being reserved
@@ -289,13 +293,13 @@ private:
 struct tlsf_allocator final : allocator
 {
     tlsf_allocator() = default;
-    tlsf_allocator(cc::span<std::byte> buffer) { initialize(buffer); }
+    explicit tlsf_allocator(cc::span<std::byte> buffer) { initialize(buffer); }
     ~tlsf_allocator() { destroy(); }
 
     void initialize(cc::span<std::byte> buffer);
     void destroy();
 
-    // provide an additional memory to the TLSF (can be done multiple times)
+    // provide an additional memory pool to the TLSF (can be done multiple times)
     void add_pool(cc::span<std::byte> buffer);
 
     // returns false if internal consistency checks fail

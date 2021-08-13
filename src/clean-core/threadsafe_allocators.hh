@@ -88,7 +88,7 @@ struct atomic_pool_allocator final : allocator
     size_t max_num_blocks() const { return _buffer_size / _block_size; }
 
     atomic_pool_allocator() = default;
-    atomic_pool_allocator(span<std::byte> buffer, size_t block_size);
+    explicit atomic_pool_allocator(span<std::byte> buffer, size_t block_size);
 
     void initialize(span<std::byte> buffer, size_t block_size);
 
@@ -132,12 +132,12 @@ struct atomic_linear_allocator final : allocator
 
     void reset() { _offset.store(0, std::memory_order_release); }
 
-    size_t allocated_size() const { return _offset; }
+    size_t allocated_size() const { return _offset.load(); }
     size_t max_size() const { return _buffer_end - _buffer_begin; }
     float allocated_ratio() const { return allocated_size() / float(max_size()); }
 
     atomic_linear_allocator() = default;
-    atomic_linear_allocator(span<std::byte> buffer) : _buffer_begin(buffer.data()), _offset(0), _buffer_end(buffer.data() + buffer.size()) {}
+    explicit atomic_linear_allocator(span<std::byte> buffer) : _buffer_begin(buffer.data()), _offset(0), _buffer_end(buffer.data() + buffer.size()) {}
 
     void initialize(span<std::byte> buffer)
     {
@@ -158,7 +158,7 @@ private:
 struct synced_tlsf_allocator final : allocator
 {
     synced_tlsf_allocator() = default;
-    synced_tlsf_allocator(cc::span<std::byte> buffer) : _backing(buffer) {}
+    explicit synced_tlsf_allocator(cc::span<std::byte> buffer) : _backing(buffer) {}
     ~synced_tlsf_allocator() { _backing.destroy(); }
 
 
