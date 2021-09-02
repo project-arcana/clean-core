@@ -179,7 +179,7 @@ struct atomic_linked_pool
     /// release CAN be called from within the lambda ONLY for nodes already iterated (including the current one)
     /// this operation is slow and should not occur in normal operation
     template <class F>
-    unsigned iterate_allocated_nodes(F&& func, cc::allocator* scratch_alloc = cc::system_allocator)
+    uint32_t iterate_allocated_nodes(F&& func, cc::allocator* scratch_alloc = cc::system_allocator)
     {
         static_assert(sizeof(T) > 0, "requires complete type");
 
@@ -188,8 +188,8 @@ struct atomic_linked_pool
 
         auto const free_indices = _get_free_node_indices(scratch_alloc);
 
-        unsigned num_iterated_nodes = 0;
-        unsigned free_list_index = 0;
+        uint32_t num_iterated_nodes = 0;
+        uint32_t free_list_index = 0;
         for (handle_t i = 0u; i < _pool_size; ++i)
         {
             if (free_list_index >= free_indices.size() || i < free_indices[free_list_index])
@@ -210,7 +210,7 @@ struct atomic_linked_pool
     }
 
     /// This operation is slow and should not occur in normal operation
-    unsigned release_all(cc::allocator* scratch_alloc = cc::system_allocator)
+    uint32_t release_all(cc::allocator* scratch_alloc = cc::system_allocator)
     {
         return iterate_allocated_nodes([this](T& node) { unsafe_release_node(&node); }, scratch_alloc);
     }
@@ -311,12 +311,13 @@ private:
         cc::alloc_vector<handle_t> free_indices(scratch_alloc);
         free_indices.reserve(_pool_size);
 
-        T* cursor = _first_free_node;
+        T* cursor = _first_free_node.load(std::memory_order_relaxed);
         while (cursor != nullptr)
         {
-            free_indices.push_back(static_cast<handle_t>(cursor - _pool));
+            free_indices.emplace_back_stable(static_cast<handle_t>(cursor - _pool));
             cursor = *reinterpret_cast<T**>(cursor);
         }
+
         // sort ascending
         auto temp_sortvec = cc::alloc_vector<handle_t>::uninitialized(free_indices.size(), scratch_alloc);
         detail::radix_sort(free_indices.data(), temp_sortvec.data(), free_indices.size());
