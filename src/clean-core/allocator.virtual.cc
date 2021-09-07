@@ -95,9 +95,11 @@ std::byte* cc::virtual_linear_allocator::realloc(void* ptr, size_t old_size, siz
 {
     if (!ptr || ptr != _last_allocation)
     {
-        return new_size > 0 ? this->alloc(new_size, align) : nullptr;
+        // cannot realloc, fall back (this is not invalid usage unlike for stack_linear_allocator)
+        return cc::allocator::realloc(ptr, old_size, new_size, align);
     }
 
+    // true realloc
     std::byte* const byte_ptr = static_cast<std::byte*>(ptr);
     CC_ASSERT(old_size == _physical_current - byte_ptr && "incorrect old size");
 
@@ -198,8 +200,6 @@ std::byte* cc::virtual_stack_allocator::realloc(void* ptr, size_t old_size, size
         // malloc case
         return this->alloc(new_size, align);
     }
-
-    (void)align;
 
     // no need to memcpy, the memory remains the same
     std::byte* const byte_ptr = static_cast<std::byte*>(ptr);
