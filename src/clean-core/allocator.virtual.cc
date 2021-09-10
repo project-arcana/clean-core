@@ -119,11 +119,11 @@ size_t cc::virtual_linear_allocator::decommit_idle_memory()
     // align up to the start of the first empty page
     std::byte* const ptr = cc::align_up(_physical_current, _chunk_size_bytes);
     // then free all memory between that and _physical_end
-    size_t const size_to_free = _physical_end - ptr;
+    ptrdiff_t const size_to_free = _physical_end - ptr;
 
     if (size_to_free > 0)
     {
-        decommit_physical_memory(ptr, size_to_free);
+        decommit_physical_memory(ptr, size_t(size_to_free));
         _physical_end = ptr;
     }
 
@@ -232,11 +232,11 @@ size_t cc::virtual_stack_allocator::decommit_idle_memory()
     // align up to the start of the first empty page
     std::byte* const ptr = cc::align_up(_physical_current, _chunk_size_bytes);
     // then free all memory between that and _physical_end
-    size_t const size_to_free = _physical_end - ptr;
+    ptrdiff_t const size_to_free = _physical_end - ptr;
 
     if (size_to_free > 0)
     {
-        decommit_physical_memory(ptr, size_to_free);
+        decommit_physical_memory(ptr, size_t(size_to_free));
         _physical_end = ptr;
     }
 
