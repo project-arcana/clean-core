@@ -190,13 +190,27 @@ struct atomic_linked_pool
 
         uint32_t num_iterated_nodes = 0;
         uint32_t free_list_index = 0;
-        for (handle_t i = 0u; i < _pool_size; ++i)
+        for (uint32_t i = 0u; i < _pool_size; ++i)
         {
             if (free_list_index >= free_indices.size() || i < free_indices[free_list_index])
             {
                 // no free indices left, or before the next free index
-                func(_pool[i]);
                 ++num_iterated_nodes;
+                T& node = _pool[i];
+
+                if constexpr (std::is_invocable_r_v<bool, F, T&>)
+                {
+                    // the lambda returns bool, stop iteration if it returns false
+                    if (!func(node))
+                    {
+                        break;
+                    }
+                }
+                else
+                {
+                    // the lambda returns void
+                    func(node);
+                }
             }
             else
             {
