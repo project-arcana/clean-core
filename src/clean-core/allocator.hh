@@ -71,19 +71,6 @@ struct allocator
 };
 
 
-/// system provided allocator (malloc / free)
-struct system_allocator_t final : allocator
-{
-    std::byte* alloc(size_t size, size_t align = alignof(std::max_align_t)) override;
-
-    void free(void* ptr) override;
-
-    std::byte* realloc(void* ptr, size_t old_size, size_t new_size, size_t align = alignof(std::max_align_t)) override;
-
-    system_allocator_t() = default;
-};
-
-
 /// global instance of the system allocator (malloc / free) (thread safe)
 extern allocator* const system_allocator;
 
