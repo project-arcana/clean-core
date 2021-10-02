@@ -61,7 +61,7 @@ template <typename T>
 struct [[nodiscard]] lock_guard
 {
     CC_FORCE_INLINE explicit lock_guard(T& mutex) : _mutex(mutex) { _mutex.lock(); }
-    CC_FORCE_INLINE ~lock_guard() noexcept { _mutex.unlock(); }
+    CC_FORCE_INLINE ~lock_guard() { _mutex.unlock(); }
 
     lock_guard(lock_guard const&) = delete;
     lock_guard(lock_guard&&) noexcept = delete;
