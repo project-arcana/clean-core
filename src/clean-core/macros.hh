@@ -77,17 +77,20 @@
 #define CC_FORCE_INLINE __forceinline
 #define CC_DONT_INLINE __declspec(noinline)
 
-// since March 21 there is [[msvc::likely]] and [[msvc::unlikely]] as custom attributes (c++14 and up)
-// however this is not immediately usable here because the syntax would have to change:
-// if (cond) [[msvc::likely]]
-// { /*...*/ }
+// WARNING: deprecated, use CC_CONDITION_LIKELY
 #define CC_LIKELY(x) x
 #define CC_UNLIKELY(x) x
+
+// these are supported in MSVC since March 2021, valid in C++14 and up (custom attributes)
+// usage: if CC_CONDITION_LIKELY(foo) { /*...*/ }
+#define CC_CONDITION_LIKELY(x) (x) [[msvc::likely]]
+#define CC_CONDITION_UNLIKELY(x) (x) [[msvc::unlikely]]
 #define CC_COLD_FUNC
-#define CC_HOT_FUNC
+#define CC_HOT_FUNC __declspec(safebuffers, spectre(nomitigation))
 
 #define CC_BUILTIN_UNREACHABLE __assume(0)
 #define CC_COUNTOF(arr) _countof(arr)
+#define CC_ASSUME(x) __assume(x)
 
 #elif defined(CC_COMPILER_POSIX)
 
@@ -97,13 +100,23 @@
 #define CC_FORCE_INLINE __attribute__((always_inline)) inline
 #define CC_DONT_INLINE __attribute__((noinline))
 
+// WARNING: deprecated, use CC_CONDITION_LIKELY
 #define CC_LIKELY(x) __builtin_expect((x), 1)
 #define CC_UNLIKELY(x) __builtin_expect((x), 0)
+
+// usage: if CC_CONDITION_LIKELY(foo) { /*...*/ }
+#define CC_CONDITION_LIKELY(x) (__builtin_expect((x), 1))
+#define CC_CONDITION_UNLIKELY(x) (__builtin_expect((x), 0))
 #define CC_COLD_FUNC __attribute__((cold))
 #define CC_HOT_FUNC __attribute__((hot))
 
 #define CC_BUILTIN_UNREACHABLE __builtin_unreachable()
 #define CC_COUNTOF(arr) (sizeof(arr) / sizeof(arr[0]))
+#if defined(CC_COMPILER_CLANG)
+#define CC_ASSUME(x) __builtin_assume(x)
+#else
+#define CC_ASSUME(x) ((!x) ? __builtin_unreachable() : void(0))
+#endif
 
 #else
 #error "Unknown compiler"
