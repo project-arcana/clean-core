@@ -15,7 +15,11 @@
 
 #ifdef CC_COMPILER_MSVC
 // __debugbreak() terminates immediately without an attached debugger
+#if _MSC_VER >= 1400
 #define CC_DEBUG_BREAK() (::cc::detail::is_debugger_connected() ? __debugbreak() : void(0))
+#else
+#define CC_DEBUG_BREAK() (::cc::detail::is_debugger_connected() ? _asm int 0x03 : void(0))
+#endif
 #elif defined(CC_COMPILER_POSIX)
 // __builtin_trap() causes an illegal instruction and crashes without an attached debugger
 #define CC_DEBUG_BREAK() (::cc::detail::is_debugger_connected() ? __builtin_trap() : void(0))
