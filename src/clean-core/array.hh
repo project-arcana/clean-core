@@ -63,7 +63,7 @@ struct array
         return _values[I];
     }
 
-    bool operator==(cc::span<T const> rhs) const noexcept
+    bool operator==(span<T const> rhs) const noexcept
     {
         if (N != rhs.size())
             return false;
@@ -73,7 +73,7 @@ struct array
         return true;
     }
 
-    bool operator!=(cc::span<T const> rhs) const noexcept
+    bool operator!=(span<T const> rhs) const noexcept
     {
         if (N != rhs.size())
             return true;
@@ -210,7 +210,7 @@ struct array<T, dynamic_size>
         return _data[i];
     }
 
-    bool operator==(cc::span<T const> rhs) const noexcept
+    bool operator==(span<T const> rhs) const noexcept
     {
         if (_size != rhs.size())
             return false;
@@ -220,7 +220,7 @@ struct array<T, dynamic_size>
         return true;
     }
 
-    bool operator!=(cc::span<T const> rhs) const noexcept
+    bool operator!=(span<T const> rhs) const noexcept
     {
         if (_size != rhs.size())
             return true;
