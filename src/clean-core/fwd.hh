@@ -102,7 +102,6 @@ struct lock_guard;
 struct allocator;
 struct linear_allocator;
 struct stack_allocator;
-struct scratch_allocator;
 struct tlsf_allocator;
 struct atomic_pool_allocator;
 struct atomic_linear_allocator;
