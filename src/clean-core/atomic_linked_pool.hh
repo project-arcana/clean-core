@@ -99,7 +99,8 @@ struct atomic_linked_pool
             // acquire-candidate: the current value of _first_free_node
             acquired_node = _first_free_node.load(std::memory_order_acquire);
             // read the in-place next pointer of this node
-            T* const next_pointer_of_acquired = *reinterpret_cast<T**>(acquired_node);
+            // NOTE: reinterpret cast is not enough whenever T is pointer-to-const (e.g. char const*)
+            T* const next_pointer_of_acquired = *((T**)acquired_node);
 
             // compare-exchange these two - spurious failure if raced
             cas_success = std::atomic_compare_exchange_weak_explicit(&_first_free_node, &acquired_node, next_pointer_of_acquired,
@@ -329,7 +330,9 @@ private:
         while (cursor != nullptr)
         {
             free_indices.emplace_back_stable(static_cast<handle_t>(cursor - _pool));
-            cursor = *reinterpret_cast<T**>(cursor);
+            // read the in-place-linked-list ptr from the node
+            // NOTE: reinterpret cast is not enough whenever T is pointer-to-const (e.g. char const*)
+            cursor = *((T**)cursor);
         }
 
         // sort ascending
