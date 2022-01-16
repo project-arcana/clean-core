@@ -173,12 +173,12 @@ public:
     }
 
     template <class U = T>
-    [[nodiscard]] constexpr T const& value_or(U&& default_value) const&
+    [[nodiscard]] constexpr T value_or(U&& default_value) const&
     {
         return _has_value ? _data.value : static_cast<T const&>(cc::forward<U>(default_value));
     }
     template <class U = T>
-    [[nodiscard]] constexpr T&& value_or(U&& default_value) &&
+    [[nodiscard]] constexpr T value_or(U&& default_value) &&
     {
         return _has_value ? static_cast<T&&>(_data.value) : static_cast<T&&>(cc::forward<U>(default_value));
     }
