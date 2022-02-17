@@ -230,7 +230,7 @@ struct atomic_linked_pool
         return iterate_allocated_nodes([this](T& node) { unsafe_release_node(&node); }, scratch_alloc);
     }
 
-    /// release a slot in the pool by the pointer to it's node
+    /// release a slot in the pool by the pointer to its node
     /// unsafe: cannot check handle generation
     void unsafe_release_node(T* node)
     {
