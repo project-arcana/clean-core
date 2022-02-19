@@ -50,6 +50,9 @@ struct capped_array;
 template <class T>
 struct alloc_array;
 
+template <size_t N = dynamic_size>
+struct bitset;
+
 template <class KeyT, class ValueT, class HashT = cc::hash<KeyT>, class EqualT = cc::equal_to<void>>
 struct map;
 template <class T, class HashT = cc::hash<T>, class EqualT = cc::equal_to<void>>
