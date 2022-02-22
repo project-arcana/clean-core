@@ -197,6 +197,4 @@ inline bool test_cpu_support_lzcnt() { return test_cpuid_register(0x80000001, 2,
 
 // returns true if the executing CPU has support for POPCNT
 inline bool test_cpu_support_popcount() { return test_cpuid_register(0x00000001, 2, 23); }
-
-
 }
