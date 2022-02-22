@@ -33,8 +33,10 @@
 // see https://godbolt.org/z/aWW1f8
 // assertion handler is customizable
 
-#define CC_DETAIL_EXECUTE_ASSERT(condition, msg) \
-    (CC_UNLIKELY(!(condition)) ? (::cc::detail::assertion_failed({#condition, CC_PRETTY_FUNC, __FILE__, msg, __LINE__}), CC_BREAK_AND_ABORT()) : void(0)) // force ;
+#define CC_DETAIL_EXECUTE_ASSERT(condition, msg)                                                                                                    \
+    (CC_UNLIKELY(!(condition))                                                                                                                      \
+         ? (CC_DEBUG_BREAK(), ::cc::detail::assertion_failed({#condition, CC_PRETTY_FUNC, __FILE__, msg, __LINE__}), ::cc::detail::perform_abort()) \
+         : void(0)) // force ;
 
 #define CC_RUNTIME_ASSERT(condition) CC_DETAIL_EXECUTE_ASSERT(condition, nullptr)
 #define CC_RUNTIME_ASSERT_MSG(condition, msg) CC_DETAIL_EXECUTE_ASSERT(condition, msg)
@@ -68,8 +70,9 @@
 #endif
 
 #ifdef CC_ENABLE_ASSERTIONS
-#define CC_UNREACHABLE(msg) \
-    (::cc::detail::assertion_failed({"unreachable code reached: " msg, CC_PRETTY_FUNC, __FILE__, nullptr, __LINE__}), CC_BREAK_AND_ABORT(), CC_BUILTIN_UNREACHABLE)
+#define CC_UNREACHABLE(msg)                                                                                                             \
+    (CC_DEBUG_BREAK(), ::cc::detail::assertion_failed({"unreachable code reached: " msg, CC_PRETTY_FUNC, __FILE__, nullptr, __LINE__}), \
+     ::cc::detail::perform_abort(), CC_BUILTIN_UNREACHABLE)
 #else
 #define CC_UNREACHABLE(msg) CC_BUILTIN_UNREACHABLE
 #endif
