@@ -127,7 +127,7 @@
 
 #if defined(CC_COMPILER_POSIX) || defined(__clang__) || defined(__GNUC__)
 // even if code isn't compiled on a POSIX compiler, these helpers can still
-// be active in ie. a clang code model (ie.: MSVC via Qt Creator)
+// be active in a clang code model (eg MSVC via Qt Creator)
 
 // enables warnings/errors on malformed calls to a printf-like function
 // indices start at 1 and count the implicit 'this'-argument of methods
