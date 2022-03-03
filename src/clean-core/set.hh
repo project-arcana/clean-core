@@ -62,7 +62,7 @@ public:
     // operators
 public:
     /// adds a value to the set
-    /// returns true if already contained
+    /// returns false if already contained
     /// TODO: proper support for move-only types
     bool add(T const& value)
     {
