@@ -136,6 +136,7 @@ pool_allocator<Size, Align>& get_pool_allocator()
 template <class T, class... Args>
 T* alloc(Args&&... args)
 {
+    // TODO: make customizable via MACRO for applications that want a different mechanism
     auto p = detail::get_pool_allocator<sizeof(T), alignof(T)>().alloc();
     return new (cc::placement_new, p) T(cc::forward<Args>(args)...);
 }
@@ -144,6 +145,7 @@ void free(T* p)
 {
     CC_CONTRACT(p != nullptr);
     p->~T();
+    // TODO: make customizable via MACRO for applications that want a different mechanism
     detail::get_pool_allocator<sizeof(T), alignof(T)>().free(const_cast<std::remove_cv_t<T>*>(p));
 }
 }
