@@ -2,6 +2,7 @@
 
 #include <clean-core/assert.hh>
 #include <clean-core/macros.hh>
+#include <clean-core/utility.hh>
 
 #ifdef CC_OS_WINDOWS
 #include <clean-core/native/win32_sanitized.hh>
@@ -93,4 +94,19 @@ void cc::decommit_physical_memory(std::byte* ptr, size_t size)
 #else
     static_assert(false, "unsupported platform");
 #endif
+}
+
+std::byte* cc::grow_physical_memory(std::byte* physical_current, std::byte* physical_end, std::byte* virtual_end, size_t chunk_size, size_t grow_num_bytes)
+{
+    if (physical_current + grow_num_bytes <= physical_end)
+        return physical_end; // no growth required
+
+    // round up new size to multiple of chunk size
+    size_t const new_commit_size = cc::align_up(grow_num_bytes, chunk_size);
+    CC_ASSERT(physical_end + new_commit_size <= virtual_end && "grow_physical_memory: virtual memory overcommitted");
+
+    // allocate new pages at the end of current physical commit range
+    cc::commit_physical_memory(physical_end, new_commit_size);
+    physical_end += new_commit_size;
+    return physical_end;
 }
