@@ -12,7 +12,7 @@
 char* cc::allocator::alloc_string_copy(cc::string_view source)
 {
     size_t const source_length = source.length();
-    char* const res = reinterpret_cast<char*>(alloc(source_length + 1));
+    char* const res = reinterpret_cast<char*>(this->alloc(source_length + 1, alignof(char)));
 
     // check because empty source is a legitimate case (allocates a single 0 char)
     if (source_length > 0)
