@@ -150,7 +150,11 @@ public:
     }
 
     /// adds an element at the end
-    T& push_back(T const& value) { return emplace_back(value); }
+    T& push_back(T const& value)
+    {
+        static_assert(std::is_copy_constructible_v<T>, "only works with copyable types. did you forget a cc::move?");
+        return emplace_back(value);
+    }
     /// adds an element at the end
     T& push_back(T&& value) { return emplace_back(cc::move(value)); }
 
@@ -167,6 +171,7 @@ public:
     void push_back_range(Range&& range)
     {
         static_assert(cc::is_any_range<Range>);
+        static_assert(std::is_copy_constructible_v<T>, "only works with copyable types");
 
         if constexpr (collection_traits<Range>::has_size)
             this->reserve(_size + cc::collection_size(range));
