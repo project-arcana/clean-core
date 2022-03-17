@@ -171,7 +171,7 @@ public:
     void push_back_range(Range&& range)
     {
         static_assert(cc::is_any_range<Range>);
-        static_assert(std::is_copy_constructible_v<T>, "only works with copyable types. use push_back(T&&) to move elements into the vector.");
+        static_assert(std::is_copy_constructible_v<T>, "only works with copyable types. use push_back(T&&) to move elements into the vector");
 
         if constexpr (collection_traits<Range>::has_size)
             this->reserve(_size + cc::collection_size(range));
