@@ -7,6 +7,8 @@
 #include <clean-core/allocators/linear_allocator.hh>
 #include <clean-core/allocators/stack_allocator.hh>
 #include <clean-core/capped_vector.hh>
+#include <clean-core/functors.hh>
+#include <clean-core/string.hh>
 #include <clean-core/vector.hh>
 
 #include <typed-geometry/feature/random.hh>
@@ -215,10 +217,37 @@ struct is_capped_vector<cc::capped_vector<T, S>> : std::true_type
 MONTE_CARLO_TEST("cc::vector mct")
 {
     auto const make_int = [](tg::rng& rng) { return uniform(rng, -10, 10); };
+    auto const make_str = [](tg::rng& rng)
+    {
+        cc::string s;
+        switch (uniform(rng, 0, 2))
+        {
+        case 0:
+            // empty str
+            break;
+
+        case 1:
+            // small string
+            s.resize(uniform(rng, 0, 20));
+            for (auto& c : s)
+                c = uniform(rng, 'A', 'Z');
+            break;
+
+        case 2:
+            // larger string
+            s.resize(uniform(rng, 0, 100));
+            for (auto& c : s)
+                c = uniform(rng, 'A', 'Z');
+            break;
+        }
+
+        return s;
+    };
 
     addOp("gen int", make_int);
+    addOp("gen str", make_str);
 
-    auto const addType = [&](auto obj)
+    auto const addType = [&](auto obj, auto make_element, auto elem_str)
     {
         using vector_t = decltype(obj);
         using T = std::decay_t<decltype(obj[0])>;
@@ -228,6 +257,13 @@ MONTE_CARLO_TEST("cc::vector mct")
         addOp("default ctor", [] { return vector_t(); });
         addOp("move ctor", [](vector_t const& s) { return cc::move(vector_t(s)); });
         addOp("move assignment", [](vector_t& a, vector_t const& b) { a = vector_t(b); });
+
+        addOp("size ctor",
+              [](tg::rng& rng)
+              {
+                  auto cnt = size_t(uniform(rng, 0, 30));
+                  return vector_t(cnt);
+              });
 
         if constexpr (std::is_copy_constructible_v<T>)
         {
@@ -241,20 +277,25 @@ MONTE_CARLO_TEST("cc::vector mct")
                   auto cnt = uniform(rng, 0, 30);
                   s.resize(cnt);
                   for (auto i = 0; i < cnt; ++i)
-                      s[i] = T(make_int(rng));
+                      s[i] = make_element(rng);
                   return s;
               });
 
-        if constexpr (!is_capped_vector<vector_t>::value)
-            addOp("reserve", [](tg::rng& rng, vector_t& s) { s.reserve(uniform(rng, 0, 30)); }).make_optional();
-        addOp("resize", [](tg::rng& rng, vector_t& s) { s.resize(uniform(rng, 0, 30)); });
-        addOp("resize + int", [](tg::rng& rng, vector_t& s, int c) { s.resize(uniform(rng, 0, 30), c); });
+        if constexpr (is_capped_vector<vector_t>::value)
+            addOp("reserve", [](tg::rng& rng, vector_t&) { (void)uniform(rng, 0, 30); });
+        else
+            addOp("reserve", [](tg::rng& rng, vector_t& s) { s.reserve(uniform(rng, 0, 30)); });
 
-        addOp("random replace", [&](tg::rng& rng, vector_t& s) { random_choice(rng, s) = make_int(rng); })
+        addOp("resize", [](tg::rng& rng, vector_t& s) { s.resize(uniform(rng, 0, 30)); });
+        addOp("resize + int", [](tg::rng& rng, vector_t& s, T const& c) { s.resize(uniform(rng, 0, 30), c); });
+
+        addOp("random replace", [&](tg::rng& rng, vector_t& s) { random_choice(rng, s) = make_element(rng); })
             .when([](tg::rng&, vector_t const& s) { return s.size() > 0; });
 
-        addOp("push_back", [](vector_t& s, int c) { s.push_back(c); });
-        addOp("emplace_back", [](vector_t& s, int c) { s.emplace_back(c); });
+        addOp("push_back", [](vector_t& s, T const& c) { s.push_back(c); });
+        addOp("push_back move", [](vector_t& s, T c) { s.push_back(cc::move(c)); });
+        addOp("emplace_back", [](vector_t& s, T const& c) { s.emplace_back(c); });
+        addOp("emplace_back move", [](vector_t& s, T c) { s.emplace_back(cc::move(c)); });
 
         addOp("op[]", [](tg::rng& rng, vector_t const& s) { return random_choice(rng, s); })
             .when([](tg::rng&, vector_t const& s) { return s.size() > 0; });
@@ -262,7 +303,7 @@ MONTE_CARLO_TEST("cc::vector mct")
             .when([](tg::rng&, vector_t const& s) { return s.size() > 0; });
 
         addOp("fill",
-              [](vector_t& s, int v)
+              [](vector_t& s, T const& v)
               {
                   for (auto& c : s)
                       c = v;
@@ -276,15 +317,29 @@ MONTE_CARLO_TEST("cc::vector mct")
         addOp("size", [](vector_t const& s) { return s.size(); });
         addOp("front", [](vector_t const& s) { return s.front(); }).when_not(is_empty);
         addOp("back", [](vector_t const& s) { return s.back(); }).when_not(is_empty);
+
+        setPrinter<vector_t>(
+            [&](vector_t const& v)
+            {
+                cc::string s = "[";
+                for (auto i = 0; i < int(v.size()); ++i)
+                {
+                    if (i > 0)
+                        s += ", ";
+                    s += elem_str(v[i]);
+                }
+                s += "]";
+                return s;
+            });
     };
 
-    auto testType = [&](auto obj)
+    auto testType = [&](auto obj, auto make_element, auto elem_str)
     {
         using T = decltype(obj);
 
-        addType(std::vector<T>());
-        addType(cc::vector<T>());
-        addType(cc::capped_vector<T, 40>());
+        addType(std::vector<T>(), make_element, elem_str);
+        addType(cc::vector<T>(), make_element, elem_str);
+        addType(cc::capped_vector<T, 40>(), make_element, elem_str);
 
         testEquivalence(
             [](std::vector<T> const& a, cc::vector<T> const& b)
@@ -302,7 +357,8 @@ MONTE_CARLO_TEST("cc::vector mct")
             });
     };
 
-    testType(int{});
+    testType(int{}, make_int, [](int i) { return cc::to_string(i); });
+    testType(cc::string{}, make_str, cc::identity_function{});
 }
 
 MONTE_CARLO_TEST("cc::alloc_vector mct")
