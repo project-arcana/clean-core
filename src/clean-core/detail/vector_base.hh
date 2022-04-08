@@ -201,17 +201,15 @@ public:
     }
 
     /// adds an element at the given index, moves
-    void insert_at_index(T const& value, size_t index) { insert_range_at_index(cc::span<T const>(value), index); }
+    void insert_at(T const& value, size_t index) { insert_range_at(cc::span<T const>(value), index); }
 
-    void insert_range_at_index(cc::span<T const> values, size_t index)
+    void insert_range_at(cc::span<T const> values, size_t index)
     {
         CC_CONTRACT(index <= _size);
 
         size_t const num_new_elems = values.size();
         if (num_new_elems == 0)
-        {
             return;
-        }
 
         reserve(_size + num_new_elems);
 
