@@ -139,8 +139,8 @@ inline uint32_t ceil_pow2(uint32_t v) { return uint32_t(1) << ((bit_log2(v - uin
 inline uint64_t ceil_pow2(uint64_t v) { return uint64_t(1) << ((bit_log2(v - uint64_t(1)) + 1) & 63); }
 
 // returns true if v is a power of 2
-constexpr bool is_pow2(uint32_t v) { return ((v & (v - uint32_t(1))) == 0); }
-constexpr bool is_pow2(uint64_t v) { return ((v & (v - uint64_t(1))) == 0); }
+constexpr bool is_pow2(uint32_t v) { return (v & (v - uint32_t(1))) == 0; }
+constexpr bool is_pow2(uint64_t v) { return (v & (v - uint64_t(1))) == 0; }
 
 // computes v % divisor, divisor must be a power of 2
 constexpr uint32_t mod_pow2(uint32_t v, uint32_t divisor) { return v & (divisor - 1); }

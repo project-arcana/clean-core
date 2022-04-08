@@ -5,6 +5,8 @@
 #include <cstdio>
 
 #include <clean-core/allocator.hh>
+#include <clean-core/allocators/linear_allocator.hh>
+#include <clean-core/allocators/stack_allocator.hh>
 #include <clean-core/utility.hh>
 
 namespace
@@ -54,7 +56,8 @@ constexpr bool is_aligned(T value, size_t alignment)
 // returns true if alignment requests are properly honored
 bool test_alignment_requirements(cc::allocator* alloc)
 {
-    auto f_test_alignment = [&](unsigned align) -> bool {
+    auto f_test_alignment = [&](unsigned align) -> bool
+    {
         auto* const buf = alloc->alloc(1, align);
         bool const res = is_aligned(buf, align);
         alloc->free(buf);
@@ -170,14 +173,16 @@ void test_fuzz_allocations(cc::allocator* alloc, tg::rng& rng, unsigned buffer_s
     allocation_t persistent_allocs[max_num_persistent_allocs] = {};
     unsigned num_persistent_allocs = 0;
 
-    auto f_allocate = [&](unsigned size) -> unsigned {
+    auto f_allocate = [&](unsigned size) -> unsigned
+    {
         num_allocated_bytes += size;
 
         persistent_allocs[num_persistent_allocs++] = {alloc->alloc(size), size};
         return num_persistent_allocs - 1;
     };
 
-    auto f_deallocate_pop = [&] {
+    auto f_deallocate_pop = [&]
+    {
         allocation_t const allocation = persistent_allocs[--num_persistent_allocs];
 
         num_allocated_bytes -= allocation.size;
@@ -278,50 +283,4 @@ TEST("cc::stack_allocator")
     stackalloc.realloc(buf_realloc, 750, 1000);
     stackalloc.realloc(buf_realloc, 1000, 100);
     stackalloc.free(buf_realloc);
-}
-
-TEST("cc::scratch_allocator")
-{
-    {
-        std::byte scratchalloc_buf[4096];
-        cc::scratch_allocator scratchalloc(scratchalloc_buf, nullptr);
-
-        CHECK(test_alignment_requirements(&scratchalloc));
-        CHECK(scratchalloc.is_empty());
-
-        test_basic_integrity(&scratchalloc, true);
-        CHECK(scratchalloc.is_empty());
-
-        // alloc and re-free
-        for (auto i = 0u; i < 50; ++i)
-        {
-            std::byte* const buf_n = scratchalloc.alloc(500);
-            CHECK(scratchalloc.in_use(buf_n));
-            scratchalloc.free(buf_n);
-        }
-        CHECK(scratchalloc.is_empty());
-
-        test_persistent_integrity(&scratchalloc, true);
-        CHECK(scratchalloc.is_empty());
-    }
-    // test correct fallback to the backing allocator
-    {
-        std::byte small_buf[64];
-        cc::scratch_allocator backed_scratchalloc(small_buf, cc::system_allocator);
-
-        auto* const large_alloc = backed_scratchalloc.alloc(1024);
-
-        write_memory_pattern(large_alloc, 1024);
-        CHECK(verify_memory_pattern(large_alloc, 1024));
-
-        backed_scratchalloc.free(large_alloc);
-    }
-}
-
-FUZZ_TEST("cc::scratch_allocator fuzz")(tg::rng& rng)
-{
-    std::byte scratchalloc_buf[8192];
-    cc::scratch_allocator scratchalloc(scratchalloc_buf, nullptr);
-
-    test_fuzz_allocations(&scratchalloc, rng, sizeof(scratchalloc_buf));
 }

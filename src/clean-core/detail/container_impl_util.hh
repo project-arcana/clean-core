@@ -66,6 +66,28 @@ CC_FORCE_INLINE void container_copy_construct_fill(T const& value, SizeT num, T*
 }
 
 template <class T, class SizeT = std::size_t>
+CC_FORCE_INLINE void container_relocate_construct_range(T* dest, T* src, SizeT num_elements)
+{
+    if constexpr (std::is_trivially_copyable_v<T>)
+    {
+        if (num_elements > 0)
+        {
+            std::memmove(dest, src, num_elements * sizeof(T));
+        }
+    }
+    else
+    {
+        for (SizeT i = 0; i < num_elements; ++i)
+        {
+            // move-construct new element in place
+            new (placement_new, &dest[i]) T(cc::move(src[i]));
+            // call dtor on old element
+            src[i].~T();
+        }
+    }
+}
+
+template <class T, class SizeT = std::size_t>
 CC_FORCE_INLINE void container_destroy_reverse([[maybe_unused]] T* data, [[maybe_unused]] SizeT size, [[maybe_unused]] SizeT to_index = 0)
 {
     static_assert(sizeof(T) > 0, "cannot destroy incomplete types");

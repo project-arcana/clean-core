@@ -4,6 +4,8 @@
 #include <vector>
 
 #include <clean-core/alloc_vector.hh>
+#include <clean-core/allocators/linear_allocator.hh>
+#include <clean-core/allocators/stack_allocator.hh>
 #include <clean-core/capped_vector.hh>
 #include <clean-core/vector.hh>
 
@@ -145,7 +147,8 @@ TEST("cc::vector basics")
 {
     tg::rng rng;
 
-    auto const test = [&](auto&& v0, auto&& v1) {
+    auto const test = [&](auto&& v0, auto&& v1)
+    {
         //
         auto s = rng();
         v0.rng.seed(s);
@@ -162,7 +165,8 @@ TEST("cc::vector basics")
         }
     };
 
-    auto const type_test = [&](auto t) {
+    auto const type_test = [&](auto t)
+    {
         using T = decltype(t);
         // test new vector and vector-like types
         for (auto i = 0; i < 10; ++i)
@@ -214,7 +218,8 @@ MONTE_CARLO_TEST("cc::vector mct")
 
     addOp("gen int", make_int);
 
-    auto const addType = [&](auto obj) {
+    auto const addType = [&](auto obj)
+    {
         using vector_t = decltype(obj);
         using T = std::decay_t<decltype(obj[0])>;
 
@@ -230,37 +235,38 @@ MONTE_CARLO_TEST("cc::vector mct")
             addOp("copy assignment", [](vector_t& a, vector_t const& b) { a = b; });
         }
 
-        addOp("randomize", [&](tg::rng& rng, vector_t& s) {
-            auto cnt = uniform(rng, 0, 30);
-            s.resize(cnt);
-            for (auto i = 0; i < cnt; ++i)
-                s[i] = T(make_int(rng));
-            return s;
-        });
+        addOp("randomize",
+              [&](tg::rng& rng, vector_t& s)
+              {
+                  auto cnt = uniform(rng, 0, 30);
+                  s.resize(cnt);
+                  for (auto i = 0; i < cnt; ++i)
+                      s[i] = T(make_int(rng));
+                  return s;
+              });
 
         if constexpr (!is_capped_vector<vector_t>::value)
             addOp("reserve", [](tg::rng& rng, vector_t& s) { s.reserve(uniform(rng, 0, 30)); }).make_optional();
         addOp("resize", [](tg::rng& rng, vector_t& s) { s.resize(uniform(rng, 0, 30)); });
         addOp("resize + int", [](tg::rng& rng, vector_t& s, int c) { s.resize(uniform(rng, 0, 30), c); });
 
-        addOp("random replace", [&](tg::rng& rng, vector_t& s) { random_choice(rng, s) = make_int(rng); }).when([](tg::rng&, vector_t const& s) {
-            return s.size() > 0;
-        });
+        addOp("random replace", [&](tg::rng& rng, vector_t& s) { random_choice(rng, s) = make_int(rng); })
+            .when([](tg::rng&, vector_t const& s) { return s.size() > 0; });
 
         addOp("push_back", [](vector_t& s, int c) { s.push_back(c); });
         addOp("emplace_back", [](vector_t& s, int c) { s.emplace_back(c); });
 
-        addOp("op[]", [](tg::rng& rng, vector_t const& s) { return random_choice(rng, s); }).when([](tg::rng&, vector_t const& s) {
-            return s.size() > 0;
-        });
-        addOp("data[]", [](tg::rng& rng, vector_t const& s) {
-            return s.data()[uniform(rng, 0, int(s.size()) - 1)];
-        }).when([](tg::rng&, vector_t const& s) { return s.size() > 0; });
+        addOp("op[]", [](tg::rng& rng, vector_t const& s) { return random_choice(rng, s); })
+            .when([](tg::rng&, vector_t const& s) { return s.size() > 0; });
+        addOp("data[]", [](tg::rng& rng, vector_t const& s) { return s.data()[uniform(rng, 0, int(s.size()) - 1)]; })
+            .when([](tg::rng&, vector_t const& s) { return s.size() > 0; });
 
-        addOp("fill", [](vector_t& s, int v) {
-            for (auto& c : s)
-                c = v;
-        });
+        addOp("fill",
+              [](vector_t& s, int v)
+              {
+                  for (auto& c : s)
+                      c = v;
+              });
 
 
         if constexpr (!is_capped_vector<vector_t>::value)
@@ -272,23 +278,28 @@ MONTE_CARLO_TEST("cc::vector mct")
         addOp("back", [](vector_t const& s) { return s.back(); }).when_not(is_empty);
     };
 
-    auto testType = [&](auto obj) {
+    auto testType = [&](auto obj)
+    {
         using T = decltype(obj);
 
         addType(std::vector<T>());
         addType(cc::vector<T>());
         addType(cc::capped_vector<T, 40>());
 
-        testEquivalence([](std::vector<T> const& a, cc::vector<T> const& b) {
-            REQUIRE(a.size() == b.size());
-            for (auto i = 0; i < int(a.size()); ++i)
-                REQUIRE(a[i] == b[i]);
-        });
-        testEquivalence([](cc::vector<T> const& a, cc::capped_vector<T, 40> const& b) {
-            REQUIRE(a.size() == b.size());
-            for (auto i = 0; i < int(a.size()); ++i)
-                REQUIRE(a[i] == b[i]);
-        });
+        testEquivalence(
+            [](std::vector<T> const& a, cc::vector<T> const& b)
+            {
+                REQUIRE(a.size() == b.size());
+                for (auto i = 0; i < int(a.size()); ++i)
+                    REQUIRE(a[i] == b[i]);
+            });
+        testEquivalence(
+            [](cc::vector<T> const& a, cc::capped_vector<T, 40> const& b)
+            {
+                REQUIRE(a.size() == b.size());
+                for (auto i = 0; i < int(a.size()); ++i)
+                    REQUIRE(a[i] == b[i]);
+            });
     };
 
     testType(int{});
@@ -302,7 +313,8 @@ MONTE_CARLO_TEST("cc::alloc_vector mct")
 
     addOp("gen int", make_int);
 
-    auto const addType = [&](auto obj) {
+    auto const addType = [&](auto obj)
+    {
         using vector_t = decltype(obj);
         using T = std::decay_t<decltype(obj[0])>;
 
@@ -310,49 +322,54 @@ MONTE_CARLO_TEST("cc::alloc_vector mct")
 
         addOp("default ctor", [] { return vector_t(); });
 
-        addOp("move ctor", [](vector_t const& s) {
-            if constexpr (std::is_copy_assignable_v<vector_t>)
-                return cc::move(vector_t(s));
-            else
-                return cc::move(vector_t(cc::span<T const>{s}));
-        });
-        addOp("move assignment", [](vector_t& a, vector_t const& b) {
-            if constexpr (std::is_copy_assignable_v<vector_t>)
-                a = vector_t(b);
-            else
-                a = vector_t(cc::span<T const>{b});
-        });
+        addOp("move ctor",
+              [](vector_t const& s)
+              {
+                  if constexpr (std::is_copy_assignable_v<vector_t>)
+                      return cc::move(vector_t(s));
+                  else
+                      return cc::move(vector_t(cc::span<T const>{s}));
+              });
+        addOp("move assignment",
+              [](vector_t& a, vector_t const& b)
+              {
+                  if constexpr (std::is_copy_assignable_v<vector_t>)
+                      a = vector_t(b);
+                  else
+                      a = vector_t(cc::span<T const>{b});
+              });
 
-        addOp("randomize", [&](tg::rng& rng, vector_t& s) {
-            auto cnt = uniform(rng, 0, 30);
-            s.resize(cnt);
-            for (auto i = 0; i < cnt; ++i)
-                s[i] = T(make_int(rng));
-        });
+        addOp("randomize",
+              [&](tg::rng& rng, vector_t& s)
+              {
+                  auto cnt = uniform(rng, 0, 30);
+                  s.resize(cnt);
+                  for (auto i = 0; i < cnt; ++i)
+                      s[i] = T(make_int(rng));
+              });
 
         if constexpr (!is_capped_vector<vector_t>::value)
             addOp("reserve", [](tg::rng& rng, vector_t& s) { s.reserve(uniform(rng, 0, 30)); }).make_optional();
         addOp("resize", [](tg::rng& rng, vector_t& s) { s.resize(uniform(rng, 0, 30)); });
         addOp("resize + int", [](tg::rng& rng, vector_t& s, int c) { s.resize(uniform(rng, 0, 30), c); });
 
-        addOp("random replace", [&](tg::rng& rng, vector_t& s) { random_choice(rng, s) = make_int(rng); }).when([](tg::rng&, vector_t const& s) {
-            return s.size() > 0;
-        });
+        addOp("random replace", [&](tg::rng& rng, vector_t& s) { random_choice(rng, s) = make_int(rng); })
+            .when([](tg::rng&, vector_t const& s) { return s.size() > 0; });
 
         addOp("push_back", [](vector_t& s, int c) { s.push_back(c); });
         addOp("emplace_back", [](vector_t& s, int c) { s.emplace_back(c); });
 
-        addOp("op[]", [](tg::rng& rng, vector_t const& s) { return random_choice(rng, s); }).when([](tg::rng&, vector_t const& s) {
-            return s.size() > 0;
-        });
-        addOp("data[]", [](tg::rng& rng, vector_t const& s) {
-            return s.data()[uniform(rng, 0, int(s.size()) - 1)];
-        }).when([](tg::rng&, vector_t const& s) { return s.size() > 0; });
+        addOp("op[]", [](tg::rng& rng, vector_t const& s) { return random_choice(rng, s); })
+            .when([](tg::rng&, vector_t const& s) { return s.size() > 0; });
+        addOp("data[]", [](tg::rng& rng, vector_t const& s) { return s.data()[uniform(rng, 0, int(s.size()) - 1)]; })
+            .when([](tg::rng&, vector_t const& s) { return s.size() > 0; });
 
-        addOp("fill", [](vector_t& s, int v) {
-            for (auto& c : s)
-                c = v;
-        });
+        addOp("fill",
+              [](vector_t& s, int v)
+              {
+                  for (auto& c : s)
+                      c = v;
+              });
 
 
         if constexpr (!is_capped_vector<vector_t>::value)
@@ -364,24 +381,29 @@ MONTE_CARLO_TEST("cc::alloc_vector mct")
         addOp("back", [](vector_t const& s) { return s.back(); }).when_not(is_empty);
     };
 
-    auto testType = [&](auto obj) {
+    auto testType = [&](auto obj)
+    {
         using T = decltype(obj);
 
         addType(std::vector<T>());
         addType(cc::alloc_vector<T>());
         addType(cc::vector<T>());
 
-        testEquivalence([](std::vector<T> const& a, cc::alloc_vector<T> const& b) {
-            REQUIRE(a.size() == b.size());
-            for (auto i = 0; i < int(a.size()); ++i)
-                REQUIRE(a[i] == b[i]);
-        });
+        testEquivalence(
+            [](std::vector<T> const& a, cc::alloc_vector<T> const& b)
+            {
+                REQUIRE(a.size() == b.size());
+                for (auto i = 0; i < int(a.size()); ++i)
+                    REQUIRE(a[i] == b[i]);
+            });
 
-        testEquivalence([](cc::vector<T> const& a, cc::alloc_vector<T> const& b) {
-            REQUIRE(a.size() == b.size());
-            for (auto i = 0; i < int(a.size()); ++i)
-                REQUIRE(a[i] == b[i]);
-        });
+        testEquivalence(
+            [](cc::vector<T> const& a, cc::alloc_vector<T> const& b)
+            {
+                REQUIRE(a.size() == b.size());
+                for (auto i = 0; i < int(a.size()); ++i)
+                    REQUIRE(a[i] == b[i]);
+            });
     };
 
     testType(int{});
@@ -436,26 +458,26 @@ TEST("cc::vector/alloc_vector interior references")
 
         foo(foo& f)
         {
-            CC_ASSERT(!f.is_moved_from);
-            CC_ASSERT(!f.is_destroyed);
+            CHECK(!f.is_moved_from);
+            CHECK(!f.is_destroyed);
             f.is_moved_from = true;
         }
         foo& operator=(foo& f)
         {
-            CC_ASSERT(!f.is_moved_from);
-            CC_ASSERT(!f.is_destroyed);
+            CHECK(!f.is_moved_from);
+            CHECK(!f.is_destroyed);
             f.is_moved_from = true;
             return *this;
         }
         foo(foo const& f)
         {
-            CC_ASSERT(!f.is_moved_from);
-            CC_ASSERT(!f.is_destroyed);
+            CHECK(!f.is_moved_from);
+            CHECK(!f.is_destroyed);
         }
         foo& operator=(foo const& f)
         {
-            CC_ASSERT(!f.is_moved_from);
-            CC_ASSERT(!f.is_destroyed);
+            CHECK(!f.is_moved_from);
+            CHECK(!f.is_destroyed);
             return *this;
         }
         ~foo() { is_destroyed = true; }
@@ -467,7 +489,8 @@ TEST("cc::vector/alloc_vector interior references")
             fs.push_back(fs[0]);
     }
 
-    auto const f_test_alloc_vector = [](cc::allocator* alloc) {
+    auto const f_test_alloc_vector = [](cc::allocator* alloc)
+    {
         cc::alloc_vector<foo> afs(alloc);
         afs.push_back({});
         for (auto i = 0; i < 100; ++i)
@@ -480,8 +503,6 @@ TEST("cc::vector/alloc_vector interior references")
     cc::linear_allocator linalloc(buffer);
 
     f_test_alloc_vector(&linalloc);
-
-    CHECK(true); // this test has the asserts in foo instead of checks
 }
 
 TEST("cc::vector/alloc_vector interior references (value types)")

@@ -121,9 +121,10 @@ public:
         {
             auto const new_cap = _capacity == 0 ? 1 : _capacity << 1;
 
-            if constexpr (std::is_trivially_copyable_v<T> && sizeof(T) <= 256)
+            if constexpr (std::is_trivially_copyable_v<T> && sizeof(T) <= 512)
             {
-                // we can use realloc
+                // we can use realloc (size limit to keep stack usage limited)
+                // temporary object required because the arg could reference memory inside this buffer
                 auto tmp_obj = T(cc::forward<Args>(args)...);
                 _data = this->_realloc(_data, _capacity, new_cap);
                 T* new_element = new (placement_new, &_data[_size]) T(cc::move(tmp_obj));
@@ -133,7 +134,7 @@ public:
             }
             else
             {
-                // we can't
+                // we can't use realloc, use separate alloc/free calls
                 T* new_data = this->_alloc(new_cap);
                 T* new_element = new (placement_new, &new_data[_size]) T(cc::forward<Args>(args)...);
                 detail::container_move_construct_range<T>(_data, _size, new_data);
@@ -173,20 +174,52 @@ public:
         static_assert(cc::is_any_range<Range>);
         static_assert(std::is_copy_constructible_v<T>, "only works with copyable types. use push_back(T&&) to move elements into the vector");
 
-        if constexpr (collection_traits<Range>::has_size)
-            this->reserve(_size + cc::collection_size(range));
-
-        if constexpr (cc::is_contiguous_range<Range, T> && std::is_trivially_copyable_v<T> && std::is_trivially_destructible_v<T>)
+        if constexpr (cc::is_contiguous_range<Range, T>)
         {
-            std::memcpy(&_data[_size], range.data(), range.size() * sizeof(T));
-            _size += range.size();
+            size_t const num_new_elems = cc::collection_size(range);
+            if (num_new_elems == 0)
+            {
+                return;
+            }
+
+            this->reserve(_size + num_new_elems);
+
+            // NOTE: this would assert for an empty span<T>
+            // only get this pointer after checking for size == 0
+            T const* const new_elem_data = &range[0];
+            detail::container_copy_construct_range<T>(new_elem_data, num_new_elems, &_data[_size]);
+            _size += num_new_elems;
         }
         else
         {
-            // TODO: a few optimizations are possible here (like moving or in-place construction)
+            if constexpr (collection_traits<Range>::has_size)
+                this->reserve(_size + cc::collection_size(range));
+
             for (auto&& v : range)
                 this->push_back(v);
         }
+    }
+
+    /// adds an element at the given index, moves
+    void insert_at_index(T const& value, size_t index) { insert_range_at_index(cc::span<T const>(value), index); }
+
+    void insert_range_at_index(cc::span<T const> values, size_t index)
+    {
+        CC_CONTRACT(index <= _size);
+
+        size_t const num_new_elems = values.size();
+        if (num_new_elems == 0)
+        {
+            return;
+        }
+
+        reserve(_size + num_new_elems);
+
+        T* const data = _data + index;
+        detail::container_relocate_construct_range<T>(data + num_new_elems, data, _size - index);
+
+        detail::container_copy_construct_range<T>(values.data(), num_new_elems, data);
+        _size += num_new_elems;
     }
 
     /// removes the last element
@@ -215,7 +248,7 @@ public:
         }
         else
         {
-            // we can't
+            // we can't use realloc, call alloc/free separately
             T* new_data = this->_alloc(new_cap);
             detail::container_move_construct_range<T>(_data, _size, new_data);
             detail::container_destroy_reverse<T>(_data, _size);

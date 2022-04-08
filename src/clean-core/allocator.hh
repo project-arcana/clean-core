@@ -70,146 +70,9 @@ struct allocator
     virtual ~allocator() = default;
 };
 
-
 /// global instance of the system allocator (malloc / free) (thread safe)
+/// see allocators/system_allocator.cc for implementation
 extern allocator* const system_allocator;
-
-/// trivial linear allocator operating in a given buffer
-/// cannot free individual allocations, only reset entirely
-struct linear_allocator final : allocator
-{
-    std::byte* alloc(size_t size, size_t align = alignof(std::max_align_t)) override
-    {
-        CC_ASSERT(_buffer_begin != nullptr && "linear_allocator uninitialized");
-
-        auto* const padded_res = cc::align_up(_head, align);
-        CC_ASSERT(padded_res + size <= _buffer_end && "linear_allocator overcommitted");
-        _head = padded_res + size;
-
-        return padded_res;
-    }
-
-    void free(void* ptr) override
-    {
-        // no-op
-        (void)ptr;
-    }
-
-    void reset() { _head = _buffer_begin; }
-
-    size_t allocated_size() const { return _head - _buffer_begin; }
-    size_t remaining_size() const { return _buffer_end - _head; }
-    size_t max_size() const { return _buffer_end - _buffer_begin; }
-    float allocated_ratio() const { return allocated_size() / float(max_size()); }
-
-    std::byte* buffer() const { return _buffer_begin; }
-
-    linear_allocator() = default;
-    linear_allocator(span<std::byte> buffer) : _buffer_begin(buffer.data()), _head(buffer.data()), _buffer_end(buffer.data() + buffer.size()) {}
-
-private:
-    std::byte* _buffer_begin = nullptr;
-    std::byte* _head = nullptr;
-    std::byte* _buffer_end = nullptr;
-};
-
-
-/// stack allocator operating in a given buffer
-/// like a linear allocator, but can also free the most recent allocation
-struct stack_allocator final : allocator
-{
-    std::byte* alloc(size_t size, size_t align = alignof(std::max_align_t)) override;
-
-    /// NOTE: ptr must be the most recent allocation received
-    void free(void* ptr) override;
-
-    /// NOTE: ptr must be the most recent allocation received
-    std::byte* realloc(void* ptr, size_t old_size, size_t new_size, size_t align = alignof(std::max_align_t)) override;
-
-    void reset()
-    {
-        _head = _buffer_begin;
-        _last_alloc = nullptr;
-    }
-
-    stack_allocator() = default;
-    stack_allocator(span<std::byte> buffer) : _buffer_begin(buffer.data()), _head(buffer.data()), _buffer_end(buffer.data() + buffer.size()) {}
-
-private:
-    std::byte* _buffer_begin = nullptr;
-    std::byte* _head = nullptr;
-    std::byte* _buffer_end = nullptr;
-    std::byte* _last_alloc = nullptr;
-};
-
-
-/// for short lived allocations serviced from a ring buffer
-/// can optionally fall back to an external allocator if overcommited
-struct scratch_allocator final : allocator
-{
-    scratch_allocator() = default;
-    scratch_allocator(span<std::byte> buffer, allocator* backing = nullptr)
-      : _buffer_begin(buffer.data()), _head(buffer.data()), _tail(buffer.data()), _buffer_end(buffer.data() + buffer.size()), _backing_alloc(backing)
-    {
-    }
-
-    std::byte* alloc(size_t size, size_t align = alignof(std::max_align_t)) override;
-
-    void free(void* ptr) override;
-
-    bool in_use(void const* ptr) const
-    {
-        if (_head == _tail)
-            return false;
-        if (_head > _tail)
-            return ptr >= _tail && ptr < _head;
-        return ptr >= _tail || ptr < _head;
-    }
-
-    bool is_empty() const { return _head == _tail; }
-
-private:
-    unsigned get_ptr_offset(void const* ptr) const;
-
-private:
-    std::byte* _buffer_begin = nullptr;
-    std::byte* _head = nullptr;
-    std::byte* _tail = nullptr;
-    std::byte* _buffer_end = nullptr;
-
-    allocator* _backing_alloc = nullptr;
-};
-
-/// Two Level Segregated Fit allocator
-/// O(1) cost for alloc, free, realloc
-/// extremely low memory overhead, 4 byte per allocation
-struct tlsf_allocator final : allocator
-{
-    tlsf_allocator() = default;
-    tlsf_allocator(cc::span<std::byte> buffer) { initialize(buffer); }
-    ~tlsf_allocator() { destroy(); }
-
-    void initialize(cc::span<std::byte> buffer);
-    void destroy();
-
-    std::byte* alloc(size_t size, size_t align = alignof(std::max_align_t)) override;
-
-    void free(void* ptr) override;
-
-    std::byte* realloc(void* ptr, size_t old_size, size_t new_size, size_t align = alignof(std::max_align_t)) override;
-
-    tlsf_allocator(tlsf_allocator&& rhs) noexcept : _tlsf(rhs._tlsf) { rhs._tlsf = nullptr; }
-    tlsf_allocator& operator==(tlsf_allocator&& rhs) noexcept
-    {
-        destroy();
-        _tlsf = rhs._tlsf;
-        rhs._tlsf = nullptr;
-        return *this;
-    }
-
-private:
-    void* _tlsf = nullptr;
-};
 
 //
 // templated virtual allocator interface implementation below
@@ -257,8 +120,11 @@ T* allocator::new_array(size_t num_elems)
 
     T* const res_array_ptr = reinterpret_cast<T*>(original_buf + padding);
 
-    for (auto i = 0u; i < num_elems; ++i)
-        new (placement_new, res_array_ptr + i) T();
+    if constexpr (!std::is_trivially_constructible_v<T>)
+    {
+        for (auto i = 0u; i < num_elems; ++i)
+            new (placement_new, res_array_ptr + i) T();
+    }
 
     return res_array_ptr;
 }
@@ -278,8 +144,10 @@ void allocator::delete_array(T* ptr)
     size_t const num_elems = *reinterpret_cast<size_t*>(original_buf);
 
     if constexpr (!std::is_trivially_destructible_v<T>)
+    {
         for (auto i = 0u; i < num_elems; ++i)
             (ptr + i)->~T();
+    }
 
     this->free(original_buf);
 }
@@ -290,8 +158,13 @@ T* allocator::new_array_sized(size_t num_elems)
 {
     static_assert(sizeof(T) > 0, "cannot construct incomplete type");
     T* const res_array_ptr = reinterpret_cast<T*>(this->alloc(sizeof(T) * num_elems, alignof(T)));
-    for (auto i = 0u; i < num_elems; ++i)
-        new (placement_new, res_array_ptr + i) T();
+
+    if constexpr (!std::is_trivially_constructible_v<T>)
+    {
+        for (auto i = 0u; i < num_elems; ++i)
+            new (placement_new, res_array_ptr + i) T();
+    }
+
     return res_array_ptr;
 }
 
@@ -306,8 +179,11 @@ void allocator::delete_array_sized(T* ptr, size_t num_elems)
         return;
 
     if constexpr (!std::is_trivially_destructible_v<T>)
+    {
         for (auto i = 0u; i < num_elems; ++i)
             (ptr + i)->~T();
+    }
+
     this->free(ptr);
 }
 

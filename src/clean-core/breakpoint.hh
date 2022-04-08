@@ -4,5 +4,5 @@
 
 namespace cc
 {
-CC_DONT_INLINE void breakpoint();
+[[deprecated("use CC_DEBUG_BREAK()")]] CC_DONT_INLINE void breakpoint();
 }

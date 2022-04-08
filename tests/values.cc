@@ -1,9 +1,10 @@
 #include <nexus/monte_carlo_test.hh>
 
-#include <clean-core/box.hh>
-#include <clean-core/capped_box.hh>
-#include <clean-core/fwd_box.hh>
-#include <clean-core/poly_box.hh>
+#include <clean-core/experimental/box.hh>
+#include <clean-core/experimental/capped_box.hh>
+#include <clean-core/experimental/fwd_box.hh>
+#include <clean-core/experimental/poly_box.hh>
+
 #include <clean-core/poly_unique_ptr.hh>
 #include <clean-core/polymorphic.hh>
 #include <clean-core/unique_ptr.hh>
@@ -137,17 +138,20 @@ MONTE_CARLO_TEST("value mct")
 
     addOp("gen int", make_int);
 
-    auto const addType = [&](auto obj) {
+    auto const addType = [&](auto obj)
+    {
         using value_t = decltype(obj);
         using T = std::decay_t<decltype(*obj)>;
 
         addOp("make", [](T t) { return value_t(t); });
         addOp("assign", [](value_t& v, T t) { v = t; });
         addOp("move assign", [](value_t& v, T t) { v = value_t(t); });
-        addOp("move ctor", [](value_t& v, value_t& r) {
-            v = cc::move(r);
-            r = -1;
-        });
+        addOp("move ctor",
+              [](value_t& v, value_t& r)
+              {
+                  v = cc::move(r);
+                  r = -1;
+              });
         addOp("get value", [](value_t const& v) { return *v; });
         addOp("get value (impl)", [](value_t const& v) -> T { return v; });
 
