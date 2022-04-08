@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 #include <cstring>
 #include <type_traits>
 
@@ -77,7 +78,7 @@ CC_FORCE_INLINE void container_relocate_construct_range(T* dest, T* src, SizeT n
     }
     else
     {
-        for (SizeT i = 0; i < num_elements; ++i)
+        for (int64_t i = num_elements - 1; i >= 0; --i)
         {
             // move-construct new element in place
             new (placement_new, &dest[i]) T(cc::move(src[i]));

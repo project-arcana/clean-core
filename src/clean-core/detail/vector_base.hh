@@ -201,9 +201,15 @@ public:
     }
 
     /// adds an element at the given index, moves
-    void insert_at(T const& value, size_t index) { insert_range_at(cc::span<T const>(value), index); }
+    /// NOTE: currently, value MUST NOT point into this vector
+    /// TODO: remove this restriction
+    /// TODO: move/emplace version
+    void insert_at(size_t index, T const& value) { insert_range_at(index, cc::span<T const>(value)); }
 
-    void insert_range_at(cc::span<T const> values, size_t index)
+    /// NOTE: currently, values MUST NOT point into this vector
+    /// TODO: remove this restriction
+    /// TODO: generic range version
+    void insert_range_at(size_t index, cc::span<T const> values)
     {
         CC_CONTRACT(index <= _size);
 
@@ -356,11 +362,13 @@ public:
 
     /// remove all entries that are == value
     /// returns the number of removed entries
-    template <class U = T>
-    size_t remove(U const& value)
+    /// NOTE: the argument is taken per value
+    ///       this ensures correct behavior in cases like "v.remove(v[10])"
+    size_t remove_value(T value)
     {
         return remove_all([&](T const& v) { return v == value; });
     }
+    [[deprecated("renamed to remove_value due to interior reference issues")]] size_t remove(T value) { return remove_value(cc::move(value)); }
 
     /// removes a range (start + count) of elements
     /// count == 0 is allowed and a no-op
