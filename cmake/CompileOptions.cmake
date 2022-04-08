@@ -21,7 +21,7 @@ function(arcana_configure_lib_options LIB_TARGET)
         else() # GCC
             target_compile_options(${LIB_TARGET} PRIVATE
                 -Wno-sign-compare # disable signed/unsigned warnings
-                -Wno-class-memaccess # disable memset warnings
+                $<$<COMPILE_LANGUAGE:CXX>:-Wno-class-memaccess> # disable memset warnings
             )
         endif()
     endif()

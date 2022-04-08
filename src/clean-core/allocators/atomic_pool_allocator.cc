@@ -1,4 +1,4 @@
-#include "threadsafe_allocators.hh"
+#include "atomic_pool_allocator.hh"
 
 cc::atomic_pool_allocator::atomic_pool_allocator(span<std::byte> buffer, size_t block_size) { initialize(buffer, block_size); }
 

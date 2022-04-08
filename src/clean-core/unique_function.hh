@@ -19,6 +19,7 @@ namespace cc
  * TODO: sbo_ and capped_ versions
  * TODO: deduction guides
  * TODO: member functions
+ * TODO: use cc::alloc as default allocator
  */
 template <class Signature>
 struct unique_function;

@@ -4,6 +4,9 @@
 
 #ifdef CC_OS_WINDOWS
 // clang-format off
+
+#include <mutex>
+
 #include <clean-core/native/detail/win32_sanitize_before.inl>
 #include <Windows.h> // required for stackwalker
 #include <crtdbg.h> // _CrtDebugReport
@@ -44,12 +47,15 @@ protected:
 };
 
 // macro instead of function to reduce noise in the callstack
-#define CC_PRINT_STACK_TRACE()               \
-    do                                       \
-    {                                        \
-        fprintf(stderr, "\nstack trace:\n"); \
-        CallstackOutputWalker sw;            \
-        sw.ShowCallstack();                  \
+#define CC_PRINT_STACK_TRACE()                     \
+    do                                             \
+    {                                              \
+        static std::mutex stackWalkMutex = {};     \
+        auto lg = std::lock_guard(stackWalkMutex); \
+                                                   \
+        fprintf(stderr, "\nstack trace:\n");       \
+        CallstackOutputWalker sw;                  \
+        sw.ShowCallstack();                        \
     } while (0)
 
 #else
