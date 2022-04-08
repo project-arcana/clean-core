@@ -5,9 +5,6 @@
 #ifdef CC_OS_LINUX
 #include <cxxabi.h>
 #include <cstdlib>
-#else
-// TODO: implement me
-#endif
 
 cc::string cc::demangle(string_view mangled_name)
 {
@@ -23,3 +20,8 @@ cc::string cc::demangle(string_view mangled_name)
 
     return name;
 }
+
+#else
+// TODO: implement me
+cc::string cc::demangle(string_view mangled_name) { return mangled_name; }
+#endif
