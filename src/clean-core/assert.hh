@@ -35,7 +35,7 @@
 
 #define CC_DETAIL_EXECUTE_ASSERT(condition, msg)                                                                                                    \
     (CC_UNLIKELY(!(condition))                                                                                                                      \
-         ? (CC_DEBUG_BREAK(), ::cc::detail::assertion_failed({#condition, CC_PRETTY_FUNC, __FILE__, msg, __LINE__}), ::cc::detail::perform_abort()) \
+         ? (::cc::detail::assertion_failed({#condition, CC_PRETTY_FUNC, __FILE__, msg, __LINE__}), CC_DEBUG_BREAK(), ::cc::detail::perform_abort()) \
          : void(0)) // force ;
 
 #define CC_RUNTIME_ASSERT(condition) CC_DETAIL_EXECUTE_ASSERT(condition, nullptr)
