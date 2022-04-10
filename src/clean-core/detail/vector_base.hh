@@ -167,6 +167,16 @@ public:
         return *(new (placement_new, &_data[_size++]) T(cc::forward<Args>(args)...));
     }
 
+    void push_back_range_n(T const* data, size_t num)
+    {
+        if (!data || !num)
+            return;
+
+        reserve(_size + num);
+        detail::container_copy_construct_range<T>(data, num, &_data[_size]);
+        _size += num;
+    }
+
     /// adds all elements of the range
     template <class Range>
     void push_back_range(Range&& range)
@@ -182,13 +192,9 @@ public:
                 return;
             }
 
-            this->reserve(_size + num_new_elems);
-
             // NOTE: this would assert for an empty span<T>
             // only get this pointer after checking for size == 0
-            T const* const new_elem_data = &range[0];
-            detail::container_copy_construct_range<T>(new_elem_data, num_new_elems, &_data[_size]);
-            _size += num_new_elems;
+            this->push_back_range_n(&range[0], num_new_elems);
         }
         else
         {
