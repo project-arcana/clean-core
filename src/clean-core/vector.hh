@@ -15,8 +15,7 @@ public:
 
     explicit vector(size_t size) : detail::vector_base<T, false>(this->_alloc(size), size, size)
     {
-        for (size_t i = 0; i < size; ++i)
-            new (placement_new, &this->_data[i]) T();
+        detail::container_default_construct_or_zeroed(size, _data);
     }
 
     [[nodiscard]] static vector defaulted(size_t size) { return vector(size); }
