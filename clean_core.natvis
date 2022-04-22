@@ -1,69 +1,91 @@
 <?xml version="1.0" encoding="utf-8"?>
 
+<!-- 
+  Natvis markup for most common clean core types 
+  If these have no effect, make sure that
+    Tools -> Options -> Debugging -> General -> "Show raw structure of objects in variables windows" is OFF
+  and potentially that
+    Tools -> Options -> Debugging -> General -> "Enable Edit and Continue" is OFF
+  To diagnose parsing errors etc., enable
+    Tools -> Options -> Debugging -> Output Window -> General Output Settings -> "Natvis diagnostic messages (C++ only)"
+-->
+
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
   <!-- clean-core vectors -->
   <Type Name="cc::vector&lt;*&gt;">
-    <Intrinsic Name="size" Expression="_size" />
-    <Intrinsic Name="capacity" Expression="_capacity" />
-    <DisplayString>{{ size={size()} }}</DisplayString>
+    <DisplayString>{{ vector size={_size} }}</DisplayString>
     <Expand>
-      <Item Name="[capacity]" ExcludeView="simple">capacity()</Item>
-      <!--<Item Name="[allocator]" ExcludeView="simple">_Mypair</Item>-->
+      <Item Name="[capacity]" ExcludeView="simple">_capacity</Item>
       <ArrayItems>
-        <Size>size()</Size>
+        <Size>_size</Size>
         <ValuePointer>_data</ValuePointer>
-        </ArrayItems>
+      </ArrayItems>
     </Expand>
   </Type>
 
   <Type Name="cc::alloc_vector&lt;*&gt;">
-    <Intrinsic Name="size" Expression="_size" />
-    <Intrinsic Name="capacity" Expression="_capacity" />
-    <DisplayString>{{ size={size()} }}</DisplayString>
+    <DisplayString>{{ alloc_vector size={_size)} }}</DisplayString>
     <Expand>
-      <Item Name="[capacity]" ExcludeView="simple">capacity()</Item>
+      <Item Name="[capacity]" ExcludeView="simple">_capacity</Item>
       <Item Name="[allocator]" ExcludeView="simple">_allocator</Item>
       <ArrayItems>
-        <Size>size()</Size>
+        <Size>_size</Size>
         <ValuePointer>_data</ValuePointer>
-        </ArrayItems>
+      </ArrayItems>
     </Expand>
   </Type>
 
-  <!-- clean-core dynamic arrays (second template arg: size_t(-1)  -->
-  <Type Name="cc::array&lt;*, 18446744073709551615&gt;">
-    <Intrinsic Name="size" Expression="_size" />
-    <DisplayString>{{ size={size()} }}</DisplayString>
+  <!-- clean-core dynamic arrays (second template arg for dynamic (size_t(-1) or 18446744073709551615ui64) doesn't seem to be specifiable) -->
+  <Type Name="cc::array&lt;*&gt;">
+    <DisplayString>{{ array size={_size} }}</DisplayString>
     <Expand>
-      <Item Name="[allocator]" ExcludeView="simple">_allocator</Item>
+      <!--<Item Name="[allocator]" ExcludeView="simple">_allocator</Item>-->
       <ArrayItems>
-        <Size>size()</Size>
+        <Size>_size</Size>
         <ValuePointer>_data</ValuePointer>
-        </ArrayItems>
+        <!-- NOTE: this must work for both dynamic and static version -->
+      </ArrayItems>
     </Expand>
   </Type>
 
   <Type Name="cc::alloc_array&lt;*&gt;">
     <Intrinsic Name="size" Expression="_size" />
-    <DisplayString>{{ size={size()} }}</DisplayString>
+    <DisplayString>{{ alloc_array size={_size} }}</DisplayString>
     <Expand>
       <Item Name="[allocator]" ExcludeView="simple">_allocator</Item>
       <ArrayItems>
         <Size>size()</Size>
         <ValuePointer>_data</ValuePointer>
-        </ArrayItems>
+      </ArrayItems>
     </Expand>
   </Type>
 
   <!-- clean-core span -->
   <Type Name="cc::span&lt;*&gt;">
-    <Intrinsic Name="size" Expression="_size" />
-    <DisplayString>{{ size={size()} }}</DisplayString>
+    <DisplayString>{{ span size={_size} }}</DisplayString>
     <Expand>
       <ArrayItems>
-        <Size>size()</Size>
+        <Size>_size</Size>
         <ValuePointer>_data</ValuePointer>
-        </ArrayItems>
+      </ArrayItems>
+    </Expand>
+  </Type>
+
+  <!-- clean-core string -->
+  <Type Name="cc::sbo_string&lt;*&gt;">
+    <DisplayString>{{ string {_data,[_size]s} }}</DisplayString>
+    <Expand>
+      <Item Name="[value]">_data</Item>
+      <Item Name="[size]">_size</Item>
+      <Item Name="[in SBO]" ExcludeView="simple">_data == _sbo</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="cc::string_view">
+    <DisplayString>{{ string_view {_data,[_size]s} }}</DisplayString>
+    <Expand>
+      <Item Name="[value]">_data,_size</Item>
+      <Item Name="[size]">_size</Item>
     </Expand>
   </Type>
 </AutoVisualizer>
