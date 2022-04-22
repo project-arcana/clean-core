@@ -15,8 +15,9 @@
   <Type Name="cc::vector&lt;*&gt;">
     <DisplayString>{{ vector size={_size} }}</DisplayString>
     <Expand>
+      <Item Name="[size]">_size</Item>
       <Item Name="[capacity]" ExcludeView="simple">_capacity</Item>
-      <ArrayItems>
+      <ArrayItems Condition="_data != 0">
         <Size>_size</Size>
         <ValuePointer>_data</ValuePointer>
       </ArrayItems>
@@ -26,9 +27,10 @@
   <Type Name="cc::alloc_vector&lt;*&gt;">
     <DisplayString>{{ alloc_vector size={_size)} }}</DisplayString>
     <Expand>
-      <Item Name="[capacity]" ExcludeView="simple">_capacity</Item>
+      <Item Name="[size]">_size</Item>
+      <Item Name="[capacity]">_capacity</Item>
       <Item Name="[allocator]" ExcludeView="simple">_allocator</Item>
-      <ArrayItems>
+      <ArrayItems Condition="_data != 0">
         <Size>_size</Size>
         <ValuePointer>_data</ValuePointer>
       </ArrayItems>
@@ -36,14 +38,14 @@
   </Type>
 
   <!-- clean-core dynamic arrays (second template arg for dynamic (size_t(-1) or 18446744073709551615ui64) doesn't seem to be specifiable) -->
+  <!-- TODO: fix this for non-dynamic -->
   <Type Name="cc::array&lt;*&gt;">
     <DisplayString>{{ array size={_size} }}</DisplayString>
     <Expand>
-      <!--<Item Name="[allocator]" ExcludeView="simple">_allocator</Item>-->
-      <ArrayItems>
+      <Item Name="[size]">_size</Item>
+      <ArrayItems Condition="_data != 0">
         <Size>_size</Size>
         <ValuePointer>_data</ValuePointer>
-        <!-- NOTE: this must work for both dynamic and static version -->
       </ArrayItems>
     </Expand>
   </Type>
@@ -52,8 +54,9 @@
     <Intrinsic Name="size" Expression="_size" />
     <DisplayString>{{ alloc_array size={_size} }}</DisplayString>
     <Expand>
+      <Item Name="[size]">_size</Item>
       <Item Name="[allocator]" ExcludeView="simple">_allocator</Item>
-      <ArrayItems>
+      <ArrayItems Condition="_data != 0">
         <Size>size()</Size>
         <ValuePointer>_data</ValuePointer>
       </ArrayItems>
@@ -64,7 +67,7 @@
   <Type Name="cc::span&lt;*&gt;">
     <DisplayString>{{ span size={_size} }}</DisplayString>
     <Expand>
-      <ArrayItems>
+      <ArrayItems Condition="_data != 0">
         <Size>_size</Size>
         <ValuePointer>_data</ValuePointer>
       </ArrayItems>
@@ -86,6 +89,19 @@
     <Expand>
       <Item Name="[value]">_data,_size</Item>
       <Item Name="[size]">_size</Item>
+    </Expand>
+  </Type>
+  
+  <!-- clean-core span2 (experimental) -->
+  <Type Name="cc::span2&lt;*&gt;">
+    <DisplayString>{{ span2 size={_size_x}x{_size_y} }}</DisplayString>
+    <Expand>
+      <ArrayItems Condition="_data != 0">
+        <Direction>Forward</Direction>
+        <Rank>2</Rank>
+        <Size>$i == 0 ? _size_x : _size_y</Size>
+        <ValuePointer>($T1*) _data</ValuePointer>
+      </ArrayItems>
     </Expand>
   </Type>
 </AutoVisualizer>
