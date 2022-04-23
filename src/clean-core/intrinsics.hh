@@ -7,7 +7,10 @@
 #ifdef CC_COMPILER_MSVC
 #include <intrin.h>
 #else
+#ifndef __cpuid
+// NOTE: this file does not (always) have include guards
 #include <cpuid.h>
+#endif
 #include <x86intrin.h>
 #endif
 
