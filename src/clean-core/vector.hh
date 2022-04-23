@@ -15,7 +15,7 @@ public:
 
     explicit vector(size_t size) : detail::vector_base<T, false>(this->_alloc(size), size, size)
     {
-        detail::container_default_construct_or_zeroed(size, _data);
+        detail::container_default_construct_or_zeroed(size, this->_data);
     }
 
     [[nodiscard]] static vector defaulted(size_t size) { return vector(size); }

@@ -22,7 +22,7 @@ public:
         this->_size = size;
         this->_capacity = size;
 
-        detail::container_default_construct_or_zeroed(size, _data);
+        detail::container_default_construct_or_zeroed(size, this->_data);
     }
 
     [[nodiscard]] static alloc_vector defaulted(size_t size, cc::allocator* allocator = cc::system_allocator)
