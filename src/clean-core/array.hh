@@ -249,10 +249,19 @@ private:
 template <class T, class... U>
 array(T, U...) -> array<T, 1 + sizeof...(U)>;
 
-template <class T, class... Args>
+template <class T, class... Args, cc::enable_if<!std::is_array_v<std::remove_reference_t<T>>> = true>
 [[nodiscard]] array<T, 1 + sizeof...(Args)> make_array(T&& v0, Args&&... rest)
 {
     return {{cc::forward<T>(v0), cc::forward<Args>(rest)...}};
+}
+
+template <class T, size_t N>
+[[nodiscard]] array<T, N> make_array(T const (&a)[N])
+{
+    array<T, N> r;
+    for (size_t i = 0; i < N; ++i)
+        r._values[i] = a[i];
+    return r;
 }
 
 // hash
