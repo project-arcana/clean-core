@@ -37,22 +37,24 @@ public:
         return v;
     }
 
-    vector(T const* begin, size_t num_elements)
+    explicit vector(T const* begin, size_t num_elements)
     {
         this->reserve(num_elements);
         detail::container_copy_construct_range<T>(begin, num_elements, this->_data);
         this->_size = num_elements;
     }
-    vector(std::initializer_list<T> data) : vector(data.begin(), data.size()) {}
-    vector(cc::span<T const> data) : vector(data.begin(), data.size()) {}
-    vector(vector const& rhs) : vector(rhs.begin(), rhs.size()) {}
+
+    explicit vector(cc::span<T const> data) : vector(data.begin(), data.size()) {}
 
     template <class Range, cc::enable_if<cc::is_any_range<Range>> = true>
     explicit vector(Range const& range)
     {
-        for (auto const& e : range)
-            this->emplace_back(e);
+        this->push_back_range(range);
     }
+
+    vector(std::initializer_list<T> data) : vector(data.begin(), data.size()) {}
+
+    vector(vector const& rhs) : vector(rhs.begin(), rhs.size()) {}
 
     vector(vector&& rhs) noexcept
     {

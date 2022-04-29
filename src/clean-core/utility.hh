@@ -82,6 +82,14 @@ template <class T>
     }
 } constexpr swap; // implemented as functor so it cannot be found by ADL
 
+// straightforward swap that does not respect custom overloads
+template <class T>
+constexpr void simple_swap(T& a, T& b)
+{
+    T tmp = static_cast<T&&>(a);
+    a = static_cast<T&&>(b);
+    b = static_cast<T&&>(tmp);
+}
 
 /// increment the value (pointer or integer) to align to the given mask
 template <class T>
