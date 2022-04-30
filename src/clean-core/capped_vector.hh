@@ -74,6 +74,12 @@ public:
     using compact_size_t = detail::compact_size_t_typed<T, N>;
     constexpr capped_vector() = default;
 
+    explicit capped_vector(size_t size)
+    {
+        CC_CONTRACT(size <= N);
+        resize(size, T());
+    }
+
     [[nodiscard]] static capped_vector defaulted(size_t size)
     {
         CC_CONTRACT(size <= N);
@@ -161,18 +167,20 @@ public:
 
     // methods
 public:
-    void push_back(T const& t)
+    T& push_back(T const& t)
     {
         CC_CONTRACT(_size < N);
         new (placement_new, &_u.value[_size]) T(t);
         ++_size;
+        return back();
     }
 
-    void push_back(T&& t)
+    T& push_back(T&& t)
     {
         CC_CONTRACT(_size < N);
         new (placement_new, &_u.value[_size]) T(cc::move(t));
         ++_size;
+        return back();
     }
 
     void pop_back()

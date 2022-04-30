@@ -1,13 +1,8 @@
 #pragma once
 
-#include <cstddef>
-
 #include <atomic>
-#include <mutex>
 
 #include <clean-core/allocator.hh>
-#include <clean-core/new.hh>
-#include <clean-core/utility.hh>
 
 namespace cc
 {
@@ -88,7 +83,7 @@ struct atomic_pool_allocator final : allocator
     size_t max_num_blocks() const { return _buffer_size / _block_size; }
 
     atomic_pool_allocator() = default;
-    atomic_pool_allocator(span<std::byte> buffer, size_t block_size);
+    explicit atomic_pool_allocator(span<std::byte> buffer, size_t block_size);
 
     void initialize(span<std::byte> buffer, size_t block_size);
 
@@ -105,86 +100,4 @@ private:
     size_t _block_size = 0;
 };
 
-/// thread safe version of cc::linear_allocator
-struct atomic_linear_allocator final : allocator
-{
-    std::byte* alloc(size_t size, size_t align = alignof(std::max_align_t)) override
-    {
-        CC_ASSERT(_buffer_begin != nullptr && "atomic_linear_allocator unintialized");
-
-        auto const buffer_size = size + align - 1; // align worst case buffer to satisfy up-aligning
-        auto const buffer_start = _offset.fetch_add(buffer_size, std::memory_order_acquire);
-
-        auto* const alloc_start = _buffer_begin + buffer_start;
-        auto* const padded_res = cc::align_up(alloc_start, align);
-
-        CC_ASSERT(padded_res - alloc_start < std::ptrdiff_t(align) && "up-align OOB");
-        CC_ASSERT(padded_res + size <= _buffer_end && "atomic_linear_allocator overcommitted");
-
-        return padded_res;
-    }
-
-    void free(void* ptr) override
-    {
-        // no-op
-        (void)ptr;
-    }
-
-    void reset() { _offset.store(0, std::memory_order_release); }
-
-    size_t allocated_size() const { return _offset; }
-    size_t max_size() const { return _buffer_end - _buffer_begin; }
-    float allocated_ratio() const { return allocated_size() / float(max_size()); }
-
-    atomic_linear_allocator() = default;
-    atomic_linear_allocator(span<std::byte> buffer) : _buffer_begin(buffer.data()), _offset(0), _buffer_end(buffer.data() + buffer.size()) {}
-
-    void initialize(span<std::byte> buffer)
-    {
-        // atomics cant be moved, making this necessary
-        _buffer_begin = buffer.data();
-        _offset = 0;
-        _buffer_end = buffer.data() + buffer.size();
-    }
-
-private:
-    std::byte* _buffer_begin = nullptr;
-    std::atomic<std::size_t> _offset = {0};
-    std::byte* _buffer_end = nullptr;
-};
-
-
-/// Synchronized (mutexed) version of tlsf_allocator
-struct synced_tlsf_allocator final : allocator
-{
-    synced_tlsf_allocator() = default;
-    synced_tlsf_allocator(cc::span<std::byte> buffer) : _backing(buffer) {}
-    ~synced_tlsf_allocator() { _backing.destroy(); }
-
-
-    std::byte* alloc(size_t size, size_t align = alignof(std::max_align_t)) override
-    {
-        auto lg = std::lock_guard(_mutex);
-        return _backing.alloc(size, align);
-    }
-
-    void free(void* ptr) override
-    {
-        auto lg = std::lock_guard(_mutex);
-        _backing.free(ptr);
-    }
-
-    std::byte* realloc(void* ptr, size_t old_size, size_t new_size, size_t align = alignof(std::max_align_t)) override
-    {
-        auto lg = std::lock_guard(_mutex);
-        return _backing.realloc(ptr, old_size, new_size, align);
-    }
-
-    void initialize(cc::span<std::byte> buffer) { _backing.initialize(buffer); }
-    void destroy() { _backing.destroy(); }
-
-private:
-    std::mutex _mutex;
-    cc::tlsf_allocator _backing;
-};
 }

@@ -320,6 +320,7 @@ public:
     // string processing
 public:
     string_view subview(size_t offset, size_t size) const { return string_view(_data, _size).subview(offset, size); }
+    string_view subview_clamped(size_t offset, size_t size) const { return string_view(_data, _size).subview_clamped(offset, size); }
     string_view subview(size_t offset) const { return string_view(_data, _size).subview(offset); }
     sbo_string substring(size_t offset, size_t size) const { return subview(offset, size); }
     sbo_string substring(size_t offset) const { return subview(offset); }
@@ -634,7 +635,7 @@ public:
         auto const os = old.size();
         while (i < _size)
         {
-            if (subview(i, os) == old) // found
+            if (subview_clamped(i, os) == old) // found
             {
                 r += replacement;
                 i += old.size();

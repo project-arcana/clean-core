@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 #include <cstring>
 #include <type_traits>
 
@@ -63,6 +64,28 @@ CC_FORCE_INLINE void container_copy_construct_fill(T const& value, SizeT num, T*
     static_assert(sizeof(T) > 0, "cannot copy incomplete types");
     for (SizeT i = 0; i < num; ++i)
         new (placement_new, &dest[i]) T(value);
+}
+
+template <class T, class SizeT = std::size_t>
+CC_FORCE_INLINE void container_relocate_construct_range(T* dest, T* src, SizeT num_elements)
+{
+    if constexpr (std::is_trivially_copyable_v<T>)
+    {
+        if (num_elements > 0)
+        {
+            std::memmove(dest, src, num_elements * sizeof(T));
+        }
+    }
+    else
+    {
+        for (int64_t i = num_elements - 1; i >= 0; --i)
+        {
+            // move-construct new element in place
+            new (placement_new, &dest[i]) T(cc::move(src[i]));
+            // call dtor on old element
+            src[i].~T();
+        }
+    }
 }
 
 template <class T, class SizeT = std::size_t>

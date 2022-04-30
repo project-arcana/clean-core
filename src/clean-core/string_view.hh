@@ -94,6 +94,10 @@ public:
         CC_CONTRACT(offset + size <= _size);
         return {_data + offset, size};
     }
+    constexpr string_view subview_clamped(size_t offset, size_t size) const
+    {
+        return {_data + offset, offset > _size ? 0 : offset + size > _size ? _size - offset : size};
+    }
     constexpr string_view subview(size_t offset) const
     {
         CC_CONTRACT(offset <= _size);

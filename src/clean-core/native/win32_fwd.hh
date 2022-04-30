@@ -36,4 +36,20 @@ typedef UINT_PTR WPARAM;
 typedef LONG_PTR LPARAM;
 typedef LONG_PTR LRESULT;
 
+#if (_MSC_VER >= 800) || defined(_STDCALL_SUPPORTED)
+#define CALLBACK __stdcall
+#define WINAPI __stdcall
+#define WINAPIV __cdecl
+#define APIENTRY WINAPI
+#define APIPRIVATE __stdcall
+#define PASCAL __stdcall
+#else
+#define CALLBACK
+#define WINAPI
+#define WINAPIV
+#define APIENTRY WINAPI
+#define APIPRIVATE
+#define PASCAL pascal
+#endif
+
 #endif
