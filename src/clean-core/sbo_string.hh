@@ -81,7 +81,6 @@ public:
         _data = _sbo;
     }
 
-    sbo_string(char c) : sbo_string(&c, 1) {}
     sbo_string(char const* s)
     {
         _size = std::strlen(s);
