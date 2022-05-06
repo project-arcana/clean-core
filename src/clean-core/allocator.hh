@@ -125,6 +125,10 @@ T* allocator::new_array(size_t num_elems)
         for (auto i = 0u; i < num_elems; ++i)
             new (placement_new, res_array_ptr + i) T();
     }
+    else
+    {
+        std::memset(res_array_ptr, 0, sizeof(T) * num_elems);
+    }
 
     return res_array_ptr;
 }
@@ -163,6 +167,10 @@ T* allocator::new_array_sized(size_t num_elems)
     {
         for (auto i = 0u; i < num_elems; ++i)
             new (placement_new, res_array_ptr + i) T();
+    }
+    else
+    {
+        std::memset(res_array_ptr, 0, sizeof(T) * num_elems);
     }
 
     return res_array_ptr;
