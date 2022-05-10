@@ -71,7 +71,7 @@
 
 #ifdef CC_ENABLE_ASSERTIONS
 #define CC_UNREACHABLE(msg)                                                                                                             \
-    (CC_DEBUG_BREAK(), ::cc::detail::assertion_failed({"unreachable code reached: " msg, CC_PRETTY_FUNC, __FILE__, nullptr, __LINE__}), \
+    (::cc::detail::assertion_failed({"unreachable code reached: " msg, CC_PRETTY_FUNC, __FILE__, nullptr, __LINE__}), CC_DEBUG_BREAK(), \
      ::cc::detail::perform_abort(), CC_BUILTIN_UNREACHABLE)
 #else
 #define CC_UNREACHABLE(msg) CC_BUILTIN_UNREACHABLE
