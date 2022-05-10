@@ -21,8 +21,8 @@ public:
         this->_data = this->_alloc(size);
         this->_size = size;
         this->_capacity = size;
-        for (size_t i = 0; i < size; ++i)
-            new (placement_new, &this->_data[i]) T();
+
+        detail::container_default_construct_or_zeroed(size, this->_data);
     }
 
     [[nodiscard]] static alloc_vector defaulted(size_t size, cc::allocator* allocator = cc::system_allocator)

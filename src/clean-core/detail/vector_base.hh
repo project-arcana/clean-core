@@ -410,6 +410,12 @@ public:
         this->pop_back();
     }
 
+    void fill_memzero()
+    {
+        static_assert(std::is_trivially_copyable_v<T>, "Can only memzero trivial types");
+        memset(_data, 0, size_bytes());
+    }
+
     /// returns true iff any entry is == value
     template <class U = T>
     bool contains(U const& value) const
