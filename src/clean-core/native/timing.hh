@@ -6,7 +6,7 @@
 
 namespace cc
 {
-CC_FORCE_INLINE int64_t get_high_precision_time();
+CC_FORCE_INLINE int64_t get_high_precision_ticks();
 CC_FORCE_INLINE int64_t get_high_precision_frequency();
 }
 
@@ -14,7 +14,7 @@ CC_FORCE_INLINE int64_t get_high_precision_frequency();
 
 #include <clean-core/native/win32_sanitized.hh>
 
-CC_FORCE_INLINE int64_t cc::get_high_precision_time()
+CC_FORCE_INLINE int64_t cc::get_high_precision_ticks()
 {
     ::LARGE_INTEGER timestamp;
     ::QueryPerformanceCounter(&timestamp);
@@ -34,7 +34,7 @@ CC_FORCE_INLINE int64_t cc::get_high_precision_frequency()
 #include <sys/time.h>
 #include <sys/types.h>
 
-CC_FORCE_INLINE int64_t cc::get_high_precision_time()
+CC_FORCE_INLINE int64_t cc::get_high_precision_ticks()
 {
     ::timespec ts;
     ::clock_gettime(CLOCK_MONOTONIC, &ts);
