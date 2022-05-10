@@ -6,7 +6,11 @@
 
 namespace cc
 {
+// returns a high precision platform specific tick counter
+// divide by frequency to convert to seconds
 CC_FORCE_INLINE int64_t get_high_precision_ticks();
+
+// returns the amount of ticks per second
 CC_FORCE_INLINE int64_t get_high_precision_frequency();
 }
 
