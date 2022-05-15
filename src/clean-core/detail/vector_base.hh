@@ -61,9 +61,11 @@ struct vector_internals
 };
 
 
-template <class T, bool HasAllocator>
+template <class T, class IndexT, bool HasAllocator>
 struct vector_base : protected std::conditional_t<HasAllocator, detail::vector_internals_with_allocator<T>, detail::vector_internals<T>>
 {
+    using index_t = IndexT;
+
     // properties
 public:
     size_t size() const { return _size; }
@@ -100,15 +102,15 @@ public:
         return _data[_size - 1];
     }
 
-    T& operator[](size_t i)
+    T& operator[](index_t i)
     {
-        CC_CONTRACT(i < _size);
-        return _data[i];
+        CC_CONTRACT(size_t(i) < _size);
+        return _data[size_t(i)];
     }
-    T const& operator[](size_t i) const
+    T const& operator[](index_t i) const
     {
-        CC_CONTRACT(i < _size);
-        return _data[i];
+        CC_CONTRACT(size_t(i) < _size);
+        return _data[size_t(i)];
     }
 
     // methods
@@ -210,14 +212,14 @@ public:
     /// NOTE: currently, value MUST NOT point into this vector
     /// TODO: remove this restriction
     /// TODO: move/emplace version
-    void insert_at(size_t index, T const& value) { insert_range_at(index, cc::span<T const>(value)); }
+    void insert_at(index_t index, T const& value) { insert_range_at(index, cc::span<T const>(value)); }
 
     /// NOTE: currently, values MUST NOT point into this vector
     /// TODO: remove this restriction
     /// TODO: generic range version
-    void insert_range_at(size_t index, cc::span<T const> values)
+    void insert_range_at(index_t index, cc::span<T const> values)
     {
-        CC_CONTRACT(index <= _size);
+        CC_CONTRACT(size_t(index) <= _size);
 
         size_t const num_new_elems = values.size();
         if (num_new_elems == 0)
@@ -225,8 +227,8 @@ public:
 
         reserve(_size + num_new_elems);
 
-        T* const data = _data + index;
-        detail::container_relocate_construct_range<T>(data + num_new_elems, data, _size - index);
+        T* const data = _data + size_t(index);
+        detail::container_relocate_construct_range<T>(data + num_new_elems, data, _size - size_t(index));
 
         detail::container_copy_construct_range<T>(values.data(), num_new_elems, data);
         _size += num_new_elems;
@@ -378,35 +380,35 @@ public:
 
     /// removes a range (start + count) of elements
     /// count == 0 is allowed and a no-op
-    void remove_range(size_t idx, size_t cnt)
+    void remove_range(index_t idx, size_t cnt)
     {
         if (cnt == 0)
             return;
 
-        CC_CONTRACT(idx < _size);
-        CC_CONTRACT(idx + cnt <= _size);
+        CC_CONTRACT(size_t(idx) < _size);
+        CC_CONTRACT(size_t(idx) + cnt <= _size);
 
-        for (size_t i = idx; i < _size - cnt; ++i)
+        for (size_t i = size_t(idx); i < _size - cnt; ++i)
             _data[i] = cc::move(_data[i + cnt]);
         detail::container_destroy_reverse<T>(_data, _size, _size - cnt);
         _size -= cnt;
     }
 
     /// removes the element at the given index
-    void remove_at(size_t idx)
+    void remove_at(index_t idx)
     {
         CC_CONTRACT(idx < _size);
-        for (size_t i = idx + 1; i < _size; ++i)
+        for (size_t i = size_t(idx) + 1; i < _size; ++i)
             _data[i - 1] = cc::move(_data[i]);
         --_size;
         _data[_size].~T();
     }
 
     /// removes the element at the given index without preserving order
-    void remove_at_unordered(size_t idx)
+    void remove_at_unordered(index_t idx)
     {
-        CC_CONTRACT(idx < _size);
-        cc::swap(_data[idx], this->back());
+        CC_CONTRACT(size_t(idx) < _size);
+        cc::swap(_data[size_t(idx)], this->back());
         this->pop_back();
     }
 

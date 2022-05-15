@@ -34,11 +34,11 @@ struct span;
 template <class T>
 struct strided_span;
 
-template <class T>
+template <class T, class IndexT = size_t>
 struct vector;
 template <class T, size_t N>
 struct capped_vector;
-template <class T>
+template <class T, class IndexT = size_t>
 struct alloc_vector;
 
 template <class T, size_t N = dynamic_size>
@@ -98,7 +98,7 @@ struct poly_unique_ptr;
 
 // locks
 struct spin_lock;
-template<class T>
+template <class T>
 struct lock_guard;
 
 // allocators
