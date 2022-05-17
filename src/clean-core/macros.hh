@@ -45,6 +45,11 @@
 #endif
 #endif
 
+// from CMake:
+// CC_DEBUG is defined in debug configurations
+// CC_RELEASE in release configurations
+// CC_RELWITHDEBINFO in release-with-debug
+
 // =========
 // operating systems
 // CC_OS_WINDOWS, CC_OS_LINUX, CC_OS_APPLE, or CC_OS_BSD
@@ -159,6 +164,12 @@
 
 #else
 #error "Unknown compiler"
+#endif
+
+#ifdef CC_DEBUG
+#define CC_FORCE_INLINE_DEBUGGABLE inline
+#else
+#define CC_FORCE_INLINE_DEBUGGABLE CC_FORCE_INLINE
 #endif
 
 // =========
