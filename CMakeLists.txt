@@ -19,6 +19,9 @@ include(cmake/SourceGroup.cmake)
 include(cmake/CompileOptions.cmake)
 include(cmake/AddLibrary.cmake)
 
+# TODO: make configurable
+include(cmake/AddTest.cmake)
+
 # =========================================
 # define library
 

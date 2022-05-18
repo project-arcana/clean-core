@@ -732,23 +732,23 @@ MONTE_CARLO_TEST("cc::alloc_vector mct")
 TEST("cc::vector remove")
 {
     cc::vector<int> v = {3, 2, 1, 3};
-    v.remove(3);
+    v.remove_value(3);
     CHECK(v.size() == 2);
     CHECK(v == cc::vector{2, 1});
-    v.remove(2);
+    v.remove_value(2);
     CHECK(v == cc::vector{1});
     CHECK(v.size() == 1);
     v.push_back(4);
     v.push_back(4);
     CHECK(v == cc::vector{1, 4, 4});
     CHECK(v.size() == 3);
-    v.remove(2);
+    v.remove_value(2);
     CHECK(v == cc::vector{1, 4, 4});
     CHECK(v.size() == 3);
-    v.remove(1);
+    v.remove_value(1);
     CHECK(v == cc::vector{4, 4});
     CHECK(v.size() == 2);
-    v.remove(4);
+    v.remove_value(4);
     CHECK(v.empty());
     CHECK(v.size() == 0);
 
