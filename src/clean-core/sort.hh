@@ -72,6 +72,64 @@ void sort_by(Collection&& collection, KeyF&& key, CompareF&& compare = {})
         cc::constant_function<true>{});
 }
 
+/// ensures that the element at idx is "correctly sorted"
+/// i.e. if collection were completely sorted but without actually sorting everything
+/// has O(n) time complexity
+template <class Collection, class CompareF = cc::less<void>>
+void nth_element(Collection&& collection, size_t idx, CompareF&& compare = {})
+{
+    static_assert(collection_traits<Collection>::is_range);
+    size_t size = cc::collection_size(collection);
+    cc::sort_ex(
+        0, size,                                                                         //
+        [&collection](int64_t i) { return collection[i]; },                              //
+        compare,                                                                         //
+        [&collection](int64_t a, int64_t b) { cc::swap(collection[a], collection[b]); }, //
+        [idx](int64_t start, int64_t size) { return start <= idx && idx < start + size; });
+}
+
+template <class Collection, class KeyF, class CompareF = cc::less<void>>
+void nth_element_by(Collection&& collection, size_t idx, KeyF&& key, CompareF&& compare = {})
+{
+    static_assert(collection_traits<Collection>::is_range);
+    size_t size = cc::collection_size(collection);
+    cc::sort_ex(
+        0, size,                                                                         //
+        [&collection, &key](int64_t i) { return cc::invoke(key, collection[i]); },       //
+        compare,                                                                         //
+        [&collection](int64_t a, int64_t b) { cc::swap(collection[a], collection[b]); }, //
+        [idx](int64_t start, int64_t size) { return start <= idx && idx < start + size; });
+}
+
+/// makes sure that all elements from idx..idx+count-1 are what they would be if collection were completely sorted
+/// but without actually sorting the whole collection
+/// takes O(n + count * log count) time
+/// NOTE: idx + count is not required to be in bounds
+template <class Collection, class CompareF = cc::less<void>>
+void sort_subrange(Collection&& collection, size_t idx, size_t count, CompareF&& compare = {})
+{
+    static_assert(collection_traits<Collection>::is_range);
+    size_t size = cc::collection_size(collection);
+    cc::sort_ex(
+        0, size,                                                                         //
+        [&collection](int64_t i) { return collection[i]; },                              //
+        compare,                                                                         //
+        [&collection](int64_t a, int64_t b) { cc::swap(collection[a], collection[b]); }, //
+        [idx, count](int64_t start, int64_t size) { return start <= idx + count && idx <= start + size; });
+}
+
+template <class Collection, class KeyF, class CompareF = cc::less<void>>
+void sort_subrange_by(Collection&& collection, size_t idx, size_t count, KeyF&& key, CompareF&& compare = {})
+{
+    static_assert(collection_traits<Collection>::is_range);
+    size_t size = cc::collection_size(collection);
+    cc::sort_ex(
+        0, size,                                                                         //
+        [&collection, &key](int64_t i) { return cc::invoke(key, collection[i]); },       //
+        compare,                                                                         //
+        [&collection](int64_t a, int64_t b) { cc::swap(collection[a], collection[b]); }, //
+        [idx, count](int64_t start, int64_t size) { return start <= idx && idx + count <= start + size; });
+}
 
 namespace detail
 {
@@ -240,10 +298,10 @@ void sort_ex_impl(int64_t start, int64_t size, GetF& get, CompareF& compare, Swa
     int64_t start_right = pivot_pos + 1;
     int64_t size_right = end - start_right;
 
-    if (cc::invoke(select, start_left, size_left, get, compare, swap, select))
+    if (cc::invoke(select, start_left, size_left))
         detail::sort_ex_impl(start_left, size_left, get, compare, swap, select);
 
-    if (cc::invoke(select, start_right, size_right, get, compare, swap, select))
+    if (cc::invoke(select, start_right, size_right))
         detail::sort_ex_impl(start_right, size_right, get, compare, swap, select);
 }
 }

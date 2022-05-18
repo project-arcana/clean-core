@@ -65,3 +65,43 @@ FUZZ_TEST("cc::sort fuzzer")(tg::rng& rng)
     for (auto i = 1; i < cnt; ++i)
         CHECK(v[i - 1] <= v[i]);
 }
+
+FUZZ_TEST("cc::nth_element fuzzer")(tg::rng& rng)
+{
+    cc::vector<int> v;
+
+    auto cnt = uniform(rng, 1, 200);
+    for (auto i = 0; i < cnt; ++i)
+        v.push_back(uniform(rng, -100, 100));
+
+    auto idx = uniform(rng, 0, cnt - 1);
+    cc::nth_element(v, idx);
+
+    auto nth = v[idx];
+
+    cc::sort(v);
+
+    CHECK(v[idx] == nth);
+}
+
+FUZZ_TEST("cc::sort_subrange fuzzer")(tg::rng& rng)
+{
+    cc::vector<int> v;
+
+    auto cnt = uniform(rng, 1, 200);
+    for (auto i = 0; i < cnt; ++i)
+        v.push_back(uniform(rng, -100, 100));
+
+    auto idx = uniform(rng, 0, cnt - 1);
+    auto count = uniform(rng, 1, cnt - idx);
+
+    cc::sort_subrange(v, idx, count);
+
+    auto subrange = cc::vector<int>(cc::span(v).subspan(idx, count));
+
+    cc::sort(v);
+
+    auto ref = cc::vector<int>(cc::span(v).subspan(idx, count));
+
+    CHECK(subrange == ref);
+}
