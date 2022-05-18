@@ -6,16 +6,14 @@
 
 namespace cc
 {
-template <class T, class IndexT>
-struct vector : detail::vector_base<T, IndexT, false>
+template <class T>
+struct vector : detail::vector_base<T, size_t, false>
 {
-    using index_t = IndexT;
-
     // ctors
 public:
     vector() = default;
 
-    explicit vector(size_t size) : detail::vector_base<T, IndexT, false>(this->_alloc(size), size, size)
+    explicit vector(size_t size) : detail::vector_base<T, size_t, false>(this->_alloc(size), size, size)
     {
         for (size_t i = 0; i < size; ++i)
             new (placement_new, &this->_data[i]) T();
@@ -104,10 +102,10 @@ public:
 };
 
 // hash
-template <class T, class IndexT>
-struct hash<vector<T, IndexT>>
+template <class T>
+struct hash<vector<T>>
 {
-    [[nodiscard]] constexpr uint64_t operator()(vector<T, IndexT> const& a) const noexcept
+    [[nodiscard]] constexpr uint64_t operator()(vector<T> const& a) const noexcept
     {
         uint64_t h = 0;
         for (auto const& v : a)

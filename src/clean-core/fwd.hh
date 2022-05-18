@@ -34,11 +34,13 @@ struct span;
 template <class T>
 struct strided_span;
 
-template <class T, class IndexT = size_t>
+template <class T>
 struct vector;
+template <class Traits>
+struct vector_ex;
 template <class T, size_t N>
 struct capped_vector;
-template <class T, class IndexT = size_t>
+template <class T>
 struct alloc_vector;
 
 template <class T, size_t N = dynamic_size>

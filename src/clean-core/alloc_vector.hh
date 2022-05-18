@@ -7,16 +7,14 @@
 namespace cc
 {
 // cc::vector, but backed by a given allocator
-template <class T, class IndexT>
-struct alloc_vector : public detail::vector_base<T, IndexT, true>
+template <class T>
+struct alloc_vector : public detail::vector_base<T, size_t, true>
 {
-    using index_t = IndexT;
-
     // ctors
 public:
-    alloc_vector() noexcept : detail::vector_base<T, IndexT, true>(cc::system_allocator) {}
+    alloc_vector() noexcept : detail::vector_base<T, size_t, true>(cc::system_allocator) {}
 
-    explicit alloc_vector(cc::allocator* allocator) noexcept : detail::vector_base<T, IndexT, true>(allocator) { CC_CONTRACT(allocator != nullptr); }
+    explicit alloc_vector(cc::allocator* allocator) noexcept : detail::vector_base<T, size_t, true>(allocator) { CC_CONTRACT(allocator != nullptr); }
 
     explicit alloc_vector(size_t size, cc::allocator* allocator = cc::system_allocator) : alloc_vector(allocator)
     {
@@ -125,10 +123,10 @@ public:
 };
 
 // hash
-template <class T, class IndexT>
-struct hash<alloc_vector<T, IndexT>>
+template <class T>
+struct hash<alloc_vector<T>>
 {
-    [[nodiscard]] constexpr uint64_t operator()(alloc_vector<T, IndexT> const& a) const noexcept
+    [[nodiscard]] constexpr uint64_t operator()(alloc_vector<T> const& a) const noexcept
     {
         uint64_t h = 0;
         for (auto const& v : a)
