@@ -36,6 +36,8 @@ struct strided_span;
 
 template <class T>
 struct vector;
+template <class Traits>
+struct vector_ex;
 template <class T, size_t N>
 struct capped_vector;
 template <class T>
@@ -98,7 +100,7 @@ struct poly_unique_ptr;
 
 // locks
 struct spin_lock;
-template<class T>
+template <class T>
 struct lock_guard;
 
 // allocators
