@@ -68,9 +68,9 @@ constexpr void sort_by_descending(Collection&& collection, KeyF&& key);
 /// i.e. all elements before idx actually belong before index (and same with above)
 ///      even if they are themselves not necessarily sorted
 template <class Collection, class CompareF = cc::less<void>>
-constexpr void nth_element(Collection&& collection, size_t idx, CompareF&& compare = {});
+constexpr void quickselect(Collection&& collection, size_t idx, CompareF&& compare = {});
 template <class Collection, class KeyF, class CompareF = cc::less<void>>
-constexpr void nth_element_by(Collection&& collection, size_t idx, KeyF&& key, CompareF&& compare = {});
+constexpr void quickselect_by(Collection&& collection, size_t idx, KeyF&& key, CompareF&& compare = {});
 
 /// makes sure that all elements from idx..idx+count-1 are what they would be if collection were completely sorted
 /// but without actually sorting the whole collection
@@ -80,9 +80,9 @@ constexpr void nth_element_by(Collection&& collection, size_t idx, KeyF&& key, C
 /// i.e. all elements before the subrange actually belong before (and same with above)
 ///      even if they are themselves not necessarily sorted
 template <class Collection, class CompareF = cc::less<void>>
-constexpr void sort_subrange(Collection&& collection, size_t idx, size_t count, CompareF&& compare = {});
+constexpr void quickselect_range(Collection&& collection, size_t idx, size_t count, CompareF&& compare = {});
 template <class Collection, class KeyF, class CompareF = cc::less<void>>
-constexpr void sort_subrange_by(Collection&& collection, size_t idx, size_t count, KeyF&& key, CompareF&& compare = {});
+constexpr void quickselect_range_by(Collection&& collection, size_t idx, size_t count, KeyF&& key, CompareF&& compare = {});
 
 /// returns true iff the collection is sorted according to comparison/key criterion
 /// takes O(collection_size time)
@@ -142,10 +142,13 @@ constexpr void small_sort(int64_t start, int64_t size, GetF& get, CompareF& comp
 
     if (size == 2)
     {
-        auto&& e0 = cc::invoke(get, start + 0);
-        auto&& e1 = cc::invoke(get, start + 1);
-        if (!cc::invoke(compare, e0, e1))
-            cc::invoke(swap, start + 0, start + 1);
+        detail::sort2(start, start + 1, get, compare, swap);
+        return;
+    }
+
+    if (size == 3)
+    {
+        detail::sort3(start, start + 1, start + 2, get, compare, swap);
         return;
     }
 
@@ -362,7 +365,7 @@ constexpr void sort_by_descending(Collection&& collection, KeyF&& key)
 }
 
 template <class Collection, class CompareF>
-constexpr void nth_element(Collection&& collection, size_t idx, CompareF&& compare)
+constexpr void quickselect(Collection&& collection, size_t idx, CompareF&& compare)
 {
     static_assert(collection_traits<Collection>::is_range);
     size_t size = cc::collection_size(collection);
@@ -373,7 +376,7 @@ constexpr void nth_element(Collection&& collection, size_t idx, CompareF&& compa
                 detail::index_in_range{int64_t(idx)});
 }
 template <class Collection, class KeyF, class CompareF>
-constexpr void nth_element_by(Collection&& collection, size_t idx, KeyF&& key, CompareF&& compare)
+constexpr void quickselect_by(Collection&& collection, size_t idx, KeyF&& key, CompareF&& compare)
 {
     static_assert(collection_traits<Collection>::is_range);
     size_t size = cc::collection_size(collection);
@@ -385,7 +388,7 @@ constexpr void nth_element_by(Collection&& collection, size_t idx, KeyF&& key, C
 }
 
 template <class Collection, class CompareF>
-constexpr void sort_subrange(Collection&& collection, size_t idx, size_t count, CompareF&& compare)
+constexpr void quickselect_range(Collection&& collection, size_t idx, size_t count, CompareF&& compare)
 {
     static_assert(collection_traits<Collection>::is_range);
     size_t size = cc::collection_size(collection);
@@ -396,7 +399,7 @@ constexpr void sort_subrange(Collection&& collection, size_t idx, size_t count, 
                 detail::overlaps_range{int64_t(idx), int64_t(count)});
 }
 template <class Collection, class KeyF, class CompareF>
-constexpr void sort_subrange_by(Collection&& collection, size_t idx, size_t count, KeyF&& key, CompareF&& compare)
+constexpr void quickselect_range_by(Collection&& collection, size_t idx, size_t count, KeyF&& key, CompareF&& compare)
 {
     static_assert(collection_traits<Collection>::is_range);
     size_t size = cc::collection_size(collection);
