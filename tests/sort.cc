@@ -4,7 +4,12 @@
 
 #include <clean-core/array.hh>
 #include <clean-core/sort.hh>
+#include <clean-core/unique_ptr.hh>
 #include <clean-core/vector.hh>
+
+#include <reflector/compare.hh>
+
+#include <typed-geometry/tg-lean.hh>
 
 TEST("cc::sort basics")
 {
@@ -50,6 +55,63 @@ TEST("cc::sort api")
         cc::sort(v);
         CHECK(cc::vector<int>(v) == cc::vector{1, 2, 3, 4});
     }
+
+    // comparators
+    {
+        cc::vector<int> v = {4, 2, 3, 1};
+        cc::sort(v, [](auto a, auto b) { return a > b; });
+        CHECK(v == cc::vector{4, 3, 2, 1});
+    }
+    {
+        cc::vector<int> v = {4, 2, 3, 1};
+        cc::sort(v, rf::greater{});
+        CHECK(v == cc::vector{4, 3, 2, 1});
+    }
+
+    // sort_by
+    {
+        cc::vector<int> v = {4, 2, 3, 1};
+        cc::sort_by(v, [](auto i) { return -i; });
+        CHECK(v == cc::vector{4, 3, 2, 1});
+    }
+    {
+        cc::vector<tg::vec3> v = {{1, 12, 3}, {6, 5, 2}, {-1, 6, 10}};
+        cc::sort_by(v, &tg::vec3::y);
+        CHECK(v == cc::vector<tg::vec3>{{6, 5, 2}, {-1, 6, 10}, {1, 12, 3}});
+    }
+    {
+        cc::vector<tg::vec3> v = {{1, 12, 3}, {6, 5, 2}, {-1, 6, 10}};
+        cc::sort_by(v, [](tg::vec3 const& v) { return v.z; });
+        CHECK(v == cc::vector<tg::vec3>{{6, 5, 2}, {1, 12, 3}, {-1, 6, 10}});
+    }
+
+    // descending
+    {
+        cc::vector<int> v = {4, 2, 3, 1};
+        cc::sort_descending(v);
+        CHECK(v == cc::vector{4, 3, 2, 1});
+    }
+    {
+        cc::vector<int> v = {4, 2, 3, 1};
+        cc::sort_by_descending(v, [](int i) { return -i; });
+        CHECK(v == cc::vector{1, 2, 3, 4});
+    }
+
+    // move-only stuff
+    {
+        cc::vector<cc::unique_ptr<int>> v;
+        v.push_back(cc::make_unique<int>(4));
+        v.push_back(cc::make_unique<int>(2));
+        v.push_back(cc::make_unique<int>(3));
+        v.push_back(cc::make_unique<int>(1));
+        cc::sort_by(
+            v, [o = cc::make_unique<int>(10)](auto const& p) { return -*p + *o; },
+            [o = cc::make_unique<int>(10)](int a, int b) { return a + *o > b + *o; });
+        CHECK(*v[0] == 1);
+        CHECK(*v[1] == 2);
+        CHECK(*v[2] == 3);
+        CHECK(*v[3] == 4);
+    }
 }
 
 FUZZ_TEST("cc::sort fuzzer")(tg::rng& rng)
@@ -61,6 +123,8 @@ FUZZ_TEST("cc::sort fuzzer")(tg::rng& rng)
         v.push_back(uniform(rng, -100, 100));
 
     cc::sort(v);
+
+    CHECK(cc::is_sorted(v));
 
     for (auto i = 1; i < cnt; ++i)
         CHECK(v[i - 1] <= v[i]);
@@ -98,6 +162,7 @@ FUZZ_TEST("cc::sort_subrange fuzzer")(tg::rng& rng)
     cc::sort_subrange(v, idx, count);
 
     auto subrange = cc::vector<int>(cc::span(v).subspan(idx, count));
+    CHECK(cc::is_sorted(subrange));
 
     cc::sort(v);
 

@@ -17,6 +17,8 @@ struct hash;
 template <class T = void, class = bool> // SFINAE-friendly for cc::enable_if
 struct less;
 template <class T = void, class = bool> // SFINAE-friendly for cc::enable_if
+struct greater;
+template <class T = void, class = bool> // SFINAE-friendly for cc::enable_if
 struct equal_to;
 
 struct nullopt_t;

@@ -40,96 +40,62 @@ namespace cc
  * - insertion_sort is typically move-based, not swap-based, so we cannot use it here
  * - other steps of pdqsort also depend on local tmp copies that cannot be used
  * - maybe a special swap location? prob better as sep arg
+ * - is_cheap_to_store trait (e.g. trivially copyable <= 256 bit) so that some get invocations can be removed
+ * - parallel version
  */
 template <class GetF, class CompareF, class SwapF, class SelectF>
-void sort_ex(int64_t start, size_t size, GetF&& get, CompareF&& compare, SwapF&& swap, SelectF&& select);
-
-// TODO: move lambdas out into detail namespace
-//       so they don't get generated multiple times (with diff compare funs)
-template <class Collection, class CompareF = cc::less<void>>
-void sort(Collection&& collection, CompareF&& compare = {})
-{
-    static_assert(collection_traits<Collection>::is_range);
-    size_t size = cc::collection_size(collection);
-    cc::sort_ex(
-        0, size,                                                                         //
-        [&collection](int64_t i) { return collection[i]; },                              //
-        compare,                                                                         //
-        [&collection](int64_t a, int64_t b) { cc::swap(collection[a], collection[b]); }, //
-        cc::constant_function<true>{});
-}
-
-template <class Collection, class KeyF, class CompareF = cc::less<void>>
-void sort_by(Collection&& collection, KeyF&& key, CompareF&& compare = {})
-{
-    static_assert(collection_traits<Collection>::is_range);
-    size_t size = cc::collection_size(collection);
-    cc::sort_ex(
-        0, size,                                                                         //
-        [&collection, &key](int64_t i) { return cc::invoke(key, collection[i]); },       //
-        compare,                                                                         //
-        [&collection](int64_t a, int64_t b) { cc::swap(collection[a], collection[b]); }, //
-        cc::constant_function<true>{});
-}
+constexpr void sort_ex(int64_t start, size_t size, GetF&& get, CompareF&& compare, SwapF&& swap, SelectF&& select);
 
 /// ensures that the element at idx is "correctly sorted"
 /// i.e. if collection were completely sorted but without actually sorting everything
-/// has O(n) time complexity
+/// has O(collection.size * log collection.size) time complexity (avg and worst case)
+/// and O(collection.size) time complexity best case
+///   TODO: needs to be implemented for full pdqsort guarantees
+/// is deterministic, but not stable
 template <class Collection, class CompareF = cc::less<void>>
-void nth_element(Collection&& collection, size_t idx, CompareF&& compare = {})
-{
-    static_assert(collection_traits<Collection>::is_range);
-    size_t size = cc::collection_size(collection);
-    cc::sort_ex(
-        0, size,                                                                         //
-        [&collection](int64_t i) { return collection[i]; },                              //
-        compare,                                                                         //
-        [&collection](int64_t a, int64_t b) { cc::swap(collection[a], collection[b]); }, //
-        [idx](int64_t start, int64_t size) { return start <= idx && idx < start + size; });
-}
-
+constexpr void sort(Collection&& collection, CompareF&& compare = {});
 template <class Collection, class KeyF, class CompareF = cc::less<void>>
-void nth_element_by(Collection&& collection, size_t idx, KeyF&& key, CompareF&& compare = {})
-{
-    static_assert(collection_traits<Collection>::is_range);
-    size_t size = cc::collection_size(collection);
-    cc::sort_ex(
-        0, size,                                                                         //
-        [&collection, &key](int64_t i) { return cc::invoke(key, collection[i]); },       //
-        compare,                                                                         //
-        [&collection](int64_t a, int64_t b) { cc::swap(collection[a], collection[b]); }, //
-        [idx](int64_t start, int64_t size) { return start <= idx && idx < start + size; });
-}
+constexpr void sort_by(Collection&& collection, KeyF&& key, CompareF&& compare = {});
+template <class Collection>
+constexpr void sort_descending(Collection&& collection);
+template <class Collection, class KeyF>
+constexpr void sort_by_descending(Collection&& collection, KeyF&& key);
+
+/// ensures that the element at idx is "correctly sorted"
+/// i.e. if collection were completely sorted but without actually sorting everything
+/// has O(collection.size) time complexity
+/// also guarantees that everything below and above "idx" is "in the correct partition"
+/// i.e. all elements before idx actually belong before index (and same with above)
+///      even if they are themselves not necessarily sorted
+template <class Collection, class CompareF = cc::less<void>>
+constexpr void nth_element(Collection&& collection, size_t idx, CompareF&& compare = {});
+template <class Collection, class KeyF, class CompareF = cc::less<void>>
+constexpr void nth_element_by(Collection&& collection, size_t idx, KeyF&& key, CompareF&& compare = {});
 
 /// makes sure that all elements from idx..idx+count-1 are what they would be if collection were completely sorted
 /// but without actually sorting the whole collection
-/// takes O(n + count * log count) time
+/// takes O(collection_size + count * log count) time
 /// NOTE: idx + count is not required to be in bounds
+/// also guarantees that everything below and above the subrange is "in the correct partition"
+/// i.e. all elements before the subrange actually belong before (and same with above)
+///      even if they are themselves not necessarily sorted
 template <class Collection, class CompareF = cc::less<void>>
-void sort_subrange(Collection&& collection, size_t idx, size_t count, CompareF&& compare = {})
-{
-    static_assert(collection_traits<Collection>::is_range);
-    size_t size = cc::collection_size(collection);
-    cc::sort_ex(
-        0, size,                                                                         //
-        [&collection](int64_t i) { return collection[i]; },                              //
-        compare,                                                                         //
-        [&collection](int64_t a, int64_t b) { cc::swap(collection[a], collection[b]); }, //
-        [idx, count](int64_t start, int64_t size) { return start <= idx + count && idx <= start + size; });
-}
-
+constexpr void sort_subrange(Collection&& collection, size_t idx, size_t count, CompareF&& compare = {});
 template <class Collection, class KeyF, class CompareF = cc::less<void>>
-void sort_subrange_by(Collection&& collection, size_t idx, size_t count, KeyF&& key, CompareF&& compare = {})
-{
-    static_assert(collection_traits<Collection>::is_range);
-    size_t size = cc::collection_size(collection);
-    cc::sort_ex(
-        0, size,                                                                         //
-        [&collection, &key](int64_t i) { return cc::invoke(key, collection[i]); },       //
-        compare,                                                                         //
-        [&collection](int64_t a, int64_t b) { cc::swap(collection[a], collection[b]); }, //
-        [idx, count](int64_t start, int64_t size) { return start <= idx && idx + count <= start + size; });
-}
+constexpr void sort_subrange_by(Collection&& collection, size_t idx, size_t count, KeyF&& key, CompareF&& compare = {});
+
+/// returns true iff the collection is sorted according to comparison/key criterion
+/// takes O(collection_size time)
+template <class Collection, class CompareF = cc::less<void>>
+[[nodiscard]] constexpr bool is_sorted(Collection&& collection, CompareF&& compare = {});
+template <class Collection, class KeyF, class CompareF = cc::less<void>>
+[[nodiscard]] constexpr bool is_sorted_by(Collection&& collection, KeyF&& key, CompareF&& compare = {});
+template <class GetF, class CompareF>
+[[nodiscard]] constexpr bool is_sorted_ex(int64_t start, size_t size, GetF&& get, CompareF&& compare);
+
+//
+// Implementation
+//
 
 namespace detail
 {
@@ -143,7 +109,7 @@ enum
 };
 
 template <class GetF, class CompareF, class SwapF>
-void sort2(int64_t ia, int64_t ib, GetF& get, CompareF& compare, SwapF& swap)
+constexpr void sort2(int64_t ia, int64_t ib, GetF& get, CompareF& compare, SwapF& swap)
 {
     auto&& a = cc::invoke(get, ia);
     auto&& b = cc::invoke(get, ib);
@@ -152,7 +118,7 @@ void sort2(int64_t ia, int64_t ib, GetF& get, CompareF& compare, SwapF& swap)
 }
 
 template <class GetF, class CompareF, class SwapF>
-void sort3(int64_t ia, int64_t ib, int64_t ic, GetF& get, CompareF& compare, SwapF& swap)
+constexpr void sort3(int64_t ia, int64_t ib, int64_t ic, GetF& get, CompareF& compare, SwapF& swap)
 {
     // TODO: check what is better
     detail::sort2(ia, ib, get, compare, swap);
@@ -169,7 +135,7 @@ void sort3(int64_t ia, int64_t ib, int64_t ic, GetF& get, CompareF& compare, Swa
 
 // NOTE: we take by normal ref so it's not instantiated multiple times
 template <class GetF, class CompareF, class SwapF>
-void small_sort(int64_t start, int64_t size, GetF& get, CompareF& compare, SwapF& swap)
+constexpr void small_sort(int64_t start, int64_t size, GetF& get, CompareF& compare, SwapF& swap)
 {
     if (size <= 1)
         return;
@@ -203,7 +169,7 @@ void small_sort(int64_t start, int64_t size, GetF& get, CompareF& compare, SwapF
 // pivot is initially at start
 // returns position of pivot
 template <class GetF, class CompareF, class SwapF>
-int64_t partition_right(bool& was_already_partitioned, int64_t start, int64_t size, GetF&& get, CompareF&& compare, SwapF&& swap)
+constexpr int64_t partition_right(bool& was_already_partitioned, int64_t start, int64_t size, GetF&& get, CompareF&& compare, SwapF&& swap)
 {
     // TODO: move pivot into some local config?
     auto&& pivot = cc::invoke(get, start);
@@ -256,7 +222,7 @@ int64_t partition_right(bool& was_already_partitioned, int64_t start, int64_t si
 }
 
 template <class GetF, class CompareF, class SwapF, class SelectF>
-void sort_ex_impl(int64_t start, int64_t size, GetF& get, CompareF& compare, SwapF& swap, SelectF& select)
+constexpr void sort_ex_impl(int64_t start, int64_t size, GetF& get, CompareF& compare, SwapF& swap, SelectF& select)
 {
     if (size <= detail::small_sort_threshold)
     {
@@ -304,12 +270,164 @@ void sort_ex_impl(int64_t start, int64_t size, GetF& get, CompareF& compare, Swa
     if (cc::invoke(select, start_right, size_right))
         detail::sort_ex_impl(start_right, size_right, get, compare, swap, select);
 }
+
+// the default collection types that follow _could_ be lambdas
+// however:
+// - lambdas are generated per instantiation
+//   and thus needlessly pollute binary symbols
+//   and increase compile times
+
+// TODO:
+// - see if trying to get iterators and use "it + i" instead is worth it
+
+template <class Collection>
+struct collection_access
+{
+    Collection collection;
+
+    constexpr decltype(auto) operator()(int64_t i) const { return collection[i]; }
+};
+template <class Collection, class KeyF>
+struct collection_key_access
+{
+    Collection collection;
+    KeyF key;
+
+    constexpr decltype(auto) operator()(int64_t i) const { return cc::invoke(key, collection[i]); }
+};
+template <class Collection>
+struct collection_swap
+{
+    Collection collection;
+
+    constexpr void operator()(int64_t a, int64_t b) const { cc::swap(collection[a], collection[b]); }
+};
+
+struct index_in_range
+{
+    int64_t idx;
+
+    constexpr bool operator()(int64_t start, int64_t size) const { return start <= idx && idx < start + size; }
+};
+struct overlaps_range
+{
+    int64_t idx;
+    int64_t count;
+
+    constexpr bool operator()(int64_t start, int64_t size) const { return start <= idx + count && idx <= start + size; }
+};
 }
 
 // TODO: really expose this?
 template <class GetF, class CompareF, class SwapF, class SelectF>
-void sort_ex(int64_t start, size_t size, GetF&& get, CompareF&& compare, SwapF&& swap, SelectF&& select)
+constexpr void sort_ex(int64_t start, size_t size, GetF&& get, CompareF&& compare, SwapF&& swap, SelectF&& select)
 {
     detail::sort_ex_impl(start, int64_t(size), get, compare, swap, select);
+}
+
+
+// TODO: move lambdas out into detail namespace
+//       so they don't get generated multiple times (with diff compare funs)
+template <class Collection, class CompareF>
+constexpr void sort(Collection&& collection, CompareF&& compare)
+{
+    static_assert(collection_traits<Collection>::is_range);
+    size_t size = cc::collection_size(collection);
+    cc::sort_ex(0, size,                                            //
+                detail::collection_access<Collection&>{collection}, //
+                compare,                                            //
+                detail::collection_swap<Collection&>{collection},   //
+                cc::constant_function<true>{});
+}
+template <class Collection, class KeyF, class CompareF>
+constexpr void sort_by(Collection&& collection, KeyF&& key, CompareF&& compare)
+{
+    static_assert(collection_traits<Collection>::is_range);
+    size_t size = cc::collection_size(collection);
+    cc::sort_ex(0, size,                                                            //
+                detail::collection_key_access<Collection&, KeyF&>{collection, key}, //
+                compare,                                                            //
+                detail::collection_swap<Collection&>{collection},                   //
+                cc::constant_function<true>{});
+}
+template <class Collection>
+constexpr void sort_descending(Collection&& collection)
+{
+    cc::sort(collection, cc::greater<void>{});
+}
+template <class Collection, class KeyF>
+constexpr void sort_by_descending(Collection&& collection, KeyF&& key)
+{
+    cc::sort_by(collection, key, cc::greater<void>{});
+}
+
+template <class Collection, class CompareF>
+constexpr void nth_element(Collection&& collection, size_t idx, CompareF&& compare)
+{
+    static_assert(collection_traits<Collection>::is_range);
+    size_t size = cc::collection_size(collection);
+    cc::sort_ex(0, size,                                            //
+                detail::collection_access<Collection&>{collection}, //
+                compare,                                            //
+                detail::collection_swap<Collection&>{collection},   //
+                detail::index_in_range{int64_t(idx)});
+}
+template <class Collection, class KeyF, class CompareF>
+constexpr void nth_element_by(Collection&& collection, size_t idx, KeyF&& key, CompareF&& compare)
+{
+    static_assert(collection_traits<Collection>::is_range);
+    size_t size = cc::collection_size(collection);
+    cc::sort_ex(0, size,                                                            //
+                detail::collection_key_access<Collection&, KeyF&>{collection, key}, //
+                compare,                                                            //
+                detail::collection_swap<Collection&>{collection},                   //
+                detail::index_in_range{int64_t(idx)});
+}
+
+template <class Collection, class CompareF>
+constexpr void sort_subrange(Collection&& collection, size_t idx, size_t count, CompareF&& compare)
+{
+    static_assert(collection_traits<Collection>::is_range);
+    size_t size = cc::collection_size(collection);
+    cc::sort_ex(0, size,                                            //
+                detail::collection_access<Collection&>{collection}, //
+                compare,                                            //
+                detail::collection_swap<Collection&>{collection},   //
+                detail::overlaps_range{int64_t(idx), int64_t(count)});
+}
+template <class Collection, class KeyF, class CompareF>
+constexpr void sort_subrange_by(Collection&& collection, size_t idx, size_t count, KeyF&& key, CompareF&& compare)
+{
+    static_assert(collection_traits<Collection>::is_range);
+    size_t size = cc::collection_size(collection);
+    cc::sort_ex(0, size,                                                            //
+                detail::collection_key_access<Collection&, KeyF&>{collection, key}, //
+                compare,                                                            //
+                detail::collection_swap<Collection&>{collection},                   //
+                detail::overlaps_range{int64_t(idx), int64_t(count)});
+}
+
+template <class GetF, class CompareF>
+[[nodiscard]] constexpr bool is_sorted_ex(int64_t start, size_t size, GetF&& get, CompareF&& compare)
+{
+    int64_t end = start + size;
+    for (int64_t i = start + 1; i < end; ++i)
+        if (cc::invoke(compare, cc::invoke(get, i), cc::invoke(get, i - 1)))
+            return false;
+    return true;
+}
+template <class Collection, class CompareF>
+[[nodiscard]] constexpr bool is_sorted(Collection&& collection, CompareF&& compare)
+{
+    static_assert(collection_traits<Collection>::is_range);
+    size_t size = cc::collection_size(collection);
+    return cc::is_sorted_ex(0, size, detail::collection_access<Collection&>{collection}, compare);
+}
+template <class Collection, class KeyF, class CompareF>
+[[nodiscard]] constexpr bool is_sorted_by(Collection&& collection, KeyF&& key, CompareF&& compare)
+{
+    static_assert(collection_traits<Collection>::is_range);
+    size_t size = cc::collection_size(collection);
+    return cc::is_sorted_ex(0, size, detail::collection_key_access<Collection&, KeyF&>{collection, key}, compare);
 }
 }
