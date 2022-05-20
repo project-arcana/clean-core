@@ -97,6 +97,22 @@ TEST("cc::sort api")
         CHECK(v == cc::vector{1, 2, 3, 4});
     }
 
+    // multi sort
+    {
+        cc::vector<int> k = {4, 2, 3, 1};
+        cc::vector<char> v = {'A', 'B', 'C', 'D'};
+        cc::sort_multi(cc::less<>{}, k, v);
+        CHECK(k == cc::vector{1, 2, 3, 4});
+        CHECK(v == cc::vector{'D', 'B', 'C', 'A'});
+    }
+    {
+        cc::vector<int> k = {4, 2, 3, 1};
+        cc::vector<char> v = {'A', 'B', 'C', 'D'};
+        cc::sort_multi_by([](int i, char) { return i; }, cc::less<>{}, k, v);
+        CHECK(k == cc::vector{1, 2, 3, 4});
+        CHECK(v == cc::vector{'D', 'B', 'C', 'A'});
+    }
+
     // move-only stuff
     {
         cc::vector<cc::unique_ptr<int>> v;
@@ -128,6 +144,24 @@ FUZZ_TEST("cc::sort fuzzer")(tg::rng& rng)
 
     for (auto i = 1; i < cnt; ++i)
         CHECK(v[i - 1] <= v[i]);
+}
+
+FUZZ_TEST("cc::partition fuzzer")(tg::rng& rng)
+{
+    cc::vector<int> v;
+
+    auto cnt = uniform(rng, 0, 200);
+    for (auto i = 0; i < cnt; ++i)
+        v.push_back(uniform(rng, -100, 100));
+
+    auto ref = uniform(rng, -100, 100);
+
+    auto idx = cc::partition_by(v, [&](int i) { return i >= ref; });
+
+    for (auto i = 0; i < idx; ++i)
+        CHECK(v[i] < ref);
+    for (auto i = idx; i < cnt; ++i)
+        CHECK(v[i] >= ref);
 }
 
 FUZZ_TEST("cc::quickselect fuzzer")(tg::rng& rng)

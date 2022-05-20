@@ -25,26 +25,36 @@
 
 namespace cc
 {
-/**
- * Generic customizable sort function. Basis for all convenience wrappers based on sort
- * This function works on a "virtual" range from "start..start+size-1"
- * @param get : (int64_t idx) -> T, provides the elements to compare
- * @param compare : (T const& a, T const& b) -> bool, is true if "a < b", i.e. a should be before b
- * @param swap : (int64_t a, int64_t b) -> void, swaps the virtual elements at a and b
- * @param select : (int64_t start, size_t size) -> bool, subrange is sorted only if true
- *
- * Requirements:
- * - compare must be a total order, i.e. irreflexive, transitive, antisymmetric, total
- *
- * TODO:
- * - insertion_sort is typically move-based, not swap-based, so we cannot use it here
- * - other steps of pdqsort also depend on local tmp copies that cannot be used
- * - maybe a special swap location? prob better as sep arg
- * - is_cheap_to_store trait (e.g. trivially copyable <= 256 bit) so that some get invocations can be removed
- * - parallel version
- */
+/// Generic customizable sort function. Basis for all convenience wrappers based on sort
+/// This function works on a "virtual" range from "start..start+size-1"
+/// @param get : (int64_t idx) -> T, provides the elements to compare
+/// @param compare : (T const& a, T const& b) -> bool, is true if "a < b", i.e. a should be before b
+/// @param swap : (int64_t a, int64_t b) -> void, swaps the virtual elements at a and b
+/// @param select : (int64_t start, size_t size) -> bool, subrange is sorted only if true
+///
+/// Requirements:
+/// - compare must be a total order, i.e. irreflexive, transitive, antisymmetric, total
+///
+/// TODO:
+/// - insertion_sort is typically move-based, not swap-based, so we cannot use it here
+/// - other steps of pdqsort also depend on local tmp copies that cannot be used
+/// - maybe a special swap location? prob better as sep arg
+/// - is_cheap_to_store trait (e.g. trivially copyable <= 256 bit) so that some get invocations can be removed
+/// - parallel version
 template <class GetF, class CompareF, class SwapF, class SelectF>
 constexpr void sort_ex(int64_t start, size_t size, GetF&& get, CompareF&& compare, SwapF&& swap, SelectF&& select);
+
+/// Generic customizable partition function
+/// Swaps elements such that the range consists of two blocks
+/// The first block has "is_right(i) == false", the second has "is_right(i) == true"
+/// Returns the index of the first "right" element, i.e. is_right(ret) == true and if ret > start, then is_right(ret - 1) == false
+/// Return value is 0 if all elements are right
+/// Return value is start+size if all elements are left
+/// @param is_right : (int64_t i) -> bool, "true" means "right", "false" means "left"
+/// @param swap : (int64_t a, int64_t b) -> void, swaps the virtual elements at a and b
+/// runs in O(size)
+template <class IsRightF, class SwapF>
+constexpr int64_t partition_ex(int64_t start, size_t size, IsRightF&& is_right, SwapF&& swap);
 
 /// ensures that the element at idx is "correctly sorted"
 /// i.e. if collection were completely sorted but without actually sorting everything
@@ -52,6 +62,8 @@ constexpr void sort_ex(int64_t start, size_t size, GetF&& get, CompareF&& compar
 /// and O(collection.size) time complexity best case
 ///   TODO: needs to be implemented for full pdqsort guarantees
 /// is deterministic, but not stable
+/// @param compare : (T const& a, T const& b) -> bool, is true if "a < b", i.e. a should be before b
+/// @param key: (Element const& e) -> T, selects the key to be sorted by
 template <class Collection, class CompareF = cc::less<void>>
 constexpr void sort(Collection&& collection, CompareF&& compare = {});
 template <class Collection, class KeyF, class CompareF = cc::less<void>>
@@ -61,12 +73,34 @@ constexpr void sort_descending(Collection&& collection);
 template <class Collection, class KeyF>
 constexpr void sort_by_descending(Collection&& collection, KeyF&& key);
 
+/// sorts multiple collections simultaneously,
+/// i.e. sorts the keys collection but also swaps elements in all other collections to maintain synchronized order
+/// NOTE: comparison/key function are mandatory and at the beginning due to variadic arguments
+///       the usual comparison is "cc::less<>{}", descending is "cc::greater<>{}"
+/// @param compare : (KeyT const& a, KeyT const& b) -> bool, is true if "a < b", i.e. a should be before b
+/// @param key: (Element const&... elements) -> T, selects the key to be sorted by (NOTE: gets _all_ elements as input)
+template <class CompareF, class KeyCollection, class... Collections>
+constexpr void sort_multi(CompareF&& compare, KeyCollection&& keys, Collections&&... collections);
+template <class KeyF, class CompareF, class... Collections>
+constexpr void sort_multi_by(KeyF&& key, CompareF&& compare, Collections&&... collections);
+
+/// swaps elements in collection such that we have two blocks:
+///   is_right(e) is false for the first block
+///   is_right(e) is true for the second block
+/// returns the first index of the second block, or collection_size if none are right
+/// (is conceptually the same as sort_by(collection, is_right) where false < true)
+/// runs in O(collection.size)
+template <class Collection, class IsRightF>
+constexpr int64_t partition_by(Collection&& collection, IsRightF&& is_right);
+
 /// ensures that the element at idx is "correctly sorted"
 /// i.e. if collection were completely sorted but without actually sorting everything
 /// has O(collection.size) time complexity
 /// also guarantees that everything below and above "idx" is "in the correct partition"
 /// i.e. all elements before idx actually belong before index (and same with above)
 ///      even if they are themselves not necessarily sorted
+/// @param compare : (T const& a, T const& b) -> bool, is true if "a < b", i.e. a should be before b
+/// @param key: (Element const& e) -> T, selects the key to be sorted by
 template <class Collection, class CompareF = cc::less<void>>
 constexpr void quickselect(Collection&& collection, size_t idx, CompareF&& compare = {});
 template <class Collection, class KeyF, class CompareF = cc::less<void>>
@@ -79,6 +113,8 @@ constexpr void quickselect_by(Collection&& collection, size_t idx, KeyF&& key, C
 /// also guarantees that everything below and above the subrange is "in the correct partition"
 /// i.e. all elements before the subrange actually belong before (and same with above)
 ///      even if they are themselves not necessarily sorted
+/// @param compare : (T const& a, T const& b) -> bool, is true if "a < b", i.e. a should be before b
+/// @param key: (Element const& e) -> T, selects the key to be sorted by
 template <class Collection, class CompareF = cc::less<void>>
 constexpr void quickselect_range(Collection&& collection, size_t idx, size_t count, CompareF&& compare = {});
 template <class Collection, class KeyF, class CompareF = cc::less<void>>
@@ -86,6 +122,8 @@ constexpr void quickselect_range_by(Collection&& collection, size_t idx, size_t 
 
 /// returns true iff the collection is sorted according to comparison/key criterion
 /// takes O(collection_size time)
+/// @param compare : (T const& a, T const& b) -> bool, is true if "a < b", i.e. a should be before b
+/// @param key: (Element const& e) -> T, selects the key to be sorted by
 template <class Collection, class CompareF = cc::less<void>>
 [[nodiscard]] constexpr bool is_sorted(Collection&& collection, CompareF&& compare = {});
 template <class Collection, class KeyF, class CompareF = cc::less<void>>
@@ -328,6 +366,40 @@ constexpr void sort_ex(int64_t start, size_t size, GetF&& get, CompareF&& compar
     detail::sort_ex_impl(start, int64_t(size), get, compare, swap, select);
 }
 
+template <class IsRightF, class SwapF>
+constexpr int64_t partition_ex(int64_t start, size_t size, IsRightF&& is_right, SwapF&& swap)
+{
+    int64_t end = start + size;
+    int64_t first = start;
+    int64_t last = end - 1;
+
+    while (true)
+    {
+        while (first < end && !cc::invoke(is_right, first))
+            first++;
+        while (last > start && cc::invoke(is_right, last))
+            last--;
+
+        if (first >= last)
+            break;
+
+        cc::invoke(swap, first, last);
+        ++first;
+        --last;
+    }
+
+    return first;
+}
+
+template <class Collection, class IsRightF>
+constexpr int64_t partition_by(Collection&& collection, IsRightF&& is_right)
+{
+    static_assert(collection_traits<Collection>::is_range);
+    size_t size = cc::collection_size(collection);
+    return cc::partition_ex(0, size,                                                                     //
+                            detail::collection_key_access<Collection&, IsRightF&>{collection, is_right}, //
+                            detail::collection_swap<Collection&>{collection});
+}
 
 // TODO: move lambdas out into detail namespace
 //       so they don't get generated multiple times (with diff compare funs)
@@ -362,6 +434,39 @@ template <class Collection, class KeyF>
 constexpr void sort_by_descending(Collection&& collection, KeyF&& key)
 {
     cc::sort_by(collection, key, cc::greater<void>{});
+}
+
+template <class CompareF, class KeyCollection, class... Collections>
+constexpr void sort_multi(CompareF&& compare, KeyCollection&& keys, Collections&&... collections)
+{
+    static_assert(collection_traits<KeyCollection>::is_range);
+    static_assert((collection_traits<Collections>::is_range && ...));
+    size_t size = cc::collection_size(keys);
+    CC_ASSERT(((cc::collection_size(collections) == size) && ...) && "collections must have the same size");
+    cc::sort_ex(
+        0, size,                                         //
+        detail::collection_access<KeyCollection&>{keys}, //
+        compare,                                         //
+        [&](int64_t a, int64_t b)
+        {
+            cc::swap(keys[a], keys[b]);
+            (cc::swap(collections[a], collections[b]), ...);
+        },
+        cc::constant_function<true>{});
+}
+template <class KeyF, class CompareF, class... Collections>
+constexpr void sort_multi_by(KeyF&& key, CompareF&& compare, Collections&&... collections)
+{
+    static_assert(sizeof...(collections) >= 1, "must sort at least one collection");
+    static_assert((collection_traits<Collections>::is_range && ...));
+    size_t size = (cc::collection_size(collections), ...);
+    CC_ASSERT(((cc::collection_size(collections) == size) && ...) && "collections must have the same size");
+    cc::sort_ex(
+        0, size,                                                                        //
+        [&](int64_t i) { return key(collections[i]...); },                              //
+        compare,                                                                        //
+        [&](int64_t a, int64_t b) { (cc::swap(collections[a], collections[b]), ...); }, //
+        cc::constant_function<true>{});
 }
 
 template <class Collection, class CompareF>
