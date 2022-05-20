@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <type_traits>
 
+#include <clean-core/always_false.hh>
 #include <clean-core/enable_if.hh>
 #include <clean-core/forward.hh>
 #include <clean-core/fwd.hh>
@@ -72,6 +73,12 @@ constexpr decltype(auto) collection_add(CollectionT&& c, T&& value)
     return collection_traits<CollectionT>::add(c, cc::forward<T>(value));
 }
 
+/// an indexed range is a range (i.e. begin/end/ranged-base-for)
+/// with a subscript operator working with size_t (but might convert)
+/// and a size (i.e. cc::collection_size works)
+template <class CollectionT>
+constexpr bool is_indexed_range = collection_traits<CollectionT>::is_indexed_range;
+
 // ======= Implementation =======
 
 namespace detail
@@ -112,6 +119,18 @@ struct has_data_t<CollectionT,
                   std::void_t<                                     //
                       decltype(std::declval<CollectionT>().data()) //
                       >> : std::true_type
+{
+};
+
+template <class CollectionT, class = void>
+struct has_index_access_t : std::false_type
+{
+};
+template <class CollectionT>
+struct has_index_access_t<CollectionT,
+                          std::void_t<                                        //
+                              decltype(std::declval<CollectionT>()[size_t()]) //
+                              >> : std::true_type
 {
 };
 
@@ -165,7 +184,9 @@ struct base_collection_traits
 {
     static constexpr bool has_data = false;
     static constexpr bool has_size = false;
+    static constexpr bool has_index_access = false;
     static constexpr bool is_range = false;
+    static constexpr bool is_indexed_range = false;
     static constexpr bool is_contiguous = false;
     static constexpr bool is_fixed_size = false;
     static constexpr bool can_add = false;
@@ -181,7 +202,9 @@ struct inferred_collection_traits : base_collection_traits
 
     static constexpr bool has_data = has_data_t<CollectionT>::value;
     static constexpr bool has_size = has_size_t<CollectionT>::value;
+    static constexpr bool has_index_access = has_index_access_t<CollectionT>::value;
     static constexpr bool is_range = has_begin_end_t<CollectionT>::value;
+    static constexpr bool is_indexed_range = has_size && has_index_access; // TODO: verify index access type matches element type
     static constexpr bool is_contiguous = has_data && has_size;
     static constexpr bool is_fixed_size = false;
     static constexpr bool can_add = !std::is_same_v<decltype( //
@@ -198,9 +221,22 @@ struct inferred_collection_traits : base_collection_traits
     template <size_t I>
     static constexpr decltype(auto) get(CollectionT& range)
     {
-        return range.data()[I];
+        if constexpr (has_data)
+            return range.data()[I];
+        else if constexpr (has_index_access)
+            return range[I];
+        else
+            static_assert(cc::always_false<CollectionT>, "not indexeable");
     }
-    static constexpr decltype(auto) get(CollectionT& range, size_t i) { return range.data()[i]; }
+    static constexpr decltype(auto) get(CollectionT& range, size_t i)
+    {
+        if constexpr (has_data)
+            return range.data()[i];
+        else if constexpr (has_index_access)
+            return range[i];
+        else
+            static_assert(cc::always_false<CollectionT>, "not indexeable");
+    }
 };
 
 template <class ArrayT, class ElementT, size_t N>
@@ -210,7 +246,9 @@ struct array_collection_traits : base_collection_traits
 
     static constexpr bool has_data = true;
     static constexpr bool has_size = true;
+    static constexpr bool has_index_access = true;
     static constexpr bool is_range = true;
+    static constexpr bool is_indexed_range = true;
     static constexpr bool is_contiguous = true;
     static constexpr bool is_fixed_size = true;
     static constexpr size_t fixed_size = N;
@@ -236,7 +274,9 @@ struct cc_array_collection_traits : base_collection_traits
 
     static constexpr bool has_data = true;
     static constexpr bool has_size = true;
+    static constexpr bool has_index_access = true;
     static constexpr bool is_range = true;
+    static constexpr bool is_indexed_range = true;
     static constexpr bool is_contiguous = true;
     static constexpr bool is_fixed_size = true;
     static constexpr size_t fixed_size = N;
