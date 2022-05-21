@@ -7,16 +7,15 @@
 namespace cc
 {
 template <class T>
-struct vector : detail::vector_base<T, false>
+struct vector : detail::vector_base<T, size_t, false>
 {
     // ctors
 public:
     vector() = default;
 
-    explicit vector(size_t size) : detail::vector_base<T, false>(this->_alloc(size), size, size)
+    explicit vector(size_t size) : detail::vector_base<T, size_t, false>(this->_alloc(size), size, size)
     {
-        for (size_t i = 0; i < size; ++i)
-            new (placement_new, &this->_data[i]) T();
+        detail::container_default_construct_or_zeroed(size, this->_data);
     }
 
     [[nodiscard]] static vector defaulted(size_t size) { return vector(size); }

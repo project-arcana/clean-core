@@ -99,21 +99,6 @@ TEST("collection traits")
     }
 
     {
-        cc::capped_array<int, 10> v;
-        using traits = cc::collection_traits<decltype(v)>;
-
-        static_assert(std::is_same_v<traits::element_t, int>);
-        static_assert(traits::is_range);
-        static_assert(traits::is_contiguous);
-        static_assert(!traits::is_fixed_size);
-        static_assert(!traits::can_add);
-
-        CHECK(cc::collection_size(v) == 0);
-        v = {1, 2};
-        CHECK(cc::collection_size(v) == 2);
-    }
-
-    {
         int v[10];
         using traits = cc::collection_traits<decltype(v)>;
 

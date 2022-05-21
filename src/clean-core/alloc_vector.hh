@@ -8,21 +8,21 @@ namespace cc
 {
 // cc::vector, but backed by a given allocator
 template <class T>
-struct alloc_vector : public detail::vector_base<T, true>
+struct alloc_vector : public detail::vector_base<T, size_t, true>
 {
     // ctors
 public:
-    alloc_vector() noexcept : detail::vector_base<T, true>(cc::system_allocator) {}
+    alloc_vector() noexcept : detail::vector_base<T, size_t, true>(cc::system_allocator) {}
 
-    explicit alloc_vector(cc::allocator* allocator) noexcept : detail::vector_base<T, true>(allocator) { CC_CONTRACT(allocator != nullptr); }
+    explicit alloc_vector(cc::allocator* allocator) noexcept : detail::vector_base<T, size_t, true>(allocator) { CC_CONTRACT(allocator != nullptr); }
 
     explicit alloc_vector(size_t size, cc::allocator* allocator = cc::system_allocator) : alloc_vector(allocator)
     {
         this->_data = this->_alloc(size);
         this->_size = size;
         this->_capacity = size;
-        for (size_t i = 0; i < size; ++i)
-            new (placement_new, &this->_data[i]) T();
+
+        detail::container_default_construct_or_zeroed(size, this->_data);
     }
 
     [[nodiscard]] static alloc_vector defaulted(size_t size, cc::allocator* allocator = cc::system_allocator)

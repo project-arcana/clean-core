@@ -46,24 +46,63 @@
 #endif
 
 // =========
-// operating system
+// operating systems
+// CC_OS_WINDOWS, CC_OS_LINUX, CC_OS_APPLE, or CC_OS_BSD
 
-// CC_OS_WINDOWS, CC_OS_LINUX, CC_OS_OSX, or CC_OS_IOS
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32)
 #define CC_OS_WINDOWS
-#elif defined(__APPLE__)
+#elif defined(__APPLE__) || defined(__MACH__) || defined(macintosh)
+#define CC_OS_APPLE
+#elif defined(__linux__) || defined(linux)
+#define CC_OS_LINUX
+#elif defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
+#define CC_OS_BSD
+#else
+#error "Unknown platform"
+#endif
+
+// =========
+// targets
+
+#if defined(CC_OS_WINDOWS)
+#if defined(_DURANGO)
+#define CC_TARGET_XBOX
+#else
+#define CC_TARGET_PC
+#endif
+#endif
+
+#if defined(CC_OS_APPLE)
 #include "TargetConditionals.h"
-#if defined(TARGET_OS_MAC)
-#define CC_OS_OSX
-#elif defined(TARGET_OS_IPHONE)
-#define CC_OS_IOS
+#if TARGET_OS_MAC
+#define CC_TARGET_MACOS
+#elif TARGET_OS_IOS
+#define CC_TARGET_IOS
+#elif TARGET_OS_TV
+#define CC_TARGET_TVOS
 #else
 #error "Unknown Apple platform"
 #endif
-#elif defined(__linux__)
-#define CC_OS_LINUX
-#else
-#error "Unknown platform"
+#endif
+
+#if defined(__ANDROID__)
+#define CC_TARGET_ANDROID
+#endif
+
+#if defined(__ORBIS__)
+#define CC_TARGET_ORBIS
+#endif
+
+#if defined(__NX__)
+#define CC_TARGET_NX
+#endif
+
+#if defined(CC_TARGET_IOS) || defined(CC_TARGET_TVOS) || defined(CC_TARGET_ANDROID)
+#define CC_TARGET_MOBILE
+#endif
+
+#if defined(CC_TARGET_ORBIS) || defined(CC_TARGET_NX) || defined(CC_TARGET_XBOX)
+#define CC_TARGET_CONSOLE
 #endif
 
 
