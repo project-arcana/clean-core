@@ -428,7 +428,7 @@ public:
         return false;
     }
 
-    bool operator==(cc::span<T const> rhs) const noexcept
+    bool operator==(span<T const> rhs) const noexcept
     {
         if (_size != rhs.size())
             return false;
@@ -438,7 +438,7 @@ public:
         return true;
     }
 
-    bool operator!=(cc::span<T const> rhs) const noexcept
+    bool operator!=(span<T const> rhs) const noexcept
     {
         if (_size != rhs.size())
             return true;
@@ -447,6 +447,9 @@ public:
                 return true;
         return false;
     }
+
+    bool operator==(vector_base const& rhs) const noexcept { return operator==(span<T const>(rhs)); }
+    bool operator!=(vector_base const& rhs) const noexcept { return operator!=(span<T const>(rhs)); }
 
     // members
 protected:

@@ -230,6 +230,9 @@ struct array<T, dynamic_size>
         return false;
     }
 
+    bool operator==(array const& rhs) const noexcept { return operator==(span<T const>(rhs)); }
+    bool operator!=(array const& rhs) const noexcept { return operator!=(span<T const>(rhs)); }
+
 private:
     T* _alloc(size_t size) { return reinterpret_cast<T*>(cc::system_allocator->alloc(size * sizeof(T), alignof(T))); }
     void _free(T* p) { cc::system_allocator->free(p); }
