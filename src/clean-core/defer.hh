@@ -5,6 +5,7 @@
 
 /**
  * execute code at scope-exit:
+ * NOTE: captures by reference!
  *
  *   begin();
  *   CC_DEFER { end(); };
@@ -14,6 +15,7 @@
 
 /**
  * execute code at scope-exit in calling function:
+ * CAUTION: this one captures by value!
  *
  *   auto scoped_foo() {
  *     begin();
@@ -29,9 +31,6 @@ template <class F>
 struct deferred
 {
     F f;
-
-    deferred(deferred const&) = delete;
-    deferred(deferred&&) = delete;
 
     ~deferred() { f(); }
 };
