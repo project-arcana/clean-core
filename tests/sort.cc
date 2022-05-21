@@ -144,6 +144,10 @@ FUZZ_TEST("cc::sort fuzzer")(tg::rng& rng)
 
     for (auto i = 1; i < cnt; ++i)
         CHECK(v[i - 1] <= v[i]);
+
+    if (cc::is_strictly_sorted(v))
+        for (auto i = 1; i < cnt; ++i)
+            CHECK(v[i - 1] < v[i]);
 }
 
 FUZZ_TEST("cc::partition fuzzer")(tg::rng& rng)
