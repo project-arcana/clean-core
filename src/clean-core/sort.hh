@@ -130,6 +130,15 @@ template <class IndexedRange, class KeyF, class CompareF = cc::less<void>>
 [[nodiscard]] constexpr bool is_sorted_by(IndexedRange&& values, KeyF&& key, CompareF&& compare = {});
 template <class GetF, class CompareF>
 [[nodiscard]] constexpr bool is_sorted_ex(int64_t start, size_t size, GetF&& get, CompareF&& compare);
+/// same as sorted but without equality allowed
+/// basically, compare(v_i, v_{i+1}) must be true
+/// (for sorted, compare(v_{i+1}, v_i) must not be true, a subtle difference)
+template <class IndexedRange, class CompareF = cc::less<void>>
+[[nodiscard]] constexpr bool is_strictly_sorted(IndexedRange&& values, CompareF&& compare = {});
+template <class IndexedRange, class KeyF, class CompareF = cc::less<void>>
+[[nodiscard]] constexpr bool is_strictly_sorted_by(IndexedRange&& values, KeyF&& key, CompareF&& compare = {});
+template <class GetF, class CompareF>
+[[nodiscard]] constexpr bool is_strictly_sorted_ex(int64_t start, size_t size, GetF&& get, CompareF&& compare);
 
 //
 // Implementation
@@ -537,5 +546,29 @@ template <class IndexedRange, class KeyF, class CompareF>
     static_assert(cc::is_indexed_range<IndexedRange>);
     size_t size = cc::collection_size(values);
     return cc::is_sorted_ex(0, size, detail::values_key_access<IndexedRange&, KeyF&>{values, key}, compare);
+}
+
+template <class GetF, class CompareF>
+[[nodiscard]] constexpr bool is_strictly_sorted_ex(int64_t start, size_t size, GetF&& get, CompareF&& compare)
+{
+    int64_t end = start + size;
+    for (int64_t i = start + 1; i < end; ++i)
+        if (!cc::invoke(compare, cc::invoke(get, i - 1), cc::invoke(get, i)))
+            return false;
+    return true;
+}
+template <class IndexedRange, class CompareF>
+[[nodiscard]] constexpr bool is_strictly_sorted(IndexedRange&& values, CompareF&& compare)
+{
+    static_assert(cc::is_indexed_range<IndexedRange>);
+    size_t size = cc::collection_size(values);
+    return cc::is_strictly_sorted_ex(0, size, detail::values_access<IndexedRange&>{values}, compare);
+}
+template <class IndexedRange, class KeyF, class CompareF>
+[[nodiscard]] constexpr bool is_strictly_sorted_by(IndexedRange&& values, KeyF&& key, CompareF&& compare)
+{
+    static_assert(cc::is_indexed_range<IndexedRange>);
+    size_t size = cc::collection_size(values);
+    return cc::is_strictly_sorted_ex(0, size, detail::values_key_access<IndexedRange&, KeyF&>{values, key}, compare);
 }
 }

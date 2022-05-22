@@ -43,12 +43,12 @@ TEST("cc::sort api")
     {
         cc::array<int> v = {4, 2, 3, 1};
         cc::sort(v);
-        CHECK(v == cc::vector{1, 2, 3, 4});
+        CHECK(cc::span(v) == cc::vector{1, 2, 3, 4});
     }
     {
         cc::array<int, 4> v = {4, 2, 3, 1};
         cc::sort(v);
-        CHECK(v == cc::vector{1, 2, 3, 4});
+        CHECK(cc::span(v) == cc::vector{1, 2, 3, 4});
     }
     {
         int v[] = {4, 2, 3, 1};
@@ -144,6 +144,10 @@ FUZZ_TEST("cc::sort fuzzer")(tg::rng& rng)
 
     for (auto i = 1; i < cnt; ++i)
         CHECK(v[i - 1] <= v[i]);
+
+    if (cc::is_strictly_sorted(v))
+        for (auto i = 1; i < cnt; ++i)
+            CHECK(v[i - 1] < v[i]);
 }
 
 FUZZ_TEST("cc::partition fuzzer")(tg::rng& rng)

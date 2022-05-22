@@ -187,6 +187,9 @@ struct alloc_array
         return false;
     }
 
+    bool operator==(alloc_array const& rhs) const noexcept { return operator==(span<T const>(rhs)); }
+    bool operator!=(alloc_array const& rhs) const noexcept { return operator!=(span<T const>(rhs)); }
+
     cc::allocator* allocator() const { return this->_allocator; }
 
 private:
