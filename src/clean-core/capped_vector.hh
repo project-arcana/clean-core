@@ -247,6 +247,9 @@ public:
         return false;
     }
 
+    bool operator==(capped_vector const& rhs) const noexcept { return operator==(span<T const>(rhs)); }
+    bool operator!=(capped_vector const& rhs) const noexcept { return operator!=(span<T const>(rhs)); }
+
 private:
     compact_size_t _size = 0;
     storage_for<T[N]> _u;

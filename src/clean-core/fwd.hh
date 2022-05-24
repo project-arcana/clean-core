@@ -17,6 +17,8 @@ struct hash;
 template <class T = void, class = bool> // SFINAE-friendly for cc::enable_if
 struct less;
 template <class T = void, class = bool> // SFINAE-friendly for cc::enable_if
+struct greater;
+template <class T = void, class = bool> // SFINAE-friendly for cc::enable_if
 struct equal_to;
 
 struct nullopt_t;
@@ -36,6 +38,8 @@ struct strided_span;
 
 template <class T>
 struct vector;
+template <class Traits>
+struct vector_ex;
 template <class T, size_t N>
 struct capped_vector;
 template <class T>
@@ -98,7 +102,7 @@ struct poly_unique_ptr;
 
 // locks
 struct spin_lock;
-template<class T>
+template <class T>
 struct lock_guard;
 
 // allocators
