@@ -43,12 +43,12 @@ TEST("cc::sort api")
     {
         cc::array<int> v = {4, 2, 3, 1};
         cc::sort(v);
-        CHECK(cc::span(v) == cc::vector{1, 2, 3, 4});
+        CHECK(cc::vector<int>(v) == cc::vector{1, 2, 3, 4});
     }
     {
         cc::array<int, 4> v = {4, 2, 3, 1};
         cc::sort(v);
-        CHECK(cc::span(v) == cc::vector{1, 2, 3, 4});
+        CHECK(cc::vector<int>(v) == cc::vector{1, 2, 3, 4});
     }
     {
         int v[] = {4, 2, 3, 1};
