@@ -130,7 +130,7 @@
 #define CC_CONDITION_LIKELY(x) (x) [[msvc::likely]]
 #define CC_CONDITION_UNLIKELY(x) (x) [[msvc::unlikely]]
 #define CC_COLD_FUNC
-#define CC_HOT_FUNC __declspec(safebuffers, spectre(nomitigation))
+#define CC_HOT_FUNC
 
 #define CC_BUILTIN_UNREACHABLE __assume(0)
 #define CC_COUNTOF(arr) _countof(arr)
