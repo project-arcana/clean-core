@@ -106,26 +106,28 @@ struct range_ref
     }
 
     /// creates a range_ref based on fixed values
-    template <class U, cc::enable_if<std::is_convertible_v<U const&, T>> = true>
+    template <class U,
+              cc::enable_if<std::is_convertible_v<U, T> || //
+                            std::is_convertible_v<typename detail::try_deref_t<U>::type, T>> = true>
     range_ref(std::initializer_list<U> const& range)
     {
         _range.obj_const = &range;
-        _for_each = [](storage const& s, cc::function_ref<void(T)> f)
+        if constexpr (std::is_convertible_v<U, T>)
         {
-            for (auto&& v : *static_cast<decltype(&range)>(s.obj_const))
-                f(v);
-        };
-    }
-    /// creates a range_ref based on fixed values
-    template <class U, cc::enable_if<std::is_convertible_v<decltype(*std::declval<U const&>()), T>> = true>
-    range_ref(std::initializer_list<U> const& range)
-    {
-        _range.obj_const = &range;
-        _for_each = [](storage const& s, cc::function_ref<void(T)> f)
+            _for_each = [](storage const& s, cc::function_ref<void(T)> f)
+            {
+                for (auto&& v : *static_cast<decltype(&range)>(s.obj_const))
+                    f(v);
+            };
+        }
+        else
         {
-            for (auto&& v : *static_cast<decltype(&range)>(s.obj_const))
-                f(*v);
-        };
+            _for_each = [](storage const& s, cc::function_ref<void(T)> f)
+            {
+                for (auto&& v : *static_cast<decltype(&range)>(s.obj_const))
+                    f(*v);
+            };
+        }
     }
 
     /// iterates over all elements in the range and calls f for them
