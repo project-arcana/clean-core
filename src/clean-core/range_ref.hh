@@ -10,17 +10,40 @@
 
 namespace cc
 {
+namespace detail
+{
+template <class T, class = void>
+struct try_deref_t
+{
+    using type = void;
+};
+template <class T>
+struct try_deref_t<T, std::void_t<decltype(*std::declval<T>())>>
+{
+    using type = decltype(*std::declval<T>());
+};
+
+template <class Range, class To>
+constexpr bool is_convertible_range = cc::is_any_range<Range> //
+    && std::is_convertible_v<cc::collection_element_t<Range>, To>;
+
+template <class Range, class To>
+constexpr bool is_deref_convertible_range = cc::is_any_range<Range> //
+    && std::is_convertible_v<typename try_deref_t<cc::collection_element_t<Range>>::type, To>;
+}
+
 /// a type-erased range of elements that can be converted to T
 /// NOTE: any range assigned to this must always outlive the range_ref.
 ///       this is designed to be mainly used as function argument (similar to span, string_view, stream_ref, etc.)
 ///
 /// TODO: expose function<void(function<void(T)>)> interface
-/// TODO: disambiguate case where element and *element are convertible to T
 ///
 /// Implementation note:
-///   the templated constructors use the SFINAE-friendly cc::collection_begin
+///   the templated constructors use the SFINAE-friendly is_convertible_range, is_deref_convertible_range
 ///   and are themselves designed to support SFINAE.
 ///   this is important so that functions can be overloaded on different types of range_ref<T>s
+///   no-deref and deref must also be the same constructor, because types can be both at the same time
+///   in this case, we prefer the no-deref version
 template <class T>
 struct range_ref
 {
@@ -33,44 +56,52 @@ struct range_ref
     /// create a range_ref from any range (Range must support range-based-for)
     /// NOTE: range element types must be convertible to T
     /// CAUTION: range must always outlive the range_ref!
-    template <class Range, cc::enable_if<std::is_convertible_v<decltype(*cc::collection_begin(std::declval<Range>())), T>> = true>
+    template <class Range,
+              cc::enable_if<detail::is_convertible_range<Range, T> || //
+                            detail::is_deref_convertible_range<Range, T>> = true>
     range_ref(Range&& range)
     {
-        if constexpr (std::is_const_v<std::remove_reference_t<Range>>)
+        if constexpr (detail::is_convertible_range<Range, T>)
         {
-            _range.obj_const = &range;
-            _for_each = [](storage const& s, cc::function_ref<void(T)> f) {
-                for (auto&& v : *static_cast<decltype(&range)>(s.obj_const))
-                    f(v);
-            };
+            if constexpr (std::is_const_v<std::remove_reference_t<Range>>)
+            {
+                _range.obj_const = &range;
+                _for_each = [](storage const& s, cc::function_ref<void(T)> f)
+                {
+                    for (auto&& v : *static_cast<decltype(&range)>(s.obj_const))
+                        f(v);
+                };
+            }
+            else
+            {
+                _range.obj = &range;
+                _for_each = [](storage const& s, cc::function_ref<void(T)> f)
+                {
+                    for (auto&& v : *static_cast<decltype(&range)>(s.obj))
+                        f(v);
+                };
+            }
         }
         else
         {
-            _range.obj = &range;
-            _for_each = [](storage const& s, cc::function_ref<void(T)> f) {
-                for (auto&& v : *static_cast<decltype(&range)>(s.obj))
-                    f(v);
-            };
-        }
-    }
-    template <class Range, cc::enable_if<std::is_convertible_v<decltype(**cc::collection_begin(std::declval<Range>())), T>> = true>
-    range_ref(Range&& range)
-    {
-        if constexpr (std::is_const_v<std::remove_reference_t<Range>>)
-        {
-            _range.obj_const = &range;
-            _for_each = [](storage const& s, cc::function_ref<void(T)> f) {
-                for (auto&& v : *static_cast<decltype(&range)>(s.obj_const))
-                    f(*v);
-            };
-        }
-        else
-        {
-            _range.obj = &range;
-            _for_each = [](storage const& s, cc::function_ref<void(T)> f) {
-                for (auto&& v : *static_cast<decltype(&range)>(s.obj))
-                    f(*v);
-            };
+            if constexpr (std::is_const_v<std::remove_reference_t<Range>>)
+            {
+                _range.obj_const = &range;
+                _for_each = [](storage const& s, cc::function_ref<void(T)> f)
+                {
+                    for (auto&& v : *static_cast<decltype(&range)>(s.obj_const))
+                        f(*v);
+                };
+            }
+            else
+            {
+                _range.obj = &range;
+                _for_each = [](storage const& s, cc::function_ref<void(T)> f)
+                {
+                    for (auto&& v : *static_cast<decltype(&range)>(s.obj))
+                        f(*v);
+                };
+            }
         }
     }
 
@@ -79,7 +110,8 @@ struct range_ref
     range_ref(std::initializer_list<U> const& range)
     {
         _range.obj_const = &range;
-        _for_each = [](storage const& s, cc::function_ref<void(T)> f) {
+        _for_each = [](storage const& s, cc::function_ref<void(T)> f)
+        {
             for (auto&& v : *static_cast<decltype(&range)>(s.obj_const))
                 f(v);
         };
@@ -89,7 +121,8 @@ struct range_ref
     range_ref(std::initializer_list<U> const& range)
     {
         _range.obj_const = &range;
-        _for_each = [](storage const& s, cc::function_ref<void(T)> f) {
+        _for_each = [](storage const& s, cc::function_ref<void(T)> f)
+        {
             for (auto&& v : *static_cast<decltype(&range)>(s.obj_const))
                 f(*v);
         };
@@ -99,7 +132,8 @@ struct range_ref
     void for_each(cc::function_ref<void(T)> f) const { _for_each(_range, f); }
 
 private:
-    union storage {
+    union storage
+    {
         void* obj;             // pointer to range
         void const* obj_const; // pointer to const range
 
