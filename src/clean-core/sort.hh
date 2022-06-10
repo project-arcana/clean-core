@@ -6,6 +6,7 @@
 #include <clean-core/functors.hh>
 #include <clean-core/invoke.hh>
 #include <clean-core/less.hh>
+#include <clean-core/sort_heap.hh>
 #include <clean-core/utility.hh>
 
 // inspired by https://github.com/orlp/pdqsort

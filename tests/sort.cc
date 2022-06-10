@@ -208,3 +208,25 @@ FUZZ_TEST("cc::quickselect_range fuzzer")(tg::rng& rng)
 
     CHECK(subrange == ref);
 }
+
+FUZZ_TEST("heap sort fuzzer")(tg::rng& rng)
+{
+    cc::vector<int> v;
+
+    auto cnt = uniform(rng, 0, 200);
+    for (auto i = 0; i < cnt; ++i)
+        v.push_back(uniform(rng, -100, 100));
+
+    auto get = [&](int64_t i) { return v[i]; };
+    auto compare = [&](int a, int b) { return a < b; };
+    auto swap = [&](int64_t i, int64_t j)
+    {
+        CHECK(i != j);
+        cc::swap(v[i], v[j]);
+    };
+
+    cc::make_heap_ex(0, cnt, get, compare, swap);
+    cc::unmake_heap_ex(0, cnt, get, compare, swap);
+
+    CHECK(cc::is_sorted(v));
+}

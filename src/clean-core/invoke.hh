@@ -4,6 +4,7 @@
 
 #include <clean-core/detail/is_reference_wrapper.hh>
 #include <clean-core/forward.hh>
+#include <clean-core/macros.hh>
 
 namespace cc
 {
@@ -12,7 +13,7 @@ namespace cc
 namespace detail
 {
 template <class T, class Type, class T1, class... Args>
-constexpr decltype(auto) perform_invoke(Type T::*f, T1&& t1, Args&&... args)
+CC_FORCE_INLINE constexpr decltype(auto) perform_invoke(Type T::*f, T1&& t1, Args&&... args)
 {
     if constexpr (std::is_member_function_pointer_v<decltype(f)>)
     {
@@ -37,14 +38,14 @@ constexpr decltype(auto) perform_invoke(Type T::*f, T1&& t1, Args&&... args)
 }
 
 template <class F, class... Args>
-constexpr decltype(auto) perform_invoke(F&& f, Args&&... args)
+CC_FORCE_INLINE constexpr decltype(auto) perform_invoke(F&& f, Args&&... args)
 {
     return cc::forward<F>(f)(cc::forward<Args>(args)...);
 }
 }
 
 template <class F, class... Args>
-constexpr decltype(auto) invoke(F&& f, Args&&... args) noexcept(std::is_nothrow_invocable_v<F, Args...>)
+CC_FORCE_INLINE constexpr decltype(auto) invoke(F&& f, Args&&... args) noexcept(std::is_nothrow_invocable_v<F, Args...>)
 {
     return detail::perform_invoke(cc::forward<F>(f), cc::forward<Args>(args)...);
 }
