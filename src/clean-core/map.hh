@@ -133,7 +133,7 @@ public:
     /// NOTE: create must not modify this map
     ///       during create, the old size is still valid
     template <class T = KeyT, class CreateF>
-    ValueT& emplace_f(T const& key, CreateF&& create)
+    ValueT& get_or_create(T const& key, CreateF&& create)
     {
         if (_entries.empty() || _size > _entries.size())
             reserve(_size == 0 ? 4 : _size + 1);
