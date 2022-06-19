@@ -126,6 +126,29 @@ public:
         return l.emplace_front(KeyT(key)).value;
     }
 
+    /// looks up the given key
+    /// if it does not exists, creates it via "create()"
+    /// ("create()" must return something that can construct T)
+    /// returns the value in either case
+    /// NOTE: create must not modify this map
+    ///       during create, the old size is still valid
+    template <class T = KeyT, class CreateF>
+    ValueT& get_or_create(T const& key, CreateF&& create)
+    {
+        if (_entries.empty() || _size > _entries.size())
+            reserve(_size == 0 ? 4 : _size + 1);
+
+        auto idx = this->_get_location(key);
+        auto& l = _entries[idx];
+        for (auto& e : l)
+            if (EqualT{}(e.key, key))
+                return e.value;
+
+        auto& val = l.emplace_front(KeyT(key), create()).value;
+        ++_size; // AFTER create
+        return val;
+    }
+
     /// looks up the given key and returns the element
     /// UB if key is not present
     template <class T = KeyT>
