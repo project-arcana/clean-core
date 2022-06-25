@@ -14,6 +14,55 @@
 
 namespace cc
 {
+namespace detail
+{
+struct default_formatter;
+struct printf_formatter;
+struct pythonic_formatter;
+}
+
+/// a general purpose string interpolation function (aka a "string formatting utility")
+/// basically clean-core's version of printf and std::fmt
+///
+/// Usage:
+///
+///   // pythonic syntax
+///   auto s = cc::format("{} -> {}", 17, true);
+///
+///   // printf-style syntax
+///   // %s will always stringify, even if types mismatch
+///   auto s = cc::format("%d -> %s", 17, true);
+///
+///   // different order
+///   auto s = cc::format("{1} {0}!", "World", "Hello");
+///
+///   // format strings
+///   auto s = cc::format("{.2f} %6d", 1.234, 1000);
+///
+template <class Formatter = detail::default_formatter, class... Args>
+string format(char const* fmt_str, Args const&... args);
+
+/// same as cc::format but only uses printf-style % syntax (with the generic %s)
+template <class... Args>
+string formatf(char const* fmt_str, Args const&... args);
+
+/// same as cc::format but only uses pythonic {} syntax
+template <class... Args>
+string formatp(char const* fmt_str, Args const&... args);
+
+/// version of cc::format that appends the result to a stream or string
+/// this is usually a bit more efficient than cc::format
+/// with a custom stream_ref, this function does not allocate
+template <class Formatter = detail::default_formatter, class... Args>
+void format_to(stream_ref<char> s, string_view fmt_str, Args const&... args);
+template <class Formatter = detail::default_formatter, class... Args>
+void format_to(string& s, string_view fmt_str, Args const&... args);
+
+
+//
+// Implementation
+//
+
 template <class T>
 struct format_arg;
 
@@ -74,7 +123,7 @@ struct has_member_to_string_t<T, std::void_t<decltype(string_view(std::declval<T
 template <class T>
 constexpr bool has_member_to_string = has_member_to_string_t<T>::value;
 
-struct default_formatter
+struct default_do_format
 {
     template <class T>
     static void do_format(stream_ref<char> s, T const& v, string_view fmt_args)
@@ -114,29 +163,47 @@ struct default_formatter
             static_assert(cc::always_false<T>, "Type requires a to_string() function");
         }
     }
+
+    using do_format_fptr = function_ptr<void(stream_ref<char>, void const*, string_view)>;
+
+    struct arg_info
+    {
+        do_format_fptr do_format;
+        void const* data = nullptr;
+        string_view name;
+        bool was_used = false;
+    };
+
+    template <class T>
+    static arg_info make_arg_info(T const& v)
+    {
+        return {[](stream_ref<char> s, void const* data, string_view options) -> void
+                { default_do_format::do_format(s, *static_cast<T const*>(data), options); },
+                &v,
+                {}};
+    }
+
+    template <class T>
+    static arg_info make_arg_info(format_arg<T> const& a)
+    {
+        return {[](stream_ref<char> ss, void const* data, string_view options) -> void
+                { default_do_format::do_format(ss, *static_cast<T const*>(data), options); },
+                &a.value, a.name};
+    }
 };
 
-struct arg_info
+struct default_formatter : default_do_format
 {
-    function_ptr<void(stream_ref<char>, void const*, string_view)> do_format;
-    void const* data = nullptr;
-    string_view name;
+    static void vformat_to(stream_ref<char> s, string_view fmt_str, span<arg_info> args);
 };
-
-template <class Formatter = default_formatter, class T>
-arg_info make_arg_info(T const& v)
+struct printf_formatter : default_do_format
 {
-    return {[](stream_ref<char> s, void const* data, string_view options) -> void { Formatter::do_format(s, *static_cast<T const*>(data), options); }, &v, {}};
-}
-
-template <class Formatter = default_formatter, class T>
-arg_info make_arg_info(format_arg<T> const& a)
+    static void vformat_to(stream_ref<char> s, string_view fmt_str, span<arg_info> args);
+};
+struct pythonic_formatter : default_do_format
 {
-    return {[](stream_ref<char> ss, void const* data, string_view options) -> void { Formatter::do_format(ss, *static_cast<T const*>(data), options); },
-            &a.value, a.name};
-}
-
-void vformat_to(stream_ref<char> s, string_view fmt_str, span<arg_info const> args);
+    static void vformat_to(stream_ref<char> s, string_view fmt_str, span<arg_info> args);
+};
 }
 
 template <class T>
@@ -147,26 +214,44 @@ struct format_arg
     T const& value;
 };
 
-template <class Formatter = detail::default_formatter, class... Args>
+template <class Formatter, class... Args>
 void format_to(stream_ref<char> s, string_view fmt_str, Args const&... args)
 {
     if constexpr (sizeof...(args) == 0)
     {
-        detail::vformat_to(s, fmt_str, {});
+        Formatter::vformat_to(s, fmt_str, {});
     }
     else
     {
-        detail::arg_info vargs[] = {detail::make_arg_info(args)...};
-        detail::vformat_to(s, fmt_str, vargs);
+        typename Formatter::arg_info vargs[] = {Formatter::make_arg_info(args)...};
+        Formatter::vformat_to(s, fmt_str, vargs);
     }
 }
 
-template <class Formatter = detail::default_formatter, class... Args>
+template <class Formatter, class... Args>
+void format_to(string& s, string_view fmt_str, Args const&... args)
+{
+    cc::format_to([&s](span<char const> ss) { s += cc::string_view(ss.data(), ss.size()); }, fmt_str, args...);
+}
+
+template <class Formatter, class... Args>
 string format(char const* fmt_str, Args const&... args)
 {
     string_stream ss;
     format_to<Formatter>(make_stream_ref<char>(ss), fmt_str, args...);
     return ss.to_string();
+}
+
+template <class... Args>
+string formatf(char const* fmt_str, Args const&... args)
+{
+    return cc::format<detail::printf_formatter>(fmt_str, args...);
+}
+
+template <class... Args>
+string formatp(char const* fmt_str, Args const&... args)
+{
+    return cc::format<detail::pythonic_formatter>(fmt_str, args...);
 }
 
 namespace format_literals
