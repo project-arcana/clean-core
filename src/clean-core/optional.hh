@@ -8,6 +8,7 @@
 #include <clean-core/enable_if.hh>
 #include <clean-core/forward.hh>
 #include <clean-core/fwd.hh>
+#include <clean-core/invoke.hh>
 #include <clean-core/move.hh>
 #include <clean-core/new.hh>
 #include <clean-core/storage.hh>
@@ -192,6 +193,82 @@ public:
         new (cc::placement_new, &_data.value) T(cc::forward<Args>(args)...);
         _has_value = true;
         return _data.value;
+    }
+
+    // monadic interface
+    // (adapted from https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2019/p0798r3.html)
+public:
+    /// calls mapF with the held value and returns it wrapped in another optional
+    /// returns nullopt if no value is held
+    ///
+    /// Usage:
+    ///
+    ///   cc::optional<int> i = 17;
+    ///   i = i.map([](int x) { return x * 2; });
+    ///   auto s = i.map([](int x) { return cc::to_string(x); });
+    ///
+    ///   // works with ptr-to-member
+    ///   cc::optional<tg::pos3> p = ...;
+    ///   auto y = p.map(&tg::pos3::y);
+    ///
+    ///   // works with ptr-to-member-function
+    ///   cc::optional<cc::vector<int>> vs = ...;
+    ///   auto s = vs.map(&cc::vector<int>::size);
+    ///
+    template <class MapF>
+    [[nodiscard]] constexpr auto map(MapF&& mapF) &
+    {
+        using R = std::decay_t<decltype(cc::invoke(mapF, _data.value))>;
+        static_assert(!std::is_same_v<R, void>, "mapF must return a value. did you mean transform(...)?");
+
+        return _has_value ? cc::optional<R>(cc::invoke(mapF, _data.value)) : cc::optional<R>{};
+    }
+    template <class MapF>
+    [[nodiscard]] constexpr auto map(MapF&& mapF) const&
+    {
+        using R = std::decay_t<decltype(cc::invoke(mapF, _data.value))>;
+        static_assert(!std::is_same_v<R, void>, "mapF must return a value. did you mean transform(...)?");
+
+        return _has_value ? cc::optional<R>(cc::invoke(mapF, _data.value)) : cc::optional<R>{};
+    }
+    template <class MapF>
+    [[nodiscard]] constexpr auto map(MapF&& mapF) &&
+    {
+        using R = std::decay_t<decltype(cc::invoke(mapF, _data.value))>;
+        static_assert(!std::is_same_v<R, void>, "mapF must return a value. did you mean transform(...)?");
+
+        return _has_value ? cc::optional<R>(cc::invoke(mapF, cc::move(_data.value))) : cc::optional<R>{};
+    }
+    template <class MapF>
+    [[nodiscard]] constexpr auto map(MapF&& mapF) const&&
+    {
+        using R = std::decay_t<decltype(cc::invoke(mapF, _data.value))>;
+        static_assert(!std::is_same_v<R, void>, "mapF must return a value. did you mean transform(...)?");
+
+        return _has_value ? cc::optional<R>(cc::invoke(mapF, cc::move(_data.value))) : cc::optional<R>{};
+    }
+
+    /// calls transformF with a reference to the value, expected to update the value
+    /// transformF must return void
+    /// does nothing if no value is held
+    ///
+    /// Usage:
+    ///
+    ///   cc::optional<int> i = 17;
+    ///   i.transform([](int &x) { x *= 2; });
+    ///
+    ///   // works with ptr-to-member-function
+    ///   cc::optional<cc::vector<int>> vs = ...;
+    ///   vs.transform(&cc::vector<int>::clear);
+    ///
+    template <class TransformF>
+    constexpr void transform(TransformF&& transformF)
+    {
+        using R = std::decay_t<decltype(cc::invoke(transformF, _data.value))>;
+        static_assert(std::is_same_v<R, void>, "transformF must return void (is exptected to change its argument). did you mean map(...)?");
+
+        if (_has_value)
+            cc::invoke(transformF, _data.value);
     }
 
     // comparisons
