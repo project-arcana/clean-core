@@ -174,6 +174,7 @@ struct default_do_format
         bool was_used = false;
     };
 
+    // TODO: maybe pull out the lambda into a template function to reduce symbol size a bit
     template <class T>
     static arg_info make_arg_info(T const& v)
     {

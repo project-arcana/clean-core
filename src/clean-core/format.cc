@@ -175,7 +175,7 @@ static void impl_vformat_to(cc::stream_ref<char> ss, cc::string_view fmt_str, cc
         if (support_pythonic && *curr_c == '}')
         {
             ++curr_c;
-            CC_ASSERT_ERRMSG(curr_c != end_c && *curr_c == '}', fmt_str, {{curr_c, "expected '}'"}});
+            CC_ASSERT_ERRMSG(curr_c != end_c && *curr_c == '}', fmt_str, {{curr_c, "expected '}' (or missing earlier '{')"}});
 
             ss << cc::string_view(segment_start, curr_c);
             ++curr_c;
