@@ -47,7 +47,7 @@ static void impl_vformat_to(cc::stream_ref<char> ss, cc::string_view fmt_str, cc
                 ss << cc::string_view(segment_start, curr_c);
 
             ++curr_c;
-            CC_ASSERTF(curr_c != end_c, "{}", cc::make_error_message_for_substrings(fmt_str, {{curr_c, "expected argument or '{'"}}));
+            CC_ASSERT_ERRMSG(curr_c != end_c, fmt_str, {{curr_c, "expected argument or '{'"}});
 
             if (*curr_c == '{') // escaped {
             {
@@ -58,10 +58,8 @@ static void impl_vformat_to(cc::stream_ref<char> ss, cc::string_view fmt_str, cc
 
             if (*curr_c == '}') // plain {}
             {
-                CC_ASSERTF(curr_arg_id >= 0, "{}",
-                           cc::make_error_message_for_substrings(fmt_str, {{{arg_start_c, curr_c + 1}, "cannot use {} after named or indexed argument"}}));
-                CC_ASSERTF(curr_arg_id < int(args.size()), "{}",
-                           cc::make_error_message_for_substrings(fmt_str, {{{arg_start_c, curr_c + 1}, "not enough arguments passed to cc::format"}}));
+                CC_ASSERT_ERRMSG(curr_arg_id >= 0, fmt_str, {{{arg_start_c, curr_c + 1}, "cannot use {} after named or indexed argument"}});
+                CC_ASSERT_ERRMSG(curr_arg_id < int(args.size()), fmt_str, {{{arg_start_c, curr_c + 1}, "not enough arguments passed to cc::format"}});
                 args[curr_arg_id].do_format(ss, args[curr_arg_id].data, {});
                 args[curr_arg_id].was_used = true;
                 ++curr_arg_id;
@@ -75,17 +73,16 @@ static void impl_vformat_to(cc::stream_ref<char> ss, cc::string_view fmt_str, cc
                     // TODO: are leading zeros valid?
                     size_t index = *curr_c - '0';
                     ++curr_c;
-                    CC_ASSERTF(curr_c != end_c, "{}", cc::make_error_message_for_substrings(fmt_str, {{{arg_start_c, curr_c}, "missing closing '}'"}}));
+                    CC_ASSERT_ERRMSG(curr_c != end_c, fmt_str, {{{arg_start_c, curr_c}, "missing closing '}'"}});
                     while (is_digit(*curr_c))
                     {
                         index *= 10;
                         index += *curr_c - '0';
                         ++curr_c;
-                        CC_ASSERTF(curr_c != end_c, "{}", cc::make_error_message_for_substrings(fmt_str, {{{arg_start_c, curr_c}, "missing closing '}'"}}));
+                        CC_ASSERT_ERRMSG(curr_c != end_c, fmt_str, {{{arg_start_c, curr_c}, "missing closing '}'"}});
                     }
-                    CC_ASSERTF(index < args.size(), "{}",
-                               cc::make_error_message_for_substrings(
-                                   fmt_str, {{{arg_start_c, curr_c}, "argument index too large or not enough arguments passed to cc::format"}}));
+                    CC_ASSERT_ERRMSG(index < args.size(), fmt_str,
+                                     {{{arg_start_c, curr_c}, "argument index too large or not enough arguments passed to cc::format"}});
                     argument_index = index;
                     curr_arg_id = -1; // invalidate
                 }
@@ -93,11 +90,11 @@ static void impl_vformat_to(cc::stream_ref<char> ss, cc::string_view fmt_str, cc
                 {
                     auto const name_start = curr_c;
                     ++curr_c;
-                    CC_ASSERTF(curr_c != end_c, "{}", cc::make_error_message_for_substrings(fmt_str, {{{arg_start_c, curr_c}, "missing closing '}'"}}));
+                    CC_ASSERT_ERRMSG(curr_c != end_c, fmt_str, {{{arg_start_c, curr_c}, "missing closing '}'"}});
                     while (*curr_c == '_' || is_lower(*curr_c) || is_upper(*curr_c) || is_digit(*curr_c))
                     {
                         ++curr_c;
-                        CC_ASSERTF(curr_c != end_c, "{}", cc::make_error_message_for_substrings(fmt_str, {{{arg_start_c, curr_c}, "missing closing '}'"}}));
+                        CC_ASSERT_ERRMSG(curr_c != end_c, fmt_str, {{{arg_start_c, curr_c}, "missing closing '}'"}});
                     }
                     auto const name = cc::string_view(name_start, curr_c);
                     for (auto i = 0u; i < args.size(); ++i)
@@ -109,14 +106,13 @@ static void impl_vformat_to(cc::stream_ref<char> ss, cc::string_view fmt_str, cc
                         }
                     }
                     curr_arg_id = -1; // invalidate
-                    CC_ASSERTF(argument_index < args.size(),
-                               "{}", cc::make_error_message_for_substrings(fmt_str, {{name, "named argument not found in arguments passed to cc::format"}}));
+                    CC_ASSERT_ERRMSG(argument_index < args.size(), fmt_str, {{name, "named argument not found in arguments passed to cc::format"}});
                 }
                 else
                 {
                     argument_index = curr_arg_id++;
                 }
-                CC_ASSERTF(curr_c != end_c, "{}", cc::make_error_message_for_substrings(fmt_str, {{{arg_start_c, curr_c}, "missing closing '}'"}}));
+                CC_ASSERT_ERRMSG(curr_c != end_c, fmt_str, {{{arg_start_c, curr_c}, "missing closing '}'"}});
 
                 if (*curr_c == '}') // no format string
                 {
@@ -126,17 +122,16 @@ static void impl_vformat_to(cc::stream_ref<char> ss, cc::string_view fmt_str, cc
                 }
                 else
                 {
-                    CC_ASSERTF(*curr_c == ':', "{}",
-                               cc::make_error_message_for_substrings(fmt_str, {{{arg_start_c, curr_c}, "format specifier must start with ':'"}}));
+                    CC_ASSERT_ERRMSG(*curr_c == ':', fmt_str, {{{arg_start_c, curr_c}, "expected ':' (with format specifier) or '}'"}});
 
                     ++curr_c;
-                    CC_ASSERTF(curr_c != end_c, "{}", cc::make_error_message_for_substrings(fmt_str, {{{arg_start_c, curr_c}, "missing closing '}'"}}));
+                    CC_ASSERT_ERRMSG(curr_c != end_c, fmt_str, {{{arg_start_c, curr_c}, "missing closing '}'"}});
 
                     auto const args_start = curr_c;
                     while (*curr_c != '}')
                     {
                         ++curr_c;
-                        CC_ASSERTF(curr_c != end_c, "{}", cc::make_error_message_for_substrings(fmt_str, {{{arg_start_c, curr_c}, "missing closing '}'"}}));
+                        CC_ASSERT_ERRMSG(curr_c != end_c, fmt_str, {{{arg_start_c, curr_c}, "missing closing '}'"}});
                     }
 
                     // TODO: handle arguments that themselves contain args
