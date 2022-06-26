@@ -33,3 +33,11 @@ TEST("cc::format opinionated")
     CHECK(cc::formatf("{} %s", "x") == "{} x");
     CHECK(cc::formatp("{} %s", "x") == "x %s");
 }
+
+TEST("cc::format string format")
+{
+    CHECK(cc::format("%s", "hi") == "hi");
+    CHECK(cc::format("%5s", "hi") == "   hi");
+    CHECK(cc::format("%<5s", "hi") == "hi   ");
+    CHECK(cc::format("%^4s", "hi") == " hi ");
+}

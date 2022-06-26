@@ -11,6 +11,7 @@ namespace cc::detail
 static void advance_printf_chars(cc::string_view fmt_str, char const*& curr, char const* end)
 {
     // taken from https://en.cppreference.com/w/cpp/io/c/fprintf
+    // with slight modification: alignemnt is supported via ><^
 
     // [optional] one or more flags that modify the behavior of the conversion
     while (curr != end
@@ -19,6 +20,9 @@ static void advance_printf_chars(cc::string_view fmt_str, char const*& curr, cha
                *curr == ' ' || //
                *curr == '-' || //
                *curr == '#' || //
+               *curr == '^' || //
+               *curr == '<' || //
+               *curr == '>' || //
                *curr == '0'))
         ++curr;
 
