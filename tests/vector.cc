@@ -259,14 +259,14 @@ MONTE_CARLO_TEST("cc::vector mct")
     addOp("gen int", make_int);
     addOp("gen str", make_str);
 
-    auto constexpr max_size = 40;
+    static auto constexpr max_size = 40;
     auto const addType = [&](auto obj, auto make_element, auto elem_str, auto elem_pred)
     {
         using vector_t = decltype(obj);
         using T = std::decay_t<decltype(obj[0])>;
 
-        auto constexpr is_std_vec = is_std_vector<vector_t>::value;
-        auto constexpr is_capped_vec = is_capped_vector<vector_t>::value;
+        static auto constexpr is_std_vec = is_std_vector<vector_t>::value;
+        static auto constexpr is_capped_vec = is_capped_vector<vector_t>::value;
 
         auto is_empty = [](vector_t const& s) { return s.empty(); };
 
