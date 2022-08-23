@@ -7,9 +7,33 @@
 #include <clean-core/unique_ptr.hh>
 #include <clean-core/vector.hh>
 
+// ensure predicates work with non-ranges
+
+namespace
+{
+struct self_deref
+{
+    self_deref operator*() const { return {}; }
+};
+}
+
+static_assert(!cc::detail::is_convertible_range<int, int>);
+static_assert(!cc::detail::is_deref_convertible_range<int, int>);
+
+static_assert(cc::detail::is_convertible_range<cc::vector<int>, int>);
+static_assert(!cc::detail::is_deref_convertible_range<cc::vector<int>, int>);
+
+static_assert(!cc::detail::is_convertible_range<cc::vector<int*>, int>);
+static_assert(cc::detail::is_deref_convertible_range<cc::vector<int*>, int>);
+
+static_assert(cc::detail::is_convertible_range<cc::vector<self_deref>, self_deref>);
+static_assert(cc::detail::is_deref_convertible_range<cc::vector<self_deref>, self_deref>);
+
+
 TEST("cc::range_ref")
 {
-    auto check_range = [](cc::range_ref<int> r) {
+    auto check_range = [](cc::range_ref<int> r)
+    {
         cc::vector<int> v;
         r.for_each([&](int i) { v.push_back(i); });
         CHECK(v == cc::vector<int>{1, 2, 3});
@@ -36,13 +60,16 @@ TEST("cc::range_ref")
 
 TEST("cc::range_ref conversion")
 {
-    auto check_range = [](cc::range_ref<cc::string_view> r, cc::string_view result) {
+    auto check_range = [](cc::range_ref<cc::string_view> r, cc::string_view result)
+    {
         cc::string s;
-        r.for_each([&](cc::string_view sv) {
-            if (!s.empty())
-                s += ' ';
-            s += sv;
-        });
+        r.for_each(
+            [&](cc::string_view sv)
+            {
+                if (!s.empty())
+                    s += ' ';
+                s += sv;
+            });
         CHECK(s == result);
     };
 
@@ -80,7 +107,8 @@ TEST("cc::range_ref deref conversion")
     vals.push_back(&b);
     vals.push_back(&a);
 
-    auto check_range = [](cc::range_ref<int> vals, int result) {
+    auto check_range = [](cc::range_ref<int> vals, int result)
+    {
         auto sum = 0;
         vals.for_each([&](int v) { sum += v; });
         CHECK(sum == result);
