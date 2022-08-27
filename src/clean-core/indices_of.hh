@@ -18,7 +18,8 @@ namespace cc
 ///   for (size_t i = 0; i != v.size(); ++i)
 ///       use(i);
 ///
-/// the generated assembly is equivalent: https://godbolt.org/z/vvEKno4jT
+/// the generated assembly is equivalent for simple loops: https://godbolt.org/z/vvEKno4jT
+/// and can be better when aliasing is involved: https://godbolt.org/z/Tv5ddjvaz
 template <class SizedRange>
 constexpr auto indices_of(SizedRange const& range)
 {
