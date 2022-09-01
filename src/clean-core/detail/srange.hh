@@ -34,6 +34,21 @@ struct iiterator
     CC_FORCE_INLINE constexpr void operator++() { ++_curr; }
 };
 
+template <class T>
+struct rev_iiterator
+{
+    T _curr;
+
+    CC_FORCE_INLINE constexpr bool operator!=(rev_iiterator rhs) const { return _curr != rhs._curr; }
+    CC_FORCE_INLINE constexpr T operator*() const { return _curr; }
+    CC_FORCE_INLINE constexpr void operator++() { --_curr; }
+};
+
+template <class T>
+struct irange;
+template <class T>
+struct rev_irange;
+
 // a dumb range that iterates from begin to end (exclusive)
 // creates the same asm code as:
 //   for (T i = _begin; i != _end; ++i)
@@ -42,9 +57,36 @@ template <class T>
 struct irange
 {
     T _begin;
-    T _end;
+    T _end; // _end >= _begin
 
     CC_FORCE_INLINE constexpr iiterator<T> begin() const { return {_begin}; }
     CC_FORCE_INLINE constexpr iiterator<T> end() const { return {_end}; }
+
+    CC_FORCE_INLINE constexpr rev_irange<T> reversed() const
+    {
+        auto b = _end;
+        auto e = _begin;
+        --b;
+        --e;
+        return {b, e};
+    }
+};
+template <class T>
+struct rev_irange
+{
+    T _begin;
+    T _end;
+
+    CC_FORCE_INLINE constexpr rev_iiterator<T> begin() const { return {_begin}; }
+    CC_FORCE_INLINE constexpr rev_iiterator<T> end() const { return {_end}; }
+
+    CC_FORCE_INLINE constexpr irange<T> reversed() const
+    {
+        auto b = _end;
+        auto e = _begin;
+        ++b;
+        ++e;
+        return {b, e};
+    }
 };
 }
