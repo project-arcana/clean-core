@@ -113,6 +113,17 @@ template <class T>
 constexpr bool has_to_string = has_to_string_t<T>::value;
 
 template <class T, class = std::void_t<>>
+struct has_member_toStdString_t : std::false_type
+{
+};
+template <class T>
+struct has_member_toStdString_t<T, std::void_t<decltype(string_view(std::declval<T>().toStdString()))>> : std::true_type
+{
+};
+template <class T>
+constexpr bool has_member_toStdString = has_member_toStdString_t<T>::value;
+
+template <class T, class = std::void_t<>>
 struct has_member_to_string_t : std::false_type
 {
 };
@@ -157,6 +168,10 @@ struct default_do_format
         else if constexpr (detail::has_member_to_string<T>)
         {
             s << string_view(v.to_string());
+        }
+        else if constexpr (detail::has_member_toStdString<T>)
+        {
+            s << string_view(v.toStdString());
         }
         else
         {
