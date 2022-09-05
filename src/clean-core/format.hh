@@ -46,7 +46,7 @@ struct has_to_string_args_t : std::false_type
 {
 };
 template <class T>
-struct has_to_string_args_t<T, std::void_t<decltype(string_view(o_string(std::declval<T>(), std::declval<string_view>())))>> : std::true_type
+struct has_to_string_args_t<T, std::void_t<decltype(string_view(to_string(std::declval<T>(), std::declval<string_view>())))>> : std::true_type
 {
 };
 template <class T>
