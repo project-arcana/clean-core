@@ -75,7 +75,11 @@ void cc::commit_physical_memory(std::byte* ptr, size_t size)
 
 #elif defined(CC_OS_LINUX)
 
-    int const res = ::mprotect(ptr, size, PROT_READ | PROT_WRITE);
+    // ensure ptr and size are page-aligned
+    auto new_ptr = cc::align_down(ptr, 4096);
+    auto new_size = cc::align_up(size + (ptr - new_ptr), 4096);
+
+    int const res = ::mprotect(new_ptr, new_size, PROT_READ | PROT_WRITE);
     CC_ASSERT(res == 0 && "virtual commit failed");
 
 #else
@@ -92,8 +96,12 @@ void cc::decommit_physical_memory(std::byte* ptr, size_t size)
 
 #elif defined(CC_OS_LINUX)
 
+    // ensure ptr and size are page-aligned
+    auto new_ptr = cc::align_down(ptr, 4096);
+    auto new_size = cc::align_up(size + (ptr - new_ptr), 4096);
+
     // TODO: not sure if this actually decommits memory
-    int const res = ::mprotect(ptr, size, PROT_NONE);
+    int const res = ::mprotect(new_ptr, new_size, PROT_NONE);
     CC_ASSERT(res == 0 && "virtual decommit failed");
 
 #else
