@@ -66,6 +66,26 @@ void cc::free_virtual_memory(std::byte* ptr, size_t size_bytes)
 #endif
 }
 
+static volatile uint8_t s_byte_sink;
+
+void cc::prefault_memory(std::byte *ptr, size_t size_bytes)
+{
+    if (size_bytes == 0)
+        return;
+
+    // generates nice SIMD code: https://godbolt.org/z/5YEPz4zP7
+
+    // TODO: separate counters?
+    uint8_t s = uint8_t(*ptr);
+    auto end = ptr + size_bytes;
+    ptr = cc::align_up(ptr, 4096);
+    while (ptr < end) {
+        s ^= uint8_t(*ptr);
+        ptr += 4096;
+    }
+    s_byte_sink = s;
+}
+
 void cc::commit_physical_memory(std::byte* ptr, size_t size)
 {
 #ifdef CC_OS_WINDOWS
