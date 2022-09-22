@@ -105,6 +105,42 @@ CC_FORCE_INLINE int64_t intrin_atomic_add(int64_t volatile* counter, int64_t val
 #endif
 }
 
+CC_FORCE_INLINE uint8_t intrin_atomic_or(uint8_t volatile* counter, uint8_t value)
+{
+#ifdef CC_COMPILER_MSVC
+    return _InterlockedOr8((volatile char*)counter, value);
+#else
+    return __sync_fetch_and_or(counter, value);
+#endif
+}
+
+CC_FORCE_INLINE uint16_t intrin_atomic_or(uint16_t volatile* counter, uint16_t value)
+{
+#ifdef CC_COMPILER_MSVC
+    return _InterlockedOr16((volatile short*)counter, value);
+#else
+    return __sync_fetch_and_or(counter, value);
+#endif
+}
+
+CC_FORCE_INLINE uint32_t intrin_atomic_or(uint32_t volatile* counter, uint32_t value)
+{
+#ifdef CC_COMPILER_MSVC
+    return _InterlockedOr((volatile long*)counter, value);
+#else
+    return __sync_fetch_and_or(counter, value);
+#endif
+}
+
+CC_FORCE_INLINE uint64_t intrin_atomic_or(uint64_t volatile* counter, uint64_t value)
+{
+#ifdef CC_COMPILER_MSVC
+    return _InterlockedOr64((volatile long long*)counter, value);
+#else
+    return __sync_fetch_and_or(counter, value);
+#endif
+}
+
 template <class T>
 CC_FORCE_INLINE T* intrin_cas_pointer_t(T* volatile* destination, T* comparand, T* exchange)
 {
