@@ -8,7 +8,6 @@
 #include <clean-core/alloc_vector.hh>
 #include <clean-core/allocator.hh>
 #include <clean-core/bit_cast.hh>
-#include <clean-core/bits.hh>
 #include <clean-core/new.hh>
 
 namespace cc
