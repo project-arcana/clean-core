@@ -89,7 +89,7 @@
 #include <stdlib.h>
 #include <tchar.h>
 
-#include <Windows.h>
+#include <clean-core/native/win32_sanitized.hh>
 
 #pragma comment(lib, "version.lib") // for "VerQueryValue"
 #pragma warning(disable : 4826)
