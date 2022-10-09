@@ -169,16 +169,6 @@ public:
         return *(new (placement_new, &_data[_size++]) T(cc::forward<Args>(args)...));
     }
 
-    void push_back_range_n(T const* data, size_t num)
-    {
-        if (!data || !num)
-            return;
-
-        reserve(_size + num);
-        detail::container_copy_construct_range<T>(data, num, &_data[_size]);
-        _size += num;
-    }
-
     /// adds all elements of the range
     template <class Range>
     void push_back_range(Range&& range)
@@ -450,6 +440,17 @@ public:
 
     bool operator==(vector_base const& rhs) const noexcept { return operator==(span<T const>(rhs)); }
     bool operator!=(vector_base const& rhs) const noexcept { return operator!=(span<T const>(rhs)); }
+
+protected:
+    void push_back_range_n(T const* data, size_t num)
+    {
+        if (!data || !num)
+            return;
+
+        reserve(_size + num);
+        detail::container_copy_construct_range<T>(data, num, &_data[_size]);
+        _size += num;
+    }
 
     // members
 protected:

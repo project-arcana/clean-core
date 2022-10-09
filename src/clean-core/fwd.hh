@@ -24,6 +24,8 @@ struct equal_to;
 struct nullopt_t;
 template <class T>
 struct optional;
+template <class... Types>
+struct variant;
 
 template <class A, class B>
 struct pair;
