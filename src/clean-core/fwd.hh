@@ -101,6 +101,8 @@ template <class T>
 struct unique_ptr;
 template <class T>
 struct poly_unique_ptr;
+template <class T>
+struct shared_ptr;
 
 // locks
 struct spin_lock;

@@ -139,11 +139,12 @@ struct variant
     }
     variant(variant&& rhs) noexcept
     {
-        static_assert(std::is_move_constructible_v<Types> && ..., "all types must be movable");
+        static_assert((std::is_move_constructible_v<Types> && ...), "all types must be movable");
         // TODO: maybe better comp time if co-recurse
         rhs.visit(
             [&](auto& v)
             {
+                using T = std::decay_t<decltype(v)>;
                 constexpr auto i = detail::index_of_type<T, Types...>();
                 static_assert(i >= 0, "cannot construct variant from this type. NOTE: implicit conversions are not allowed");
                 _idx = uint8_t(i);
@@ -152,11 +153,12 @@ struct variant
     }
     variant(variant const& rhs)
     {
-        static_assert(std::is_copy_constructible_v<Types> && ..., "all types must be copyable");
+        static_assert((std::is_copy_constructible_v<Types> && ...), "all types must be copyable");
         // TODO: maybe better comp time if co-recurse
         rhs.visit(
             [&](auto const& v)
             {
+                using T = std::decay_t<decltype(v)>;
                 constexpr auto i = detail::index_of_type<T, Types...>();
                 static_assert(i >= 0, "cannot construct variant from this type. NOTE: implicit conversions are not allowed");
                 _idx = uint8_t(i);
