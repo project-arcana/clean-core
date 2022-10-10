@@ -135,7 +135,7 @@ struct variant
         constexpr auto i = detail::index_of_type<T, Types...>();
         static_assert(i >= 0, "cannot construct variant from this type. NOTE: implicit conversions are not allowed");
         _idx = uint8_t(i);
-        _data.template emplace<T>(cc::forward<T>(v));
+        _data.template emplace<std::decay_t<T>>(cc::forward<T>(v));
     }
     variant(variant&& rhs) noexcept
     {
@@ -167,22 +167,36 @@ struct variant
     }
 
     template <class T, cc::enable_if<!std::is_same_v<T, variant>> = true>
-    variant& operator=(T&& v) noexcept(noexcept(T(v)))
+    variant& operator=(T&& v) noexcept(noexcept(T(cc::forward<T>(v))))
     {
         constexpr auto i = detail::index_of_type<T, Types...>();
         static_assert(i >= 0, "cannot construct variant from this type. NOTE: implicit conversions are not allowed");
         _data.destroy(_idx);
         _idx = uint8_t(i);
-        _data.template emplace<T>(cc::forward<T>(v));
+        _data.template emplace<std::decay_t<T>>(cc::forward<T>(v));
         return *this;
     }
     variant& operator=(variant&& rhs) noexcept
     {
-        rhs.visit([&](auto&& v) { return *this = cc::forward<decltype(v)>(v); });
+        _data.destroy(_idx);
+        return rhs.visit(
+            [&](auto&& v) -> variant&
+            {
+                using T = std::decay_t<decltype(v)>;
+                this->emplace<T>(cc::move(v));
+                return *this;
+            });
     }
     variant& operator=(variant const& rhs)
     {
-        rhs.visit([&](auto&& v) { return *this = cc::forward<decltype(v)>(v); });
+        _data.destroy(_idx);
+        return rhs.visit(
+            [&](auto const& v) -> variant&
+            {
+                using T = std::decay_t<decltype(v)>;
+                this->emplace<T>(v);
+                return *this;
+            });
     }
 
     ~variant() { _data.destroy(_idx); }
