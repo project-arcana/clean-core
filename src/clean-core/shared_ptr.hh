@@ -19,6 +19,7 @@ shared_ptr<T> make_shared(Args&&... args);
 ///  - no weak_ptr (simplifies control block)
 ///  - only make_shared supported (less code, less indirection)
 ///  - no custom allocation / deleter (allows cc::alloc / cc::free)
+///  - no shared_from_this (consequence of no-weak-ptr)
 template <class T>
 struct shared_ptr
 {
@@ -38,6 +39,8 @@ struct shared_ptr
         CC_ASSERT(is_valid());
         return &_control->value;
     }
+
+    bool is_unique() const { return refcount() == 1; }
 
     uint32_t refcount() const { return _control ? _control->refcount : 0; }
 
