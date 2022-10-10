@@ -171,14 +171,12 @@ struct variant
     {
         constexpr auto i = detail::index_of_type<T, Types...>();
         static_assert(i >= 0, "cannot construct variant from this type. NOTE: implicit conversions are not allowed");
-        _data.destroy(_idx);
         _idx = uint8_t(i);
-        _data.template emplace<std::decay_t<T>>(cc::forward<T>(v));
+        this->emplace<std::decay_t<T>>(cc::forward<T>(v));
         return *this;
     }
     variant& operator=(variant&& rhs) noexcept
     {
-        _data.destroy(_idx);
         return rhs.visit(
             [&](auto&& v) -> variant&
             {
@@ -189,7 +187,6 @@ struct variant
     }
     variant& operator=(variant const& rhs)
     {
-        _data.destroy(_idx);
         return rhs.visit(
             [&](auto const& v) -> variant&
             {
