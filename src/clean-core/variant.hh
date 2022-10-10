@@ -130,7 +130,7 @@ struct variant
     }
 
     template <class T, cc::enable_if<!std::is_same_v<T, variant>> = true>
-    variant(T&& v) noexcept(noexcept(T(v)))
+    variant(T&& v) noexcept(noexcept(T(cc::forward<T>(v))))
     {
         constexpr auto i = detail::index_of_type<T, Types...>();
         static_assert(i >= 0, "cannot construct variant from this type. NOTE: implicit conversions are not allowed");
