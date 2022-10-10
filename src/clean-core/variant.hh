@@ -249,6 +249,12 @@ struct variant
         return _data.template get<T>();
     }
 
+    template <class T>
+    T const& get_or(T const& default_val) const
+    {
+        return this->is<T>() ? this->get<T>() : default_val;
+    }
+
 private:
     uint8_t _idx = 0;
     detail::variant_impl<Types...> _data;
