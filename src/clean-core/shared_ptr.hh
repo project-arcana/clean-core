@@ -20,6 +20,10 @@ shared_ptr<T> make_shared(Args&&... args);
 ///  - only make_shared supported (less code, less indirection)
 ///  - no custom allocation / deleter (allows cc::alloc / cc::free)
 ///  - no shared_from_this (consequence of no-weak-ptr)
+///  - no polymorphic casts (consequence of alloc/free)
+///
+/// enables limited forms of refcount merging and in general produces nice-ish code:
+///   https://godbolt.org/z/TMafWdM49 (full refcount++ merging, register refcount--)
 template <class T>
 struct shared_ptr
 {
@@ -38,6 +42,11 @@ struct shared_ptr
     {
         CC_ASSERT(is_valid());
         return &_control->value;
+    }
+
+    T* get() const
+    {
+        return reinterpret_cast<T*>(_control); // value always first
     }
 
     bool is_unique() const { return refcount() == 1; }
@@ -96,7 +105,7 @@ struct shared_ptr
 private:
     void dec_refcount()
     {
-        if (--_control->refcount == 0)
+        if CC_CONDITION_UNLIKELY (--_control->refcount == 0)
         {
             cc::free(_control);
             _control = nullptr;
@@ -105,7 +114,7 @@ private:
 
     struct control
     {
-        T value;
+        T value; // must stay first arg, so that _control == &_control->value
         uint32_t refcount;
 
         template <class... Args>
@@ -116,8 +125,8 @@ private:
 
     control* _control = nullptr;
 
-    template <class T, class... Args>
-    friend shared_ptr<T> make_shared(Args&&... args);
+    template <class U, class... Args>
+    friend shared_ptr<U> make_shared(Args&&... args);
 };
 
 template <class T, class... Args>
