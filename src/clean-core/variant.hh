@@ -8,14 +8,21 @@
 #include <clean-core/forward.hh>
 #include <clean-core/fwd.hh>
 #include <clean-core/has_operator.hh>
+#include <clean-core/move.hh>
 #include <clean-core/new.hh>
 
 namespace cc
 {
 namespace detail
 {
+template <class... Types>
+struct first_of;
+
 template <class T, class... Types>
-using first_of = T;
+struct first_of<T, Types...>
+{
+    using type = T;
+};
 
 template <class T, class... Types>
 static constexpr bool is_equal_any_of = (std::is_same_v<T, Types> || ...);
@@ -24,7 +31,7 @@ template <class T, class... Types>
 constexpr int index_of_type()
 {
     int i = -1;
-    ((++i, std::is_same_v<T, Types>) || ...);
+    (void)((++i, std::is_same_v<T, Types>) || ...);
     return i == int(sizeof...(Types)) ? -1 : i;
 }
 
@@ -124,7 +131,7 @@ struct variant
 
     variant()
     {
-        using T = detail::first_of<Types...>;
+        using T = typename detail::first_of<Types...>::type;
         static_assert(std::is_default_constructible_v<T>, "first type of variant is not default constructible");
         _data.template emplace<T>();
     }

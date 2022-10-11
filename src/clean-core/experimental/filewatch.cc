@@ -283,7 +283,7 @@ public:
         threadAlive.store(false, std::memory_order_release);
 #ifdef __unix__
         if (inotify_rm_watch(unixFolder, unixWatch) == -1)
-            error() << "Failed to remove inotify watch";
+            std::cerr << "Failed to remove inotify watch" << std::endl;
 #elif defined _WIN32
         SetEvent(winCloseEvent);
 #endif

@@ -46,9 +46,15 @@ if(NOT CMAKE_BUILD_TYPE)
         "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
 endif()
 
-target_compile_definitions(clean-core PUBLIC $<$<CONFIG:DEBUG>:CC_DEBUG>)
-target_compile_definitions(clean-core PUBLIC $<$<CONFIG:RELEASE>:CC_RELEASE>)
-target_compile_definitions(clean-core PUBLIC $<$<CONFIG:RELWITHDEBINFO>:CC_RELWITHDEBINFO>)
+target_link_libraries(clean-core PUBLIC
+    $<$<PLATFORM_ID:Linux>:-pthread>
+)
+
+target_compile_definitions(clean-core PUBLIC
+    $<$<CONFIG:DEBUG>:CC_DEBUG>
+    $<$<CONFIG:RELEASE>:CC_RELEASE>
+    $<$<CONFIG:RELWITHDEBINFO>:CC_RELWITHDEBINFO>
+)
 
 if (CC_ENABLE_ASSERTIONS)
     target_compile_definitions(clean-core PUBLIC $<$<CONFIG:DEBUG>:CC_ENABLE_ASSERTIONS>)
