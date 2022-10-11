@@ -7,6 +7,7 @@
 #include <clean-core/assert.hh>
 #include <clean-core/forward.hh>
 #include <clean-core/fwd.hh>
+#include <clean-core/macros.hh>
 
 namespace cc
 {
@@ -114,8 +115,11 @@ private:
 
     struct control
     {
-        T value; // must stay first arg, so that _control == &_control->value
-        uint32_t refcount;
+        // must stay first arg, so that _control == &_control->value
+        T value;
+
+        // int -> make overflow UB
+        int refcount;
 
         template <class... Args>
         control(Args&&... args) : value(cc::forward<Args>(args)...), refcount(1)
