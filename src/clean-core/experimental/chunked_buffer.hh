@@ -1,5 +1,6 @@
 #pragma once
 
+#include <clean-core/detail/srange.hh>
 #include <clean-core/macros.hh>
 #include <clean-core/new.hh>
 #include <clean-core/span.hh>
@@ -25,26 +26,6 @@ struct chunked_buffer
 {
     size_t size() const { return _full_size + (_curr.head - _curr.begin); }
     bool empty() const { return size() == 0; }
-
-    // TODO: might be able to formulate it so that f is only called once
-    // F: (span<T>) -> void
-    template <class F>
-    void for_each_chunk(F&& f)
-    {
-        for (auto const& c : _full_chunks)
-            f(c.as_span());
-        if (_curr.is_valid())
-            f(_curr.as_span());
-    }
-    // F: (span<T const>) -> void
-    template <class F>
-    void for_each_chunk(F&& f) const
-    {
-        for (auto const& c : _full_chunks)
-            f(c.as_const_span());
-        if (_curr.is_valid())
-            f(_curr.as_const_span());
-    }
 
     template <class... Args>
     T& emplace_back(Args&&... args)
@@ -100,11 +81,6 @@ struct chunked_buffer
     }
 
 private:
-    // TODO: use a doubly linked list for deque with push/pop front/back
-
-    static T* _alloc(size_t size) { return reinterpret_cast<T*>(new std::byte[size * sizeof(T)]); }
-    static void _free(T* p) { delete[] reinterpret_cast<std::byte*>(p); }
-
     struct chunk
     {
         T* head = nullptr;
@@ -115,6 +91,59 @@ private:
         cc::span<T> as_span() const { return {begin, head}; }
         cc::span<T const> as_const_span() const { return {begin, head}; }
     };
+
+    // iteration
+public:
+    // TODO: might be able to formulate it so that f is only called once
+    // F: (span<T>) -> void
+    template <class F>
+    void for_each_chunk(F&& f)
+    {
+        for (auto const& c : _full_chunks)
+            f(c.as_span());
+        if (_curr.is_valid())
+            f(_curr.as_span());
+    }
+    // F: (span<T const>) -> void
+    template <class F>
+    void for_each_chunk(F&& f) const
+    {
+        for (auto const& c : _full_chunks)
+            f(c.as_const_span());
+        if (_curr.is_valid())
+            f(_curr.as_const_span());
+    }
+
+    template <class U>
+    struct chunk_iterator
+    {
+        cc::span<U> operator*() const { return head == end ? curr.as_span() : head->as_span(); }
+
+        void operator++() { head++; }
+
+        bool operator!=(cc::sentinel) const { return head != end + 1; }
+
+        chunk_iterator() = default;
+        chunk_iterator(chunk c, chunk const* b, chunk const* e) : curr(c), head(b), end(e)
+        {
+            if (c.begin == nullptr) // special case for empty buffer
+                --end;
+        }
+
+    private:
+        chunk curr;
+        chunk const* head = nullptr;
+        chunk const* end = nullptr;
+    };
+
+    auto chunks() { return cc::detail::srange<chunk_iterator<T>>(_curr, _full_chunks.begin(), _full_chunks.end()); }
+    auto chunks() const { return cc::detail::srange<chunk_iterator<T const>>(_curr, _full_chunks.begin(), _full_chunks.end()); }
+
+private:
+    // TODO: use a doubly linked list for deque with push/pop front/back
+
+    static T* _alloc(size_t size) { return reinterpret_cast<T*>(new std::byte[size * sizeof(T)]); }
+    static void _free(T* p) { delete[] reinterpret_cast<std::byte*>(p); }
 
     chunk _curr;
     cc::vector<chunk> _full_chunks;
