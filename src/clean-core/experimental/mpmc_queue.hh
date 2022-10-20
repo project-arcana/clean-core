@@ -11,6 +11,10 @@
 
 namespace cc
 {
+#ifndef CC_MPMC_QUEUE_TRACK_SIZE
+#define CC_MPMC_QUEUE_TRACK_SIZE false
+#endif
+	
 // Multi-Producer/Multi-Consumer Queue
 // FIFO
 // ~75 cycles per enqueue and dequeue under contention
@@ -58,6 +62,11 @@ public:
         }
         cell->data_ = data;
         cell->sequence_.store(pos + 1, std::memory_order_release);
+
+#if CC_MPMC_QUEUE_TRACK_SIZE
+		_current_size.fetch_add(1);
+#endif
+
         return true;
     }
 
@@ -82,8 +91,20 @@ public:
         }
         *out_data = cell->data_;
         cell->sequence_.store(pos + _buffer_mask + 1, std::memory_order_release);
-        return true;
+        
+#if CC_MPMC_QUEUE_TRACK_SIZE
+		_current_size.fetch_add(-1);
+#endif
+
+		return true;
     }
+
+#if CC_MPMC_QUEUE_TRACK_SIZE
+	int64_t get_approximate_size() const 
+	{
+		return _current_size.load();
+	}
+#endif
 
 private:
     struct cell
@@ -91,6 +112,7 @@ private:
         std::atomic<size_t> sequence_;
         T data_;
     };
+
 
     using cacheline_pad_t = char[64];
 
@@ -108,6 +130,10 @@ private:
     std::atomic<size_t> _dequeue_pos = {0};
 
     cacheline_pad_t _pad3;
+
+#if CC_MPMC_QUEUE_TRACK_SIZE
+	std::atomic<int64_t> _current_size = {0};
+#endif
 
     mpmc_queue(mpmc_queue const& other) = delete;
     mpmc_queue(mpmc_queue&& other) noexcept = delete;
