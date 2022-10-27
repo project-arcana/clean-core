@@ -1,63 +1,153 @@
 #include <clean-core/allocator.hh>
 
+#include <clean-core/macros.hh>
 
+#if defined(CC_OS_APPLE) || defined(CC_OS_WINDOWS)
+#define CC_USE_ALIGNED_MALLOC 1
+#else
+#define CC_USE_ALIGNED_MALLOC 0
+#endif
+
+namespace cc
+{
 namespace
 {
-/// system provided allocator (malloc / free)
+// system provided allocator (malloc / free)
 struct system_allocator_t final : cc::allocator
 {
-    std::byte* alloc(size_t size, size_t align = alignof(std::max_align_t)) override
+    std::byte* try_alloc(size_t size, size_t alignment) override
     {
-#ifdef CC_OS_WINDOWS
-        return static_cast<std::byte*>(::_aligned_malloc(size, align));
+        alignment = cc::max<size_t>(alignment, size >= 16 ? 16 : 8);
+
+#if CC_USE_ALIGNED_MALLOC
+        void* result = ::_aligned_malloc(size, alignment);
 #else
-        return static_cast<std::byte*>(std::aligned_alloc(align, size));
+        void* ptr = ::malloc(size + alignment + sizeof(void*) + sizeof(size_t));
+        void* result = nullptr;
+        if (ptr)
+        {
+            result = cc::align_up((uint8_t*)ptr + sizeof(void*) + sizeof(size_t), alignment);
+            *((void**)((uint8_t*)result - sizeof(void*))) = ptr;
+            *((size_t*)((uint8_t*)result - sizeof(void*) - sizeof(size_t))) = size;
+        }
 #endif
+
+        return static_cast<std::byte*>(result);
+    }
+
+    std::byte* alloc(size_t size, size_t alignment) override
+    {
+        std::byte* const result = this->try_alloc(size, alignment);
+
+        CC_RUNTIME_ASSERT((result != nullptr || size == 0) && "Out of system memory - allocation failed");
+
+        return result;
+    }
+
+    std::byte* try_realloc(void* ptr, size_t old_size, size_t new_size, size_t align) override
+    {
+        align = cc::max<size_t>(align, new_size >= 16 ? 16 : 8);
+
+#if CC_USE_ALIGNED_MALLOC
+        // we don't need this value
+        (void)old_size;
+
+        void* result = ::_aligned_realloc(ptr, new_size, align);
+#else
+        void* result;
+        if (ptr && new_size)
+        {
+            result = this->alloc(new_size, align);
+
+            // NOTE: we wouldn't require the old_size param here
+            // size_t old_size;
+            // get_allocation_size(ptr, old_size);
+
+            ::memcpy(result, ptr, cc::min(new_size, old_size));
+
+            ::free(*((void**)((uint8_t*)ptr - sizeof(void*))));
+        }
+        else if (ptr == nullptr)
+        {
+            result = this->alloc(new_size, align);
+        }
+        else
+        {
+            ::free(*((void**)((uint8_t*)ptr - sizeof(void*))));
+            result = nullptr;
+        }
+#endif
+        return static_cast<std::byte*>(result);
+    }
+
+    std::byte* realloc(void* ptr, size_t old_size, size_t new_size, size_t align) override
+    {
+        std::byte* result = this->try_realloc(ptr, old_size, new_size, align);
+
+        CC_RUNTIME_ASSERT((result != nullptr || new_size == 0) && "Out of system memory - allocation failed");
+
+        return result;
     }
 
     void free(void* ptr) override
     {
-#ifdef CC_OS_WINDOWS
+#if CC_USE_ALIGNED_MALLOC
         ::_aligned_free(ptr);
 #else
-        std::free(ptr);
+        if (ptr)
+        {
+            ::free(*((void**)((uint8_t*)ptr - sizeof(void*))));
+        }
 #endif
     }
 
-    std::byte* realloc(void* ptr, size_t old_size, size_t new_size, size_t align = alignof(std::max_align_t)) override
+    bool get_allocation_size(void* ptr, size_t& out_size) override
+    {
+        if (!ptr)
+        {
+            return false;
+        }
+
+#if CC_USE_ALIGNED_MALLOC
+        out_size = ::_aligned_msize(ptr, 16, 0);
+        return true;
+#else
+        out_size = *((size_t*)((uint8_t*)ptr - sizeof(void*) - sizeof(size_t)));
+        return true;
+#endif
+    }
+
+    bool validate_heap() override
     {
 #ifdef CC_OS_WINDOWS
-        (void)old_size;
-        return static_cast<std::byte*>(::_aligned_realloc(ptr, new_size, align));
+
+        int32_t res = _heapchk();
+
+        CC_RUNTIME_ASSERT(res != _HEAPBADBEGIN && "Heap check: Initial header information is bad or can't be found.");
+        CC_RUNTIME_ASSERT(res != _HEAPBADNODE && "Heap check: Bad node has been found or heap is damaged.");
+        CC_RUNTIME_ASSERT(res != _HEAPBADPTR && "Heap check: Pointer into heap isn't valid.");
+        CC_RUNTIME_ASSERT(res != _HEAPEMPTY && "Heap check: Heap hasn't been initialized.");
+
+        CC_RUNTIME_ASSERT(res == _HEAPOK && "Heap check: Unknown issue");
+
+        return true;
 #else
-        if (align == alignof(std::max_align_t))
-        {
-            return static_cast<std::byte*>(std::realloc(ptr, new_size));
-        }
-        else
-        {
-            // there is no aligned_realloc equivalent on POSIX, we have to do it manually
-            std::byte* res = nullptr;
+        return false;
+#endif
+    }
 
-            if (new_size > 0)
-            {
-                res = this->alloc(new_size, align);
-
-                if (ptr != nullptr)
-                {
-                    std::memcpy(res, ptr, cc::min(old_size, new_size));
-                }
-            }
-
-            this->free(ptr);
-            return res;
-        }
+    char const* get_name() const override
+    {
+#if CC_USE_ALIGNED_MALLOC
+        return "C runtime allocator (_aligned_malloc)";
+#else
+        return "C runtime allocator (malloc)";
 #endif
     }
 
     constexpr system_allocator_t() = default;
 };
-
+}
 }
 
 /*
@@ -71,7 +161,7 @@ struct system_allocator_t final : cc::allocator
  */
 static union sys_alloc_union_t
 {
-    system_allocator_t alloc;
+    cc::system_allocator_t alloc;
 
     constexpr sys_alloc_union_t() : alloc() {}
     ~sys_alloc_union_t()

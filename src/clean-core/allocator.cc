@@ -41,16 +41,12 @@ std::byte* cc::allocator::realloc(void* ptr, size_t old_size, size_t new_size, s
     return res;
 }
 
-std::byte* cc::allocator::alloc_request(size_t min_size, size_t request_size, size_t& out_received_size, size_t align)
+std::byte* cc::allocator::try_alloc(size_t size, size_t alignment)
 {
-    CC_UNUSED(request_size);
-    out_received_size = min_size;
-    return this->alloc(min_size, align);
+    return this->alloc(size, alignment);
 }
 
-std::byte* cc::allocator::realloc_request(void* ptr, size_t old_size, size_t new_min_size, size_t request_size, size_t& out_received_size, size_t align)
+std::byte* cc::allocator::try_realloc(void* ptr, size_t old_size, size_t new_size, size_t alignment)
 {
-    CC_UNUSED(request_size);
-    out_received_size = new_min_size;
-    return this->realloc(ptr, old_size, new_min_size, align);
+    return this->realloc(ptr, old_size, new_size, alignment);
 }
