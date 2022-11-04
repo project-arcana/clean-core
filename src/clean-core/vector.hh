@@ -9,6 +9,8 @@ namespace cc
 template <class T>
 struct vector : detail::vector_base<T, size_t, false>
 {
+    static_assert(!std::is_const_v<T>, "vector of const objects is not allowed");
+
     // ctors
 public:
     vector() = default;
