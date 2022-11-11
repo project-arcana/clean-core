@@ -135,6 +135,7 @@
 #define CC_BUILTIN_UNREACHABLE __assume(0)
 #define CC_COUNTOF(arr) _countof(arr)
 #define CC_ASSUME(x) __assume(x)
+#define CC_ANALYSIS_ASSUME(Condition) __analysis_assume(!!(Condition))
 
 #elif defined(CC_COMPILER_POSIX)
 
@@ -161,6 +162,7 @@
 #else
 #define CC_ASSUME(x) ((!x) ? __builtin_unreachable() : void(0))
 #endif
+#define CC_ANALYSIS_ASSUME(Condition) (void)0
 
 #else
 #error "Unknown compiler"
