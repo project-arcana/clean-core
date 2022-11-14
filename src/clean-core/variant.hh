@@ -102,7 +102,7 @@ struct variant_impl<T, Rest...>
     }
 
     template <class F>
-    decltype(auto) visit(uint8_t idx, F&& f)
+    auto visit(uint8_t idx, F&& f) -> decltype(f(_data.head))
     {
         if constexpr (sizeof...(Rest) > 0)
             if (idx > 0)
@@ -111,7 +111,7 @@ struct variant_impl<T, Rest...>
         return f(_data.head);
     }
     template <class F>
-    decltype(auto) visit(uint8_t idx, F&& f) const
+    auto visit(uint8_t idx, F&& f) const -> decltype(f(_data.head))
     {
         if constexpr (sizeof...(Rest) > 0)
             if (idx > 0)
@@ -267,52 +267,49 @@ private:
     detail::variant_impl<Types...> _data;
 };
 
+namespace detail
+{
+template <class A, class B>
+auto permissive_equal(A const& a, B const& b, int) -> decltype(a == b)
+{
+    return a == b;
+}
+template <class A, class B>
+bool permissive_equal(A const& a, B const& b, char)
+{
+    return false;
+}
+
+template <class A, class B>
+auto permissive_not_equal(A const& a, B const& b, int) -> decltype(a != b)
+{
+    return a != b;
+}
+template <class A, class B>
+bool permissive_not_equal(A const& a, B const& b, char)
+{
+    return true;
+}
+}
+
 template <class T, class... Types>
 bool operator==(T const& lhs, variant<Types...> const& rhs)
 {
-    return rhs.visit(
-        [&lhs](auto const& rhs)
-        {
-            if constexpr (cc::has_operator_equal<T, decltype(rhs)>)
-                return lhs == rhs;
-            else
-                return false;
-        });
+    return rhs.visit([&lhs](auto const& rhs) { return detail::permissive_equal(lhs, rhs, 0); });
 }
 template <class T, class... Types>
 bool operator!=(T const& lhs, variant<Types...> const& rhs)
 {
-    return rhs.visit(
-        [&lhs](auto const& rhs)
-        {
-            if constexpr (cc::has_operator_not_equal<T, decltype(rhs)>)
-                return lhs != rhs;
-            else
-                return true;
-        });
+    return rhs.visit([&lhs](auto const& rhs) { return detail::permissive_not_equal(lhs, rhs, 0); });
 }
 template <class T, class... Types>
 bool operator==(variant<Types...> const& lhs, T const& rhs)
 {
-    return lhs.visit(
-        [&rhs](auto const& lhs)
-        {
-            if constexpr (cc::has_operator_equal<decltype(lhs), T>)
-                return lhs == rhs;
-            else
-                return false;
-        });
+    return lhs.visit([&rhs](auto const& lhs) { return detail::permissive_equal(lhs, rhs, 0); });
 }
 template <class T, class... Types>
 bool operator!=(variant<Types...> const& lhs, T const& rhs)
 {
-    return lhs.visit(
-        [&rhs](auto const& lhs)
-        {
-            if constexpr (cc::has_operator_not_equal<decltype(lhs), T>)
-                return lhs != rhs;
-            else
-                return true;
-        });
+    return lhs.visit([&rhs](auto const& lhs) { return detail::permissive_not_equal(lhs, rhs, 0); });
 }
 }
