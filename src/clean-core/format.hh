@@ -40,15 +40,15 @@ struct pythonic_formatter;
 ///   auto s = cc::format("{.2f} %6d", 1.234, 1000);
 ///
 template <class Formatter = detail::default_formatter, class... Args>
-string format(char const* fmt_str, Args const&... args);
+[[nodiscard]] string format(char const* fmt_str, Args const&... args);
 
 /// same as cc::format but only uses printf-style % syntax (with the generic %s)
 template <class... Args>
-string formatf(char const* fmt_str, Args const&... args);
+[[nodiscard]] string formatf(char const* fmt_str, Args const&... args);
 
 /// same as cc::format but only uses pythonic {} syntax
 template <class... Args>
-string formatp(char const* fmt_str, Args const&... args);
+[[nodiscard]] string formatp(char const* fmt_str, Args const&... args);
 
 /// version of cc::format that appends the result to a stream or string
 /// this is usually a bit more efficient than cc::format
