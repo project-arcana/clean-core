@@ -163,7 +163,7 @@ public:
 
     /// creates a new element at the end without growing
     template <class... Args>
-    T& emplace_back_stable(Args&&... args)
+    CC_FORCE_INLINE T& emplace_back_stable(Args&&... args)
     {
         CC_ASSERT(_size < _capacity && "At capacity");
         return *(new (placement_new, &_data[_size++]) T(cc::forward<Args>(args)...));
