@@ -135,7 +135,7 @@ struct has_index_access_t : std::false_type
 template <class CollectionT>
 struct has_index_access_t<CollectionT,
                           std::void_t<                                        //
-                              decltype(std::declval<CollectionT>()[size_t()]) //
+                              decltype(std::declval<CollectionT>()[size_t{}]) // must not be size_t() due to an nvcc compiler bug
                               >> : std::true_type
 {
 };
