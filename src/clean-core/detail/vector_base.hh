@@ -270,6 +270,7 @@ public:
         _size = new_size;
     }
 
+    /// CAUTION: currently default_value must not be an interior reference
     void resize(size_t new_size, T const& default_value)
     {
         if (new_size > _capacity)
