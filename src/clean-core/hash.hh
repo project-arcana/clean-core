@@ -84,6 +84,8 @@ static constexpr bool can_hash = detail::can_hash_t<T, Hasher>::value;
 
 // ============== make_hash ==============
 
+/// helper that creates a hash of all arguments that are passed
+/// uses cc::hash per default
 template <class Hasher = hash<void>, class... Args>
 constexpr uint64_t make_hash(Args const&... values) noexcept
 {
