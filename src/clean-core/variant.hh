@@ -178,7 +178,6 @@ struct variant
     {
         constexpr auto i = detail::index_of_type<T, Types...>();
         static_assert(i >= 0, "cannot construct variant from this type. NOTE: implicit conversions are not allowed");
-        _idx = uint8_t(i);
         this->emplace<std::decay_t<T>>(cc::forward<T>(v));
         return *this;
     }
