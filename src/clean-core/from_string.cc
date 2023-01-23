@@ -209,6 +209,6 @@ bool cc::from_string(string_view str, std::byte& out_value)
     if (i0 == -1 || i1 == -1)
         return false;
 
-    out_value = std::byte((i1 << 4) + i0);
+    out_value = std::byte((i0 << 4) + i1);
     return true;
 }
