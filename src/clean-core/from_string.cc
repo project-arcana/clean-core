@@ -184,3 +184,31 @@ bool cc::from_string(cc::string_view str, bool& v)
     else
         return false;
 }
+
+bool cc::from_string(string_view str, std::byte& out_value)
+{
+    if (str.size() != 2)
+        return false;
+
+    auto hex_from_char = [](char c) -> int
+    {
+        if ('0' <= c && c <= '9')
+            return c - '0';
+
+        if ('a' <= c && c <= 'f')
+            return 10 + (c - 'a');
+
+        if ('A' <= c && c <= 'F')
+            return 10 + (c - 'A');
+
+        return -1;
+    };
+
+    auto i0 = hex_from_char(str[0]);
+    auto i1 = hex_from_char(str[1]);
+    if (i0 == -1 || i1 == -1)
+        return false;
+
+    out_value = std::byte((i1 << 4) + i0);
+    return true;
+}

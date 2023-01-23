@@ -37,4 +37,7 @@ namespace cc
 
 [[nodiscard]] bool from_string(cc::string_view str, float& out_value);
 [[nodiscard]] bool from_string(cc::string_view str, double& out_value);
+
+// 2 chars hex, e.g. "FF" or "1A"
+[[nodiscard]] bool from_string(cc::string_view str, std::byte& out_value);
 }
