@@ -87,6 +87,15 @@ CC_FORCE_INLINE void* intrin_atomic_swap_pointer(void* volatile* destination, vo
 #endif
 }
 
+CC_FORCE_INLINE int16_t intrin_atomic_add(int16_t volatile* counter, int16_t value)
+{
+#ifdef CC_COMPILER_MSVC
+    return _InterlockedExchangeAdd16((volatile short*)counter, value);
+#else
+    return __sync_fetch_and_add(counter, value);
+#endif
+}
+
 CC_FORCE_INLINE int32_t intrin_atomic_add(int32_t volatile* counter, int32_t value)
 {
 #ifdef CC_COMPILER_MSVC
