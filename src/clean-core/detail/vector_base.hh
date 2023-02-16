@@ -77,7 +77,7 @@ struct vector_internals
                 res = static_cast<std::byte*>(std::aligned_alloc(alignof(T), size * sizeof(T)));
 
                 if (p != nullptr)
-                    std::memcpy(res, p, cc::min(old_size, size * sizeof(T)));
+                    std::memcpy(res, p, cc::min(old_size * sizeof(T), size * sizeof(T)));
             }
 
             std::free(p);
