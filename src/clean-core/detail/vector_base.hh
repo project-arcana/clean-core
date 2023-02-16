@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef> // std::byte
+#include <cstdlib> // malloc/free
 #include <cstring> // std::memcpy
 #include <initializer_list>
 #include <type_traits>
@@ -38,25 +39,52 @@ struct vector_internals_with_allocator
 template <class T>
 struct vector_internals
 {
-    T* _alloc(size_t size) { return reinterpret_cast<T*>(new std::byte[size * sizeof(T)]); }
-    void _free(T* p) { delete[] reinterpret_cast<std::byte*>(p); }
+    T* _alloc(size_t size)
+    {
+#ifdef CC_OS_WINDOWS
+        return reinterpret_cast<T*>(::_aligned_malloc(size * sizeof(T), alignof(T)));
+#else
+        return reinterpret_cast<T*>(std::aligned_alloc(alignof(T), size * sizeof(T)));
+#endif
+    }
+    void _free(T* p)
+    {
+#ifdef CC_OS_WINDOWS
+        ::_aligned_free(p);
+#else
+        std::free(p);
+#endif
+    }
     T* _realloc(T* p, size_t old_size, size_t size)
     {
         static_assert(std::is_trivially_copyable_v<T> && std::is_trivially_destructible_v<T>, "realloc not permitted for this type");
-        T* res = nullptr;
 
-        if (size > 0)
+#ifdef CC_OS_WINDOWS
+        (void)old_size;
+        return reinterpret_cast<T*>(::_aligned_realloc(p, size * sizeof(T), alignof(T)));
+#else
+        if (alignof(T) <= alignof(std::max_align_t))
         {
-            res = this->_alloc(size);
-
-            if (p != nullptr)
-            {
-                std::memcpy(res, p, cc::min(old_size, size) * sizeof(T));
-            }
+            return reinterpret_cast<T*>(std::realloc(p, size * sizeof(T)));
         }
+        else
+        {
+            // there is no aligned_realloc equivalent on POSIX, we have to do it manually
+            std::byte* res = nullptr;
 
-        this->_free(p);
-        return res;
+            if (size > 0)
+            {
+                res = static_cast<std::byte*>(std::aligned_alloc(alignof(T), size * sizeof(T)));
+
+                if (p != nullptr)
+                    std::memcpy(res, p, cc::min(old_size, size * sizeof(T)));
+            }
+
+            std::free(p);
+
+            return reinterpret_cast<T*>(res);
+        }
+#endif
     }
 };
 
@@ -129,6 +157,7 @@ public:
                 // temporary object required because the arg could reference memory inside this buffer
                 auto tmp_obj = T(cc::forward<Args>(args)...);
                 _data = this->_realloc(_data, _capacity, new_cap);
+                CC_ASSERT(cc::is_aligned(_data, alignof(T)));
                 T* new_element = new (placement_new, &_data[_size]) T(cc::move(tmp_obj));
                 _capacity = new_cap;
                 _size++;
