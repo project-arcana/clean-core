@@ -1,10 +1,13 @@
 #include <nexus/monte_carlo_test.hh>
 
+#if HAS_CLEAN_RANGES
 #include <clean-ranges/algorithms.hh>
+#endif
 
 #include <clean-core/experimental/chunked_buffer.hh>
 #include <clean-core/vector.hh>
 
+#if HAS_CLEAN_RANGES
 TEST("cc::chunked_buffer basics")
 {
     cc::chunked_buffer<int> b;
@@ -35,6 +38,7 @@ TEST("cc::chunked_buffer basics")
     CHECK(cr::count(b.chunks()) == 2);
     CHECK(cr::to<cc::vector>(b.chunks(), [](auto c) { return c.size(); }) == nx::range<size_t>{100, 11});
 }
+#endif
 
 MONTE_CARLO_TEST("cc::chunked_buffer mct")
 {

@@ -179,4 +179,6 @@ MONTE_CARLO_TEST("value mct")
 
     // TODO: more
     addType(cc::make_box<int>());
+
+	CHECK(true);
 }

@@ -2,7 +2,9 @@
 #include <nexus/fuzz_test.hh>
 #include <nexus/test.hh>
 
+#ifdef HAS_CTRACER
 #include <ctracer/trace.hh>
+#endif
 
 #include <rich-log/log.hh>
 
@@ -333,6 +335,7 @@ TEST("cc::hash sha1 comparison vog")
     CHECK(cc::make_hash_sha1_string("") == hash);
 }
 
+#ifdef HAS_CTRACER
 APP("cc::make_hash_sha1 vs vog performance")
 {
     tg::rng rng;
@@ -369,6 +372,7 @@ APP("cc::make_hash_sha1 vs vog performance")
         LOG(" cc: %.2f cycles per byte", c.elapsed_cycles() / double(total_bytes));
     }
 }
+#endif
 
 FUZZ_TEST("cc::hash sha1 vs vog")(tg::rng& rng)
 {
