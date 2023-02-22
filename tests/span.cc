@@ -7,7 +7,9 @@
 #include <clean-core/string_view.hh>
 #include <clean-core/vector.hh>
 
+#ifdef HAS_CLEAN_RANGES
 #include <clean-ranges/range.hh>
+#endif
 
 static_assert(std::is_trivially_copyable_v<cc::span<int>>);
 
@@ -60,13 +62,19 @@ TEST("cc::span")
 
     s = v;
     CHECK(s.size() == 3);
+#ifdef HAS_CLEAN_RANGES
     CHECK(cr::range(s) == cc::vector{1, 2, 3});
+#endif
 
     s = s.first(2);
+#ifdef HAS_CLEAN_RANGES
     CHECK(cr::range(s) == cc::vector{1, 2});
+#endif
 
     s = cc::span(v).last(2);
+#ifdef HAS_CLEAN_RANGES
     CHECK(cr::range(s) == cc::vector{2, 3});
+#endif
 
     auto b = cc::span(v).as_bytes();
     CHECK(b.size() == 3 * sizeof(int));

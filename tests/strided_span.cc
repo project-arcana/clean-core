@@ -3,7 +3,9 @@
 #include <clean-core/strided_span.hh>
 #include <clean-core/vector.hh>
 
+#ifdef HAS_CLEAN_RANGES
 #include <clean-ranges/range.hh>
+#endif
 
 TEST("cc::strided_span (span equivalent)")
 {
@@ -49,6 +51,8 @@ TEST("cc::strided_span (span equivalent)")
 
     s = v;
     CHECK(s.size() == 3);
+
+#ifdef HAS_CLEAN_RANGES
     CHECK(cr::range(s) == cc::vector{1, 2, 3});
     CHECK(cr::range(s.reversed()) == cc::vector{3, 2, 1});
 
@@ -57,4 +61,5 @@ TEST("cc::strided_span (span equivalent)")
 
     s = cc::strided_span(v).last(2);
     CHECK(cr::range(s) == cc::vector{2, 3});
+#endif
 }

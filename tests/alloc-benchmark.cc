@@ -1,3 +1,5 @@
+#if HAS_CTRACER
+
 #include <nexus/test.hh>
 
 #include <iostream>
@@ -178,3 +180,5 @@ TEST("cc::alloc benchmark")
         }
     });
 }
+
+#endif
