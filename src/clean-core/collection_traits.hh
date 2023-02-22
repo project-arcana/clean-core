@@ -79,6 +79,12 @@ constexpr decltype(auto) collection_add(CollectionT&& c, T&& value)
 template <class CollectionT>
 constexpr bool is_indexed_range = collection_traits<CollectionT>::is_indexed_range;
 
+/// the type of elements when iterating over the collection
+/// NOTE: is not a reference but might be const
+/// NOTE: returns a special error type CollectionT is not a collection
+template <class CollectionT>
+using collection_element_t = typename collection_traits<CollectionT>::element_t;
+
 // ======= Implementation =======
 
 namespace detail
@@ -129,12 +135,16 @@ struct has_index_access_t : std::false_type
 template <class CollectionT>
 struct has_index_access_t<CollectionT,
                           std::void_t<                                        //
-                              decltype(std::declval<CollectionT>()[size_t()]) //
+                              decltype(std::declval<CollectionT>()[size_t{}]) // must not be size_t() due to an nvcc compiler bug
                               >> : std::true_type
 {
 };
 
 struct collection_op_not_supported
+{
+};
+
+struct not_a_collection
 {
 };
 
@@ -182,6 +192,8 @@ constexpr decltype(auto) collection_add(CollectionT& c, T&& v)
 
 struct base_collection_traits
 {
+    using element_t = detail::not_a_collection;
+
     static constexpr bool has_data = false;
     static constexpr bool has_size = false;
     static constexpr bool has_index_access = false;

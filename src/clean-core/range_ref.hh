@@ -20,6 +20,24 @@ template <class From, class To>
 struct is_deref_convertible<From, To, std::enable_if_t<std::is_convertible_v<decltype(*std::declval<From>()), To>, void>> : std::true_type
 {
 };
+template <class T, class = void>
+struct try_deref_t
+{
+    using type = void;
+};
+template <class T>
+struct try_deref_t<T, std::void_t<decltype(*std::declval<T>())>>
+{
+    using type = decltype(*std::declval<T>());
+};
+
+template <class Range, class To>
+constexpr bool is_convertible_range = cc::is_any_range<Range> //
+                                      && std::is_convertible_v<cc::collection_element_t<Range>, To>;
+
+template <class Range, class To>
+constexpr bool is_deref_convertible_range = cc::is_any_range<Range> //
+                                            && std::is_convertible_v<typename try_deref_t<cc::collection_element_t<Range>>::type, To>;
 }
 
 /// a type-erased range of elements that can be converted to T
@@ -27,12 +45,13 @@ struct is_deref_convertible<From, To, std::enable_if_t<std::is_convertible_v<dec
 ///       this is designed to be mainly used as function argument (similar to span, string_view, stream_ref, etc.)
 ///
 /// TODO: expose function<void(function<void(T)>)> interface
-/// TODO: disambiguate case where element and *element are convertible to T
 ///
 /// Implementation note:
-///   the templated constructors use the SFINAE-friendly cc::collection_begin
+///   the templated constructors use the SFINAE-friendly is_convertible_range, is_deref_convertible_range
 ///   and are themselves designed to support SFINAE.
 ///   this is important so that functions can be overloaded on different types of range_ref<T>s
+///   no-deref and deref must also be the same constructor, because types can be both at the same time
+///   in this case, we prefer the no-deref version
 template <class T>
 struct range_ref
 {
@@ -47,7 +66,8 @@ struct range_ref
     /// CAUTION: range must always outlive the range_ref!
     template <class Range,
               cc::enable_if<std::is_convertible_v<decltype(*cc::collection_begin(std::declval<Range>())), T> || //
-                            detail::is_deref_convertible<decltype(*cc::collection_begin(std::declval<Range>())), T>::value> = true>
+                            detail::is_deref_convertible<decltype(*cc::collection_begin(std::declval<Range>())), T>::value>
+              = true>
     range_ref(Range&& range)
     {
         constexpr bool is_direct_convertible = std::is_convertible_v<decltype(*cc::collection_begin(std::declval<Range>())), T>;
