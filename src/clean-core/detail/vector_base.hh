@@ -7,6 +7,7 @@
 #include <type_traits>
 
 #include <clean-core/allocator.hh>
+#include <clean-core/allocators/system_allocator.hh>
 #include <clean-core/assert.hh>
 #include <clean-core/collection_traits.hh>
 #include <clean-core/detail/container_impl_util.hh>
@@ -39,12 +40,12 @@ struct vector_internals_with_allocator
 template <class T>
 struct vector_internals
 {
-    T* _alloc(size_t size) { return reinterpret_cast<T*>(cc::system_allocator->alloc(size * sizeof(T), alignof(T))); }
-    void _free(T* p) { cc::system_allocator->free(p); }
+    T* _alloc(size_t size) { return reinterpret_cast<T*>(cc::system_malloc(size * sizeof(T), alignof(T))); }
+    void _free(T* p) { cc::system_free(p); }
     T* _realloc(T* p, size_t size)
     {
         static_assert(std::is_trivially_copyable_v<T> && std::is_trivially_destructible_v<T>, "realloc not permitted for this type");
-        return reinterpret_cast<T*>(cc::system_allocator->realloc(p, size * sizeof(T), alignof(T)));
+        return reinterpret_cast<T*>(cc::system_realloc(p, size * sizeof(T), alignof(T)));
     }
 };
 
@@ -431,7 +432,7 @@ public:
     bool operator==(vector_base const& rhs) const noexcept { return operator==(span<T const>(rhs)); }
     bool operator!=(vector_base const& rhs) const noexcept { return operator!=(span<T const>(rhs)); }
 
-protected:
+public:
     void push_back_range_n(T const* data, size_t num)
     {
         if (!data || !num)
