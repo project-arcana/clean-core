@@ -104,7 +104,7 @@ CC_COLD_FUNC CC_DONT_INLINE void assertion_failed(assertion_info const& info);
 CC_COLD_FUNC CC_DONT_INLINE bool is_debugger_connected();
 
 /// calls std::abort(), avoids includes
-CC_COLD_FUNC CC_DONT_INLINE void perform_abort();
+[[noreturn]] CC_COLD_FUNC CC_DONT_INLINE void perform_abort();
 }
 
 namespace cc

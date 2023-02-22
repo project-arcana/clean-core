@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef> // std::byte
+#include <cstdlib> // malloc/free
 #include <cstring> // std::memcpy
 #include <initializer_list>
 #include <type_traits>
@@ -116,6 +117,7 @@ public:
                 // temporary object required because the arg could reference memory inside this buffer
                 auto tmp_obj = T(cc::forward<Args>(args)...);
                 _data = this->_realloc(_data, new_cap);
+                CC_ASSERT(cc::is_aligned(_data, alignof(T)));
                 T* new_element = new (placement_new, &_data[_size]) T(cc::move(tmp_obj));
                 _capacity = new_cap;
                 _size++;
@@ -143,27 +145,17 @@ public:
     T& push_back(T const& value)
     {
         static_assert(std::is_copy_constructible_v<T>, "only works with copyable types. did you forget a cc::move?");
-        return emplace_back(value);
+        return this->emplace_back(value);
     }
     /// adds an element at the end
-    T& push_back(T&& value) { return emplace_back(cc::move(value)); }
+    T& push_back(T&& value) { return this->emplace_back(cc::move(value)); }
 
     /// creates a new element at the end without growing
     template <class... Args>
-    T& emplace_back_stable(Args&&... args)
+    CC_FORCE_INLINE T& emplace_back_stable(Args&&... args)
     {
         CC_ASSERT(_size < _capacity && "At capacity");
         return *(new (placement_new, &_data[_size++]) T(cc::forward<Args>(args)...));
-    }
-
-    void push_back_range_n(T const* data, size_t num)
-    {
-        if (!data || !num)
-            return;
-
-        reserve(_size + num);
-        detail::container_copy_construct_range<T>(data, num, &_data[_size]);
-        _size += num;
     }
 
     /// adds all elements of the range
@@ -267,6 +259,7 @@ public:
         _size = new_size;
     }
 
+    /// CAUTION: currently default_value must not be an interior reference
     void resize(size_t new_size, T const& default_value)
     {
         if (new_size > _capacity)
@@ -437,6 +430,17 @@ public:
 
     bool operator==(vector_base const& rhs) const noexcept { return operator==(span<T const>(rhs)); }
     bool operator!=(vector_base const& rhs) const noexcept { return operator!=(span<T const>(rhs)); }
+
+protected:
+    void push_back_range_n(T const* data, size_t num)
+    {
+        if (!data || !num)
+            return;
+
+        reserve(_size + num);
+        detail::container_copy_construct_range<T>(data, num, &_data[_size]);
+        _size += num;
+    }
 
     // members
 protected:

@@ -16,10 +16,10 @@ TEST("cc::sort basics")
     cc::vector<int> v = {4, 2, 3, 1};
 
     cc::sort(v);
-    CHECK(v == cc::vector{1, 2, 3, 4});
+    CHECK(v == cc::vector<int>{1, 2, 3, 4});
 
     cc::sort_by(v, [](auto i) { return -i; });
-    CHECK(v == cc::vector{4, 3, 2, 1});
+    CHECK(v == cc::vector<int>{4, 3, 2, 1});
 }
 
 TEST("cc::sort api")
@@ -28,51 +28,51 @@ TEST("cc::sort api")
     {
         cc::vector<int> v = {4, 2, 3, 1};
         cc::sort(v);
-        CHECK(v == cc::vector{1, 2, 3, 4});
+        CHECK(v == cc::vector<int>{1, 2, 3, 4});
     }
     {
         cc::vector<int> v = {4, 2, 3, 1};
         cc::sort(cc::span(v));
-        CHECK(v == cc::vector{1, 2, 3, 4});
+        CHECK(v == cc::vector<int>{1, 2, 3, 4});
     }
     {
         cc::vector<int> v = {4, 2, 3, 1};
         cc::sort(cc::span(v).subspan(1));
-        CHECK(v == cc::vector{4, 1, 2, 3});
+        CHECK(v == cc::vector<int>{4, 1, 2, 3});
     }
     {
         cc::array<int> v = {4, 2, 3, 1};
         cc::sort(v);
-        CHECK(cc::vector<int>(v) == cc::vector{1, 2, 3, 4});
+        CHECK(cc::vector<int>(v) == cc::vector<int>{1, 2, 3, 4});
     }
     {
         cc::array<int, 4> v = {4, 2, 3, 1};
         cc::sort(v);
-        CHECK(cc::vector<int>(v) == cc::vector{1, 2, 3, 4});
+        CHECK(cc::vector<int>(v) == cc::vector<int>{1, 2, 3, 4});
     }
     {
         int v[] = {4, 2, 3, 1};
         cc::sort(v);
-        CHECK(cc::vector<int>(v) == cc::vector{1, 2, 3, 4});
+        CHECK(cc::vector<int>(v) == cc::vector<int>{1, 2, 3, 4});
     }
 
     // comparators
     {
         cc::vector<int> v = {4, 2, 3, 1};
         cc::sort(v, [](auto a, auto b) { return a > b; });
-        CHECK(v == cc::vector{4, 3, 2, 1});
+        CHECK(v == cc::vector<int>{4, 3, 2, 1});
     }
     {
         cc::vector<int> v = {4, 2, 3, 1};
         cc::sort(v, rf::greater{});
-        CHECK(v == cc::vector{4, 3, 2, 1});
+        CHECK(v == cc::vector<int>{4, 3, 2, 1});
     }
 
     // sort_by
     {
         cc::vector<int> v = {4, 2, 3, 1};
         cc::sort_by(v, [](auto i) { return -i; });
-        CHECK(v == cc::vector{4, 3, 2, 1});
+        CHECK(v == cc::vector<int>{4, 3, 2, 1});
     }
     {
         cc::vector<tg::vec3> v = {{1, 12, 3}, {6, 5, 2}, {-1, 6, 10}};
@@ -89,12 +89,12 @@ TEST("cc::sort api")
     {
         cc::vector<int> v = {4, 2, 3, 1};
         cc::sort_descending(v);
-        CHECK(v == cc::vector{4, 3, 2, 1});
+        CHECK(v == cc::vector<int>{4, 3, 2, 1});
     }
     {
         cc::vector<int> v = {4, 2, 3, 1};
         cc::sort_by_descending(v, [](int i) { return -i; });
-        CHECK(v == cc::vector{1, 2, 3, 4});
+        CHECK(v == cc::vector<int>{1, 2, 3, 4});
     }
 
     // multi sort
@@ -102,15 +102,15 @@ TEST("cc::sort api")
         cc::vector<int> k = {4, 2, 3, 1};
         cc::vector<char> v = {'A', 'B', 'C', 'D'};
         cc::sort_multi(cc::less<>{}, k, v);
-        CHECK(k == cc::vector{1, 2, 3, 4});
-        CHECK(v == cc::vector{'D', 'B', 'C', 'A'});
+        CHECK(k == cc::vector<int>{1, 2, 3, 4});
+        CHECK(v == cc::vector<char>{'D', 'B', 'C', 'A'});
     }
     {
         cc::vector<int> k = {4, 2, 3, 1};
         cc::vector<char> v = {'A', 'B', 'C', 'D'};
         cc::sort_multi_by([](int i, char) { return i; }, cc::less<>{}, k, v);
-        CHECK(k == cc::vector{1, 2, 3, 4});
-        CHECK(v == cc::vector{'D', 'B', 'C', 'A'});
+        CHECK(k == cc::vector<int>{1, 2, 3, 4});
+        CHECK(v == cc::vector<char>{'D', 'B', 'C', 'A'});
     }
 
     // move-only stuff
