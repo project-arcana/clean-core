@@ -8,6 +8,10 @@
 #define CC_USE_ALIGNED_MALLOC 0
 #endif
 
+#if !CC_USE_ALIGNED_MALLOC
+#include <cstdlib>
+#endif
+
 namespace cc
 {
 namespace
@@ -22,7 +26,7 @@ struct system_allocator_t final : cc::allocator
 #if CC_USE_ALIGNED_MALLOC
         void* result = ::_aligned_malloc(size, alignment);
 #else
-        void* ptr = ::malloc(size + alignment + sizeof(void*) + sizeof(size_t));
+        void* ptr = std::malloc(size + alignment + sizeof(void*) + sizeof(size_t));
         void* result = nullptr;
         if (ptr)
         {
@@ -44,45 +48,38 @@ struct system_allocator_t final : cc::allocator
         return result;
     }
 
-    std::byte* try_realloc(void* ptr, size_t old_size, size_t new_size, size_t align) override
+    std::byte* try_realloc(void* ptr, size_t new_size, size_t align) override
     {
         align = cc::max<size_t>(align, new_size >= 16 ? 16 : 8);
 
 #if CC_USE_ALIGNED_MALLOC
-        // we don't need this value
-        (void)old_size;
-
-        void* result = ::_aligned_realloc(ptr, new_size, align);
-#else
         void* result;
+
         if (ptr && new_size)
         {
-            result = this->alloc(new_size, align);
-
-            // NOTE: we wouldn't require the old_size param here
-            // size_t old_size;
-            // get_allocation_size(ptr, old_size);
-
-            ::memcpy(result, ptr, cc::min(new_size, old_size));
-
-            ::free(*((void**)((uint8_t*)ptr - sizeof(void*))));
+            result = ::_aligned_realloc(ptr, new_size, align);
         }
-        else if (ptr == nullptr)
+        else if (!ptr)
         {
-            result = this->alloc(new_size, align);
+            result = ::_aligned_malloc(new_size, align);
         }
         else
         {
-            ::free(*((void**)((uint8_t*)ptr - sizeof(void*))));
+            ::_aligned_free(ptr);
             result = nullptr;
         }
-#endif
+
         return static_cast<std::byte*>(result);
+
+#else // !CC_USE_ALIGNED_MALLOC
+      // default realloc implementation
+        return cc::allocator::realloc(ptr, new_size, align);
+#endif
     }
 
-    std::byte* realloc(void* ptr, size_t old_size, size_t new_size, size_t align) override
+    std::byte* realloc(void* ptr, size_t new_size, size_t align) override
     {
-        std::byte* result = this->try_realloc(ptr, old_size, new_size, align);
+        std::byte* result = this->try_realloc(ptr, new_size, align);
 
         CC_RUNTIME_ASSERT((result != nullptr || new_size == 0) && "Out of system memory - allocation failed");
 
@@ -96,12 +93,12 @@ struct system_allocator_t final : cc::allocator
 #else
         if (ptr)
         {
-            ::free(*((void**)((uint8_t*)ptr - sizeof(void*))));
+            std::free(*((void**)((uint8_t*)ptr - sizeof(void*))));
         }
 #endif
     }
 
-    bool get_allocation_size(void* ptr, size_t& out_size) override
+    bool get_allocation_size(void const* ptr, size_t& out_size) override
     {
         if (!ptr)
         {
@@ -109,7 +106,7 @@ struct system_allocator_t final : cc::allocator
         }
 
 #if CC_USE_ALIGNED_MALLOC
-        out_size = ::_aligned_msize(ptr, 16, 0);
+        out_size = ::_aligned_msize(const_cast<void*>(ptr), 16, 0);
         return true;
 #else
         out_size = *((size_t*)((uint8_t*)ptr - sizeof(void*) - sizeof(size_t)));
@@ -121,7 +118,7 @@ struct system_allocator_t final : cc::allocator
     {
 #ifdef CC_OS_WINDOWS
 
-        int32_t res = _heapchk();
+        int32_t const res = _heapchk();
 
         CC_RUNTIME_ASSERT(res != _HEAPBADBEGIN && "Heap check: Initial header information is bad or can't be found.");
         CC_RUNTIME_ASSERT(res != _HEAPBADNODE && "Heap check: Bad node has been found or heap is damaged.");

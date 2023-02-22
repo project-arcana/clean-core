@@ -23,7 +23,7 @@ char* cc::allocator::alloc_string_copy(cc::string_view source)
     return res;
 }
 
-std::byte* cc::allocator::realloc(void* ptr, size_t old_size, size_t new_size, size_t align)
+std::byte* cc::allocator::realloc(void* ptr, size_t new_size, size_t align)
 {
     std::byte* res = nullptr;
 
@@ -33,6 +33,10 @@ std::byte* cc::allocator::realloc(void* ptr, size_t old_size, size_t new_size, s
 
         if (ptr != nullptr)
         {
+            size_t old_size = 0;
+            bool got_old_size = this->get_allocation_size(ptr, old_size);
+            CC_RUNTIME_ASSERT(got_old_size && "Allocator with default realloc failed to provide old allocation size");
+
             std::memcpy(res, ptr, cc::min(old_size, new_size));
         }
     }
@@ -41,12 +45,6 @@ std::byte* cc::allocator::realloc(void* ptr, size_t old_size, size_t new_size, s
     return res;
 }
 
-std::byte* cc::allocator::try_alloc(size_t size, size_t alignment)
-{
-    return this->alloc(size, alignment);
-}
+std::byte* cc::allocator::try_alloc(size_t size, size_t alignment) { return this->alloc(size, alignment); }
 
-std::byte* cc::allocator::try_realloc(void* ptr, size_t old_size, size_t new_size, size_t alignment)
-{
-    return this->realloc(ptr, old_size, new_size, alignment);
-}
+std::byte* cc::allocator::try_realloc(void* ptr, size_t new_size, size_t alignment) { return this->realloc(ptr, new_size, alignment); }

@@ -27,10 +27,10 @@ struct vector_internals_with_allocator
 {
     T* _alloc(size_t size) { return reinterpret_cast<T*>(_allocator->alloc(size * sizeof(T), alignof(T))); }
     void _free(T* p) { _allocator->free(p); }
-    T* _realloc(T* p, size_t old_size, size_t size)
+    T* _realloc(T* p, size_t size)
     {
         static_assert(std::is_trivially_copyable_v<T> && std::is_trivially_destructible_v<T>, "realloc not permitted for this type");
-        return reinterpret_cast<T*>(_allocator->realloc(p, old_size * sizeof(T), size * sizeof(T), alignof(T)));
+        return reinterpret_cast<T*>(_allocator->realloc(p, size * sizeof(T), alignof(T)));
     }
     cc::allocator* _allocator = nullptr;
     constexpr explicit vector_internals_with_allocator(cc::allocator* alloc) : _allocator(alloc) {}
@@ -38,25 +38,12 @@ struct vector_internals_with_allocator
 template <class T>
 struct vector_internals
 {
-    T* _alloc(size_t size) { return reinterpret_cast<T*>(new std::byte[size * sizeof(T)]); }
-    void _free(T* p) { delete[] reinterpret_cast<std::byte*>(p); }
-    T* _realloc(T* p, size_t old_size, size_t size)
+    T* _alloc(size_t size) { return reinterpret_cast<T*>(cc::system_allocator->alloc(size * sizeof(T), alignof(T))); }
+    void _free(T* p) { cc::system_allocator->free(p); }
+    T* _realloc(T* p, size_t size)
     {
         static_assert(std::is_trivially_copyable_v<T> && std::is_trivially_destructible_v<T>, "realloc not permitted for this type");
-        T* res = nullptr;
-
-        if (size > 0)
-        {
-            res = this->_alloc(size);
-
-            if (p != nullptr)
-            {
-                std::memcpy(res, p, cc::min(old_size, size) * sizeof(T));
-            }
-        }
-
-        this->_free(p);
-        return res;
+        return reinterpret_cast<T*>(cc::system_allocator->realloc(p, size * sizeof(T), alignof(T)));
     }
 };
 
@@ -128,7 +115,7 @@ public:
                 // we can use realloc (size limit to keep stack usage limited)
                 // temporary object required because the arg could reference memory inside this buffer
                 auto tmp_obj = T(cc::forward<Args>(args)...);
-                _data = this->_realloc(_data, _capacity, new_cap);
+                _data = this->_realloc(_data, new_cap);
                 T* new_element = new (placement_new, &_data[_size]) T(cc::move(tmp_obj));
                 _capacity = new_cap;
                 _size++;
@@ -255,7 +242,7 @@ public:
         if constexpr (std::is_trivially_copyable_v<T> && std::is_trivially_destructible_v<T>)
         {
             // we can use realloc
-            _data = this->_realloc(_data, _capacity, new_cap);
+            _data = this->_realloc(_data, new_cap);
             _capacity = new_cap;
         }
         else
@@ -306,7 +293,7 @@ public:
             if constexpr (std::is_trivially_copyable_v<T> && std::is_trivially_destructible_v<T>)
             {
                 // we can use realloc
-                _data = this->_realloc(_data, _capacity, _size);
+                _data = this->_realloc(_data, _size);
                 _capacity = _size;
             }
             else

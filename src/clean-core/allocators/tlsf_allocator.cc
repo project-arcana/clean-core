@@ -29,12 +29,6 @@ void cc::tlsf_allocator::add_pool(cc::span<std::byte> buffer)
     CC_ASSERT(pool != nullptr && "failed to add TLSF pool");
 }
 
-bool cc::tlsf_allocator::check_consistency()
-{
-    CC_ASSERT(_tlsf && "unitialized");
-    return tlsf_check(_tlsf) == 0;
-}
-
 std::byte* cc::tlsf_allocator::alloc(size_t size, size_t align)
 {
     CC_ASSERT(size > 0 && "Attempted empty TLSF allocation");
@@ -45,9 +39,26 @@ std::byte* cc::tlsf_allocator::alloc(size_t size, size_t align)
 
 void cc::tlsf_allocator::free(void* ptr) { tlsf_free(_tlsf, ptr); }
 
-std::byte* cc::tlsf_allocator::realloc(void* ptr, size_t old_size, size_t new_size, size_t align)
+std::byte* cc::tlsf_allocator::realloc(void* ptr, size_t new_size, size_t align)
 {
-    (void)old_size;
     (void)align;
     return static_cast<std::byte*>(tlsf_realloc(_tlsf, ptr, new_size));
+}
+
+bool cc::tlsf_allocator::get_allocation_size(void const* ptr, size_t& out_size)
+{
+    if (!ptr)
+        return false;
+
+    out_size = tlsf_block_size(const_cast<void*>(ptr));
+    return true;
+}
+
+bool cc::tlsf_allocator::validate_heap()
+{
+    CC_ASSERT(_tlsf && "unitialized");
+
+    CC_RUNTIME_ASSERT(tlsf_check(_tlsf) == 0 && "TLSF heap state corrupt");
+
+    return true;
 }

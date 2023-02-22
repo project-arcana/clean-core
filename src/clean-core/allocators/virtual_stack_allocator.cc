@@ -64,12 +64,12 @@ void cc::virtual_stack_allocator::free(void* ptr)
     _physical_current = byte_ptr - alloc_header->padding;
 }
 
-std::byte* cc::virtual_stack_allocator::realloc(void* ptr, size_t old_size, size_t new_size, size_t align)
+std::byte* cc::virtual_stack_allocator::realloc(void* ptr, size_t new_size, size_t align)
 {
     if (new_size == 0)
     {
         // free case
-        free(ptr);
+        this->free(ptr);
         return nullptr;
     }
     else if (ptr == nullptr)
@@ -83,7 +83,8 @@ std::byte* cc::virtual_stack_allocator::realloc(void* ptr, size_t old_size, size
     stack_alloc_header const* const alloc_header = (stack_alloc_header*)(byte_ptr - sizeof(stack_alloc_header));
 
     CC_ASSERT(alloc_header->alloc_id == _last_alloc_id && "realloc ptr was not the most recent allocation");
-    CC_ASSERT(old_size == _physical_current - byte_ptr && "incorrect old size");
+    size_t const old_size = _physical_current - byte_ptr;
+    // CC_ASSERT(old_size_arg == _physical_current - byte_ptr && "incorrect old size");
 
     if (new_size > old_size)
     {
