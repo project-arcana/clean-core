@@ -34,6 +34,8 @@
 #include <cstdlib>
 
 // the next two are "bricked" in the sanitized version
+#undef FAR
+#undef NEAR
 #define FAR
 #define NEAR
 #include <PathCch.h>

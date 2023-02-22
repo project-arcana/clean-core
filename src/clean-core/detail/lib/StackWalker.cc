@@ -437,7 +437,7 @@ public:
         // new elements: 17-Dec-2003
         BOOL SourceIndexed; // pdb supports source server
         BOOL Publics;       // contains public symbols
-    };
+    } IMAGEHLP_MODULE64_V3;
 
     typedef struct IMAGEHLP_MODULE64_V2
     {
@@ -451,7 +451,7 @@ public:
         CHAR ModuleName[32];       // module name
         CHAR ImageName[256];       // image name
         CHAR LoadedImageName[256]; // symbol file name
-    };
+    } IMAGEHLP_MODULE64_V2;
 #pragma pack(pop)
 
     // SymCleanup()
