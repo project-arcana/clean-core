@@ -1,5 +1,6 @@
 #include <nexus/app.hh>
 
+#undef RICH_LOG_FORCE_MACRO_PREFIX
 #include <rich-log/log.hh>
 
 #include <iostream>
