@@ -133,7 +133,7 @@
 #define CC_HOT_FUNC
 
 #define CC_BUILTIN_UNREACHABLE __assume(0)
-#define CC_COUNTOF(arr) _countof(arr)
+#define CC_COUNTOF(arr) __crt_countof(arr)
 #define CC_ASSUME(x) __assume(x)
 
 #elif defined(CC_COMPILER_POSIX)
