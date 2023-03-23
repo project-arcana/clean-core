@@ -19,6 +19,8 @@ namespace cc
 template <class T>
 struct span
 {
+    using element_t = T;
+
     // ctors
 public:
     constexpr span() = default;
@@ -182,15 +184,25 @@ private:
 
 // deduction guide for containers
 template <class Container, cc::enable_if<is_any_contiguous_range<Container>> = true>
-span(Container& c)->span<std::remove_reference_t<decltype(*c.data())>>;
+span(Container& c) -> span<std::remove_reference_t<decltype(*c.data())>>;
 template <class Container, cc::enable_if<is_any_contiguous_range<Container>> = true>
-span(Container&& c)->span<std::remove_reference_t<decltype(*c.data())>>;
+span(Container&& c) -> span<std::remove_reference_t<decltype(*c.data())>>;
 
 /// converts a triv. copyable value, or a container with triv. copyable elements to a cc::span<std::byte>
 template <class T>
 auto as_byte_span(T&& value)
 {
-    if constexpr (is_contiguous_range<T, void>)
+    if constexpr (std::is_array_v<std::remove_reference_t<T>>)
+    {
+        // T(&)[N]
+        auto s = cc::span(value);
+        using ElementT = std::remove_reference_t<decltype(s[0])>;
+        if constexpr (std::is_const_v<ElementT>)
+            return s.template reinterpret_as<std::byte const>();
+        else
+            return s.template reinterpret_as<std::byte>();
+    }
+    else if constexpr (is_contiguous_range<T, void>)
     {
         // container of some type
         using ElementT = std::remove_reference_t<decltype(value.data()[0])>;
