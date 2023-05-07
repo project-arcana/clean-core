@@ -19,6 +19,9 @@ static constexpr bool is_contiguous_range = sizeof(detail::contiguous_range_test
 template <class ElementT, size_t N>
 static constexpr bool is_contiguous_range<ElementT (&)[N], ElementT> = true;
 
+template <class ElementT, size_t N>
+static constexpr bool is_contiguous_range<ElementT (&)[N], void const> = true;
+
 template <class Container>
 static constexpr bool is_any_contiguous_range = is_contiguous_range<Container, void const>;
 }
