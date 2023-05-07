@@ -22,6 +22,7 @@ template <class T>
 struct strided_span
 {
     using byte_t = std::conditional_t<std::is_const_v<T>, std::byte const, std::byte>;
+    using mutable_t = std::remove_const_t<T>;
 
     // ctors
 public:
@@ -45,7 +46,7 @@ public:
     /// NOTE: this ctor is for spans constructed inside an expression
     explicit constexpr strided_span(T&& val) : strided_span(&val, 1) {}
 
-    constexpr operator strided_span<T const>() const noexcept { return {_data, _size, _stride}; }
+    constexpr operator strided_span<T const>() const noexcept { return {reinterpret_cast<T const*>(_data), _size, _stride}; }
 
     // container
 public:
@@ -97,6 +98,14 @@ public:
     }
     constexpr strided_span reversed() const { return {reinterpret_cast<T*>(_data + _stride * (_size - 1)), _size, -_stride}; }
 
+    /// returns a new strided span that
+    template <class U, class TT = mutable_t, cc::enable_if<std::is_class_v<TT>> = true>
+    auto project(U TT::*member) const -> strided_span<std::conditional_t<std::is_const_v<T>, U const, U>>
+    {
+        auto new_data = &(reinterpret_cast<T*>(_data)->*member);
+        return {new_data, _size, _stride};
+    }
+
     // range
 public:
     struct iterator
@@ -132,7 +141,7 @@ private:
 
 // deduction guide for containers
 template <class Container, cc::enable_if<is_any_contiguous_range<Container>> = true>
-strided_span(Container& c)->strided_span<std::remove_reference_t<decltype(*c.data())>>;
+strided_span(Container& c) -> strided_span<std::remove_reference_t<decltype(*c.data())>>;
 template <class Container, cc::enable_if<is_any_contiguous_range<Container>> = true>
-strided_span(Container&& c)->strided_span<std::remove_reference_t<decltype(*c.data())>>;
+strided_span(Container&& c) -> strided_span<std::remove_reference_t<decltype(*c.data())>>;
 }

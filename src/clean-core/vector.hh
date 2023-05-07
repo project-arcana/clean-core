@@ -9,6 +9,8 @@ namespace cc
 template <class T>
 struct vector : detail::vector_base<T, size_t, false>
 {
+    static_assert(!std::is_const_v<T>, "vector of const objects is not allowed");
+
     // ctors
 public:
     vector() = default;
@@ -18,8 +20,11 @@ public:
         detail::container_default_construct_or_zeroed(size, this->_data);
     }
 
+    /// returns a vector with "size" elements that are default-initialized
     [[nodiscard]] static vector defaulted(size_t size) { return vector(size); }
 
+    /// returns a vector with "size" elements that are uninitialized
+    /// CAUTION: for non-pod types, you have to know what you're doing (i.e. placement new yourself)
     [[nodiscard]] static vector uninitialized(size_t size)
     {
         vector v;
@@ -29,10 +34,19 @@ public:
         return v;
     }
 
+    /// returns a vector with "size" elements all initialized with "value"
     [[nodiscard]] static vector filled(size_t size, T const& value)
     {
         vector v;
         v.resize(size, value);
+        return v;
+    }
+
+    /// returns a vector with "size" elements reserved, but size is actually 0
+    [[nodiscard]] static vector reserved(size_t size)
+    {
+        vector v;
+        v.reserve(size);
         return v;
     }
 

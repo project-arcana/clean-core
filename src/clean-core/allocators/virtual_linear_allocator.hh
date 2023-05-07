@@ -24,7 +24,11 @@ struct virtual_linear_allocator final : allocator
 
     void free(void* ptr) override { (void)ptr; }
 
-    std::byte* realloc(void* ptr, size_t old_size, size_t new_size, size_t align = alignof(std::max_align_t)) override;
+    bool get_allocation_size(void const* ptr, size_t& out_size) override;
+
+    char const* get_name() const override { return "Virtual Linear Allocator"; }
+
+    std::byte* realloc(void* ptr, size_t new_size, size_t align = alignof(std::max_align_t)) override;
 
     // free all current allocations
     // does not decommit any memory!

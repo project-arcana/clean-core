@@ -40,12 +40,12 @@ void cc::stack_allocator::free(void* ptr)
     _head = byte_ptr - alloc_header->padding;
 }
 
-std::byte* cc::stack_allocator::realloc(void* ptr, size_t old_size, size_t new_size, size_t align)
+std::byte* cc::stack_allocator::realloc(void* ptr, size_t new_size, size_t align)
 {
     if (new_size == 0)
     {
         // free case
-        free(ptr);
+        this->free(ptr);
         return nullptr;
     }
     else if (ptr == nullptr)
@@ -54,7 +54,6 @@ std::byte* cc::stack_allocator::realloc(void* ptr, size_t old_size, size_t new_s
         return this->alloc(new_size, align);
     }
 
-    (void)old_size;
     (void)align;
     // no need to memcpy, the memory remains the same
     std::byte* const byte_ptr = static_cast<std::byte*>(ptr);
@@ -62,7 +61,7 @@ std::byte* cc::stack_allocator::realloc(void* ptr, size_t old_size, size_t new_s
 
     CC_ASSERT(alloc_header->alloc_id == _last_alloc_id && "realloc ptr was not the most recent allocation");
     CC_ASSERT(byte_ptr + new_size <= _buffer_end && "stack_allocator overcommitted");
-    CC_ASSERT(old_size == _head - byte_ptr && "incorrect old size");
+    // CC_ASSERT(old_size == _head - byte_ptr && "incorrect old size");
 
     _head = byte_ptr + new_size;
     return byte_ptr;

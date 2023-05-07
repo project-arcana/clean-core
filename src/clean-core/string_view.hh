@@ -39,6 +39,11 @@ struct equals_case_insensitive_t
 struct string_view
 {
     constexpr string_view() = default;
+
+    // make sure int and bool are not convertible
+    string_view(int) = delete;
+    string_view(bool) = delete;
+
     constexpr string_view(char const* data)
     {
         _data = data;

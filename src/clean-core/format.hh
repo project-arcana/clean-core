@@ -40,15 +40,15 @@ struct pythonic_formatter;
 ///   auto s = cc::format("{.2f} %6d", 1.234, 1000);
 ///
 template <class Formatter = detail::default_formatter, class... Args>
-string format(char const* fmt_str, Args const&... args);
+[[nodiscard]] string format(char const* fmt_str, Args const&... args);
 
 /// same as cc::format but only uses printf-style % syntax (with the generic %s)
 template <class... Args>
-string formatf(char const* fmt_str, Args const&... args);
+[[nodiscard]] string formatf(char const* fmt_str, Args const&... args);
 
 /// same as cc::format but only uses pythonic {} syntax
 template <class... Args>
-string formatp(char const* fmt_str, Args const&... args);
+[[nodiscard]] string formatp(char const* fmt_str, Args const&... args);
 
 /// version of cc::format that appends the result to a stream or string
 /// this is usually a bit more efficient than cc::format
@@ -95,7 +95,7 @@ struct has_to_string_args_t : std::false_type
 {
 };
 template <class T>
-struct has_to_string_args_t<T, std::void_t<decltype(string_view(o_string(std::declval<T>(), std::declval<string_view>())))>> : std::true_type
+struct has_to_string_args_t<T, std::void_t<decltype(string_view(to_string(std::declval<T>(), std::declval<string_view>())))>> : std::true_type
 {
 };
 template <class T>
@@ -111,6 +111,17 @@ struct has_to_string_t<T, std::void_t<decltype(string_view(to_string(std::declva
 };
 template <class T>
 constexpr bool has_to_string = has_to_string_t<T>::value;
+
+template <class T, class = std::void_t<>>
+struct has_member_toStdString_t : std::false_type
+{
+};
+template <class T>
+struct has_member_toStdString_t<T, std::void_t<decltype(string_view(std::declval<T>().toStdString()))>> : std::true_type
+{
+};
+template <class T>
+constexpr bool has_member_toStdString = has_member_toStdString_t<T>::value;
 
 template <class T, class = std::void_t<>>
 struct has_member_to_string_t : std::false_type
@@ -157,6 +168,10 @@ struct default_do_format
         else if constexpr (detail::has_member_to_string<T>)
         {
             s << string_view(v.to_string());
+        }
+        else if constexpr (detail::has_member_toStdString<T>)
+        {
+            s << string_view(v.toStdString());
         }
         else
         {

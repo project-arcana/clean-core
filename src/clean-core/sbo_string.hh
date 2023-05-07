@@ -81,6 +81,10 @@ public:
         _data = _sbo;
     }
 
+    // make sure ints and bools are not implicitly convertible
+    sbo_string(int) = delete;
+    sbo_string(bool) = delete;
+
     sbo_string(char const* s)
     {
         _size = std::strlen(s);

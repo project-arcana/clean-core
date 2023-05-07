@@ -9,14 +9,13 @@ namespace cc
 /// thread safe pool allocator, O(1) alloc and free
 /// cannot alloc buffers > block_size (ie. does not search contiguous blocks)
 /// provided buffer and block size must be aligned to a multiple of all requests (this is verified)
+/// RESTRICTION: Must only allocate buffers with size <= block_size set at init
 struct atomic_pool_allocator final : allocator
 {
     std::byte* alloc(size_t size, size_t align = alignof(std::max_align_t)) override
     {
-        if (size > _block_size)
-            return nullptr;
-
-        CC_ASSERT(!is_full() && "pool_allocator full");
+		CC_ASSERT(!is_full() && "pool_allocator full");
+		CC_ASSERT(size <= _block_size && "Can only allocate buffers up to the block size");
 
         // CAS-loop to acquire a free node and write the matching next pointer
         bool cas_success = false;
@@ -60,6 +59,17 @@ struct atomic_pool_allocator final : allocator
                                                                      std::memory_order_relaxed);
         } while (!cas_success);
     }
+
+    bool get_allocation_size(void const* ptr, size_t& out_size) override
+    {
+        if (!ptr)
+            return false;
+
+        out_size = _block_size;
+        return true;
+    }
+
+	char const* get_name() const override { return "Atomic Pool Allocator"; }
 
     /// returns the offset of a node to the buffer start in bytes
     size_t get_node_offset_bytes(void const* ptr) const

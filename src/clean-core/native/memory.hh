@@ -17,6 +17,9 @@ void free_virtual_memory(std::byte* ptr, size_t size_bytes);
 // commits a region of pages inside a reserved, virtual memory range
 void commit_physical_memory(std::byte* ptr, size_t size_bytes);
 
+// touches (reads) the first byte of every page in this range to ensure pages are available
+void prefault_memory(std::byte* ptr, size_t size_bytes);
+
 // decommits a region of pages inside a reserved, virtual memory range
 void decommit_physical_memory(std::byte* ptr, size_t size_bytes);
 

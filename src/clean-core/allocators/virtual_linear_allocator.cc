@@ -32,7 +32,7 @@ std::byte* cc::virtual_linear_allocator::alloc(size_t size, size_t align)
 {
     CC_ASSERT(_virtual_begin != nullptr && "virtual_linear_allocator uninitialized");
 
-    std::byte* const padded_res = cc::align_up(_physical_current, align);
+    std::byte* const padded_res = cc::align_up(_physical_current + sizeof(size_t), align);
     size_t const num_padding_bytes = size_t(padded_res - _physical_current);
     size_t const required_size = num_padding_bytes + size;
 
@@ -40,20 +40,36 @@ std::byte* cc::virtual_linear_allocator::alloc(size_t size, size_t align)
 
     _physical_current = padded_res + size;
     _last_allocation = padded_res;
+
+    // store alloc size
+    *((size_t*)(padded_res - sizeof(size_t))) = size;
+
     return padded_res;
 }
 
-std::byte* cc::virtual_linear_allocator::realloc(void* ptr, size_t old_size, size_t new_size, size_t align)
+bool cc::virtual_linear_allocator::get_allocation_size(void const* ptr, size_t& out_size)
+{
+    if (!ptr)
+        return false;
+
+    out_size = *((size_t const*)((std::byte const*)ptr - sizeof(size_t)));
+    return true;
+}
+
+std::byte* cc::virtual_linear_allocator::realloc(void* ptr, size_t new_size, size_t align)
 {
     if (!ptr || ptr != _last_allocation)
     {
         // cannot realloc, fall back (this is not invalid usage unlike for stack_linear_allocator)
-        return cc::allocator::realloc(ptr, old_size, new_size, align);
+        return cc::allocator::realloc(ptr, new_size, align);
     }
 
     // true realloc
     std::byte* const byte_ptr = static_cast<std::byte*>(ptr);
-    CC_ASSERT(old_size == _physical_current - byte_ptr && "incorrect old size");
+
+    size_t old_size;
+    bool const success = get_allocation_size(ptr, old_size);
+    CC_ASSERT(success && old_size == _physical_current - byte_ptr && "incorrect old size");
 
     if (new_size > old_size)
     {
@@ -61,6 +77,9 @@ std::byte* cc::virtual_linear_allocator::realloc(void* ptr, size_t old_size, siz
         size_t const num_new_bytes = new_size - old_size;
         _physical_end = grow_physical_memory(_physical_current, _physical_end, _virtual_end, _chunk_size_bytes, num_new_bytes);
     }
+
+    // store new alloc size
+    *((size_t*)(byte_ptr - sizeof(size_t))) = new_size;
 
     _physical_current = byte_ptr + new_size;
     return byte_ptr;

@@ -376,7 +376,8 @@ parsed_fmt_args parse_args(cc::string_view fmt_args)
     auto const is_align = [](char c) { return c == '<' || c == '>' || c == '^'; };
     auto const is_sign = [](char c) { return c == '+' || c == '-' || c == ' '; };
 
-    auto const parse_unsigned_int = [&](char const* begin, char const* end, int& out) -> char const* {
+    auto const parse_unsigned_int = [&](char const* begin, char const* end, int& out) -> char const*
+    {
         out = *begin - '0';
         ++begin;
         while (begin != end && cc::is_digit(*begin))
@@ -473,14 +474,16 @@ char const* unsigned_int_to_binary(IntType value, char* end)
 template <class IntType>
 void unsigned_to_string_impl(cc::string_stream_ref ss, IntType value, parsed_fmt_args const& args)
 {
-    auto const add_fill = [&](int length) {
+    auto const add_fill = [&](int length)
+    {
         auto const fill = args.sign_aware_zero_padding ? '0' : args.fill;
         if (args.width > 0 && length < args.width)
             for (auto i = 0; i < args.width - length; ++i)
                 ss << fill;
     };
 
-    auto const to_binary = [&]() {
+    auto const to_binary = [&]()
+    {
         char buffer[sizeof(IntType) * 8 + 1];
         char* end = buffer + sizeof(buffer);
         char const* begin = unsigned_int_to_binary(value, end);
@@ -492,6 +495,7 @@ void unsigned_to_string_impl(cc::string_stream_ref ss, IntType value, parsed_fmt
     {
     case 0:   // fallthrough
     case 'd': // default, decimal
+    case 'u':
     {
         char buffer[20 + 1]; // large enough to hold uint64_t decimals
         auto const length = std::snprintf(buffer, sizeof(buffer), args.sign_aware_zero_padding ? "%0llu" : "%llu", static_cast<unsigned long long>(value));

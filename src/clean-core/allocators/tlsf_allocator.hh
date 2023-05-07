@@ -19,14 +19,17 @@ struct tlsf_allocator final : allocator
     // provide an additional memory pool to the TLSF (can be done multiple times)
     void add_pool(cc::span<std::byte> buffer);
 
-    // returns false if internal consistency checks fail
-    bool check_consistency();
-
     std::byte* alloc(size_t size, size_t align = alignof(std::max_align_t)) override;
 
     void free(void* ptr) override;
 
-    std::byte* realloc(void* ptr, size_t old_size, size_t new_size, size_t align = alignof(std::max_align_t)) override;
+    std::byte* realloc(void* ptr, size_t new_size, size_t align = alignof(std::max_align_t)) override;
+
+    bool get_allocation_size(void const* ptr, size_t& out_size) override;
+
+    bool validate_heap() override;
+
+    char const* get_name() const override { return "TLSF Allocator"; }
 
     tlsf_allocator(tlsf_allocator&& rhs) noexcept : _tlsf(rhs._tlsf) { rhs._tlsf = nullptr; }
     tlsf_allocator& operator==(tlsf_allocator&& rhs) noexcept

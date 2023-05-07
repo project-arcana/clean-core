@@ -24,6 +24,8 @@ struct equal_to;
 struct nullopt_t;
 template <class T>
 struct optional;
+template <class... Types>
+struct variant;
 
 template <class A, class B>
 struct pair;
@@ -99,6 +101,8 @@ template <class T>
 struct unique_ptr;
 template <class T>
 struct poly_unique_ptr;
+template <class T>
+struct shared_ptr;
 
 // locks
 struct spin_lock;

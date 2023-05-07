@@ -1,5 +1,6 @@
 #include <nexus/app.hh>
 
+#undef RICH_LOG_FORCE_MACRO_PREFIX
 #include <rich-log/log.hh>
 
 #include <iostream>
@@ -49,7 +50,7 @@ template <class... Args>
 size_t hash_combine_xxHash(Args... h)
 {
     size_t data[] = {h...};
-    return cc::hash_xxh3(cc::as_byte_span(data), 0xDEADBEEF);
+    return cc::make_hash_xxh3(cc::as_byte_span(data), 0xDEADBEEF);
 }
 }
 

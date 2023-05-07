@@ -7,6 +7,8 @@ namespace cc
 /// stack allocator operating in virtual memory
 /// reserves pages on init, commits pages on demand
 /// only frees pages if explicitly called
+///
+/// RESTRICTION: Must only free or realloc the most recent allocation
 struct virtual_stack_allocator final : allocator
 {
     virtual_stack_allocator() = default;
@@ -26,7 +28,9 @@ struct virtual_stack_allocator final : allocator
     void free(void* ptr) override;
 
     /// NOTE: ptr must be the most recent allocation received
-    std::byte* realloc(void* ptr, size_t old_size, size_t new_size, size_t align = alignof(std::max_align_t)) override;
+    std::byte* realloc(void* ptr, size_t new_size, size_t align = alignof(std::max_align_t)) override;
+
+    char const* get_name() const override { return "Virtual Stack Allocator"; }
 
     // free all current allocations
     // does not decommit any memory!

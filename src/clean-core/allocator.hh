@@ -12,11 +12,45 @@ namespace cc
 {
 struct allocator
 {
-    /// allocate a buffer with specified size and alignment
+public:
+    //
+    // pure virtual
+
+    // allocate a buffer with specified size and alignment
     [[nodiscard]] virtual std::byte* alloc(size_t size, size_t align = alignof(std::max_align_t)) = 0;
 
-    /// free a pointer previously received from alloc
+    // free a previously allocated buffer
     virtual void free(void* ptr) = 0;
+
+public:
+    //
+    // optional virtual
+    // specific interfaces which can be overriden by allocators
+
+    // reallocate a buffer, behaves like std::realloc
+    virtual std::byte* realloc(void* ptr, size_t new_size, size_t align = alignof(std::max_align_t));
+
+    // can return nullptr if the request can't be satisfied
+    [[nodiscard]] virtual std::byte* try_alloc(size_t size, size_t alignment = alignof(std::max_align_t));
+
+    // can return nullptr if the request can't be satisfied
+    // the original buffer will remain valid in that case
+    virtual std::byte* try_realloc(void* ptr, size_t new_size, size_t align = alignof(std::max_align_t));
+
+    // reads the size of the given allocation
+    // only some allocators can do this, returns true if available
+    virtual bool get_allocation_size(void const* ptr, size_t& out_size) { return false; }
+
+    // some allocators can internally validate the heap for corruptions
+    // returns true if validation is available (asserts internally)
+    virtual bool validate_heap() { return false; }
+
+    // returns a descriptive name of this allocator
+    virtual char const* get_name() const { return "Unnamed Allocator"; }
+
+public:
+    //
+    // non-virtual utility
 
     /// allocate and construct an object
     template <class T, class... Args>
@@ -47,19 +81,6 @@ struct allocator
 
     template <class T>
     T* alloc_data_copy(cc::span<T const> data);
-
-    // below:
-    // specific interfaces which can be overriden by allocators to be more efficient, with fallback otherwise
-
-    /// reallocate a buffer, behaves like std::realloc
-    virtual std::byte* realloc(void* ptr, size_t old_size, size_t new_size, size_t align = alignof(std::max_align_t));
-
-    /// allocate a buffer with specified minimum size, will span up to request_size if possible
-    [[nodiscard]] virtual std::byte* alloc_request(size_t min_size, size_t request_size, size_t& out_received_size, size_t align = alignof(std::max_align_t));
-
-    /// reallocate a buffer with specified minimum size, will span up to request_size if possible
-    [[nodiscard]] virtual std::byte* realloc_request(
-        void* ptr, size_t old_size, size_t new_min_size, size_t request_size, size_t& out_received_size, size_t align = alignof(std::max_align_t));
 
     // delete copy, default move
     allocator() = default;

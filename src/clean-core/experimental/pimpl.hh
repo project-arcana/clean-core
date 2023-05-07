@@ -1,6 +1,6 @@
 #pragma once
 
-#include <clean-core/fwd_box.hh>
+#include <clean-core/experimental/fwd_box.hh>
 
 namespace cc
 {

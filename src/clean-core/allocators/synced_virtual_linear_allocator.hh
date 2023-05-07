@@ -32,11 +32,13 @@ struct synced_virtual_linear_allocator final : allocator
 
     void free(void*) override {} // nothing
 
-    std::byte* realloc(void* ptr, size_t old_size, size_t new_size, size_t align = alignof(std::max_align_t)) override
+    std::byte* realloc(void* ptr, size_t new_size, size_t align = alignof(std::max_align_t)) override
     {
         auto lg = cc::lock_guard(_mutex);
-        return _backing.realloc(ptr, old_size, new_size, align);
+        return _backing.realloc(ptr, new_size, align);
     }
+
+	char const* get_name() const override { return "Synced Virtual Linear Allocator"; }
 
     size_t reset()
     {

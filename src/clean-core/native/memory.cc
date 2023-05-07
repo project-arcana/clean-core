@@ -66,6 +66,26 @@ void cc::free_virtual_memory(std::byte* ptr, size_t size_bytes)
 #endif
 }
 
+static volatile uint8_t s_byte_sink;
+
+void cc::prefault_memory(std::byte *ptr, size_t size_bytes)
+{
+    if (size_bytes == 0)
+        return;
+
+    // generates nice SIMD code: https://godbolt.org/z/5YEPz4zP7
+
+    // TODO: separate counters?
+    uint8_t s = uint8_t(*ptr);
+    auto end = ptr + size_bytes;
+    ptr = cc::align_up(ptr, 4096);
+    while (ptr < end) {
+        s ^= uint8_t(*ptr);
+        ptr += 4096;
+    }
+    s_byte_sink = s;
+}
+
 void cc::commit_physical_memory(std::byte* ptr, size_t size)
 {
 #ifdef CC_OS_WINDOWS
@@ -75,7 +95,11 @@ void cc::commit_physical_memory(std::byte* ptr, size_t size)
 
 #elif defined(CC_OS_LINUX)
 
-    int const res = ::mprotect(ptr, size, PROT_READ | PROT_WRITE);
+    // ensure ptr and size are page-aligned
+    auto new_ptr = cc::align_down(ptr, 4096);
+    auto new_size = cc::align_up(size + (ptr - new_ptr), 4096);
+
+    int const res = ::mprotect(new_ptr, new_size, PROT_READ | PROT_WRITE);
     CC_ASSERT(res == 0 && "virtual commit failed");
 
 #else
@@ -92,8 +116,12 @@ void cc::decommit_physical_memory(std::byte* ptr, size_t size)
 
 #elif defined(CC_OS_LINUX)
 
+    // ensure ptr and size are page-aligned
+    auto new_ptr = cc::align_down(ptr, 4096);
+    auto new_size = cc::align_up(size + (ptr - new_ptr), 4096);
+
     // TODO: not sure if this actually decommits memory
-    int const res = ::mprotect(ptr, size, PROT_NONE);
+    int const res = ::mprotect(new_ptr, new_size, PROT_NONE);
     CC_ASSERT(res == 0 && "virtual decommit failed");
 
 #else

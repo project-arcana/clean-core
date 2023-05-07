@@ -25,7 +25,7 @@
   </Type>
 
   <Type Name="cc::alloc_vector&lt;*&gt;">
-    <DisplayString>{{ alloc_vector size={_size)} }}</DisplayString>
+    <DisplayString>{{ alloc_vector size={_size} }}</DisplayString>
     <Expand>
       <Item Name="[size]">_size</Item>
       <Item Name="[capacity]">_capacity</Item>
