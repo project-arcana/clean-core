@@ -39,7 +39,7 @@ public:
 
     // reads the size of the given allocation
     // only some allocators can do this, returns true if available
-    virtual bool get_allocation_size(void const* ptr, size_t& out_size) { return false; }
+    virtual bool get_allocation_size([[maybe_unused]] void const* ptr, [[maybe_unused]] size_t& out_size) { return false; }
 
     // some allocators can internally validate the heap for corruptions
     // returns true if validation is available (asserts internally)
