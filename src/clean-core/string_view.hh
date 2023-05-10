@@ -127,6 +127,17 @@ public:
 
         return false;
     }
+    constexpr bool contains_ignore_case(string_view s) const
+    {
+        if (s.size() > _size)
+            return false;
+
+        for (size_t i = 0; i < _size - s.size() + 1; ++i)
+            if (subview(i, s.size()).equals_ignore_case(s))
+                return true;
+
+        return false;
+    }
 
     /// returns the index of the first occurrence of the character (or -1 if not found)
     constexpr int64_t index_of(char c) const
