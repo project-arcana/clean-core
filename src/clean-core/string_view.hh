@@ -167,6 +167,20 @@ public:
         return -1;
     }
 
+    /// returns the common prefix between this and another string view
+    constexpr string_view common_prefix(string_view s) const
+    {
+        size_t const min_size = _size < s._size ? _size : s._size;
+        size_t common_size = 0;
+        for (size_t i = 0; i < min_size; ++i)
+        {
+            if (_data[i] != s._data[i])
+                break;
+            ++common_size;
+        }
+        return {_data, common_size};
+    }
+
     /// returns the index of the last occurrence of the character (or -1 if not found)
     constexpr int64_t last_index_of(char c) const
     {
