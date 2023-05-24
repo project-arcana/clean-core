@@ -245,6 +245,16 @@ public:
         this->pop_back();
     }
 
+    /// returns true iff any entry is == value
+    template <class U = T>
+    bool contains(U const& value) const
+    {
+        for (size_t i = 0; i < size_t(_size); ++i)
+            if (_u.value[i] == value)
+                return true;
+        return false;
+    }
+
     constexpr bool operator==(cc::span<T const> rhs) const noexcept
     {
         if (_size != rhs.size())
