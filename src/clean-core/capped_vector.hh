@@ -227,6 +227,24 @@ public:
         _size = compact_size_t(new_size);
     }
 
+    /// removes the element at the given index
+    void remove_at(size_t idx)
+    {
+        CC_CONTRACT(idx < _size);
+        for (size_t i = size_t(idx) + 1; i < _size; ++i)
+            _u.value[i - 1] = cc::move(_u.value[i]);
+        --_size;
+        _u.value[_size].~T();
+    }
+
+    /// removes the element at the given index without preserving order
+    void remove_at_unordered(size_t idx)
+    {
+        CC_CONTRACT(size_t(idx) < _size);
+        cc::swap(_u.value[size_t(idx)], this->back());
+        this->pop_back();
+    }
+
     constexpr bool operator==(cc::span<T const> rhs) const noexcept
     {
         if (_size != rhs.size())
