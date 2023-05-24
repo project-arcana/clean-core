@@ -168,7 +168,7 @@ public:
     }
 
     /// returns the common prefix between this and another string view
-    constexpr string_view common_prefix(string_view s) const
+    constexpr string_view common_prefix_with(string_view s) const
     {
         size_t const min_size = _size < s._size ? _size : s._size;
         size_t common_size = 0;
