@@ -118,4 +118,8 @@ struct atomic_pool_allocator;
 struct atomic_linear_allocator;
 
 extern allocator* const system_allocator;
+
+// experimental
+template <class T>
+struct ringbuffer;
 }
