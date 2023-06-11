@@ -25,7 +25,7 @@ namespace experimental
  */
 template <class KeyT, class ValueT, class HashT, class EqualT>
 double compute_hash_badness(map<KeyT, ValueT, HashT, EqualT> const& map);
-}
+} // namespace experimental
 
 // Bucket Interface, similar to std::unordered_map
 // NOTE: this is unstable, private API used for testing and enthusiasts
@@ -38,7 +38,7 @@ template <class KeyT, class ValueT, class HashT, class EqualT>
 size_t bucket_idx(map<KeyT, ValueT, HashT, EqualT> const& map, KeyT const& key);
 template <class KeyT, class ValueT, class HashT, class EqualT>
 size_t bucket_size(map<KeyT, ValueT, HashT, EqualT> const& map, size_t bucket_idx);
-}
+} // namespace detail
 
 /**
  * A general-purpose hash-based map
@@ -447,8 +447,10 @@ private:
         KeyT key;
         ValueT value;
 
-        entry(KeyT key) : key(cc::move(key)), value() {}
-        entry(KeyT key, ValueT value) : key(cc::move(key)), value(cc::move(value)) {}
+        template <class... Args>
+        entry(KeyT key, Args&&... args) : key(cc::move(key)), value(cc::forward<Args>(args)...)
+        {
+        }
     };
     cc::array<cc::forward_list<entry>> _entries;
     size_t _size = 0;
@@ -495,4 +497,4 @@ size_t detail::bucket_size(map<KeyT, ValueT, HashT, EqualT> const& map, size_t b
 {
     return map._entries[bucket_idx].size();
 }
-}
+} // namespace cc
