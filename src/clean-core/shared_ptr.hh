@@ -137,7 +137,7 @@ template <class T, class... Args>
 shared_ptr<T> make_shared(Args&&... args)
 {
     shared_ptr<T> s;
-    s._control = cc::alloc<shared_ptr<T>::control>(cc::forward<Args>(args)...);
+    s._control = cc::alloc<typename shared_ptr<T>::control>(cc::forward<Args>(args)...);
     return s;
 }
-}
+} // namespace cc
