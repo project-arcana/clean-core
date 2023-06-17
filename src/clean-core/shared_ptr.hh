@@ -31,7 +31,7 @@ struct shared_ptr
     static_assert(!std::is_reference_v<T>, "cannot created a shared_ptr of a reference");
 
     bool is_valid() const { return _control != nullptr; }
-    operator bool() const { return is_valid(); }
+    explicit operator bool() const { return is_valid(); }
 
     T& operator*() const
     {
