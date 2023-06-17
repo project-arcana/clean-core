@@ -72,7 +72,9 @@ struct shared_ptr
     shared_ptr(shared_ptr const& rhs)
     {
         _control = rhs._control;
-        _control->refcount++;
+
+        if (_control)
+            _control->refcount++;
     }
     shared_ptr& operator=(shared_ptr&& rhs) noexcept
     {
@@ -93,7 +95,9 @@ struct shared_ptr
             dec_refcount();
 
         _control = rhs._control;
-        _control->refcount++;
+
+        if (_control)
+            _control->refcount++;
 
         return *this;
     }
