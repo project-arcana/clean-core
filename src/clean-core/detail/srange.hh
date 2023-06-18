@@ -62,16 +62,22 @@ struct irange
     CC_FORCE_INLINE constexpr iiterator<T> begin() const { return {_begin}; }
     CC_FORCE_INLINE constexpr iiterator<T> end() const { return {_end}; }
 
+    // NOTE: is no-op for empty ranges
     CC_FORCE_INLINE constexpr irange skip_first() const
     {
-        CC_ASSERT(_begin != _end && "cannot drop from empty range");
+        if (_begin == _end)
+            return *this;
+
         auto r = *this; // copy
         ++r._begin;
         return r;
     }
+    // NOTE: is no-op for empty ranges
     CC_FORCE_INLINE constexpr irange skip_last() const
     {
-        CC_ASSERT(_begin != _end && "cannot drop from empty range");
+        if (_begin == _end)
+            return *this;
+
         auto r = *this; // copy
         --r._end;
         return r;
