@@ -14,6 +14,24 @@ namespace cc
 template <class T, class... Args>
 shared_ptr<T> make_shared(Args&&... args);
 
+namespace detail
+{
+template <class T>
+struct control_t
+{
+    // must stay first arg, so that _control == &_control->value
+    T value;
+
+    // int -> make overflow UB
+    int refcount;
+
+    template <class... Args>
+    control_t(Args&&... args) : value(cc::forward<Args>(args)...), refcount(1)
+    {
+    }
+};
+} // namespace detail
+
 /// a high-performance, basic ref-counted pointer
 /// in particular:
 ///  - no thread-safety (no atomic access required)
@@ -29,6 +47,8 @@ template <class T>
 struct shared_ptr
 {
     static_assert(!std::is_reference_v<T>, "cannot created a shared_ptr of a reference");
+
+    using control = detail::control_t<std::remove_const_t<T>>;
 
     bool is_valid() const { return _control != nullptr; }
     explicit operator bool() const { return is_valid(); }
@@ -107,6 +127,16 @@ struct shared_ptr
             dec_refcount();
     }
 
+    // can convert to const
+    operator shared_ptr<T const>() const
+    {
+        shared_ptr<T const> r;
+        r._control = _control;
+        if (_control)
+            _control->refcount++;
+        return r;
+    }
+
 private:
     void dec_refcount()
     {
@@ -117,21 +147,9 @@ private:
         }
     }
 
-    struct control
-    {
-        // must stay first arg, so that _control == &_control->value
-        T value;
-
-        // int -> make overflow UB
-        int refcount;
-
-        template <class... Args>
-        control(Args&&... args) : value(cc::forward<Args>(args)...), refcount(1)
-        {
-        }
-    };
-
     control* _control = nullptr;
+
+    friend shared_ptr<std::remove_const_t<T>>;
 
     template <class U, class... Args>
     friend shared_ptr<U> make_shared(Args&&... args);
