@@ -127,6 +127,16 @@ struct shared_ptr
             dec_refcount();
     }
 
+    // nullptr is same as default constructed shared_ptr
+    shared_ptr(std::nullptr_t) {}
+    shared_ptr& operator=(std::nullptr_t)
+    {
+        if (_control)
+            dec_refcount();
+        _control = nullptr;
+        return *this;
+    }
+
     // can convert to const
     operator shared_ptr<T const>() const
     {
