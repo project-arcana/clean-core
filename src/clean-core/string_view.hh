@@ -30,7 +30,7 @@ struct equals_case_insensitive_t
 {
     constexpr bool operator()(char a, char b) const { return a == b || cc::to_lower(a) == cc::to_lower(b); }
 };
-}
+} // namespace detail
 
 /// a view on an utf-8 string
 /// is NON-OWNING
@@ -309,6 +309,18 @@ public:
     }
     [[nodiscard]] constexpr bool equals_ignore_case(string_view rhs) const { return equals<detail::equals_case_insensitive_t>(rhs); }
 
+    /// returns true iff this is lexicographically before rhs (NOTE: case sensitive)
+    [[nodiscard]] constexpr bool is_lexicographically_less_than(string_view rhs) const
+    {
+        auto min_size = _size < rhs._size ? _size : rhs._size;
+
+        for (size_t i = 0; i < min_size; ++i)
+            if (_data[i] != rhs._data[i])
+                return _data[i] < rhs._data[i];
+
+        return _size < rhs._size;
+    }
+
     // operators
 public:
     template <size_t N>
@@ -495,4 +507,4 @@ constexpr auto string_view::split(Pred&& pred, split_options opts) const
     return string_split_range(_data, _data + _size, opts, cc::forward<Pred>(pred));
 }
 constexpr auto string_view::split() const { return split(cc::is_space, split_options::skip_empty); }
-}
+} // namespace cc
