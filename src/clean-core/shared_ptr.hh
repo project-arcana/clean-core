@@ -147,6 +147,13 @@ struct shared_ptr
         return r;
     }
 
+    bool operator==(shared_ptr const& rhs) const { return _control == rhs._control; }
+    bool operator!=(shared_ptr const& rhs) const { return _control != rhs._control; }
+    bool operator<(shared_ptr const& rhs) const { return _control < rhs._control; }
+    bool operator<=(shared_ptr const& rhs) const { return _control <= rhs._control; }
+    bool operator>(shared_ptr const& rhs) const { return _control > rhs._control; }
+    bool operator>=(shared_ptr const& rhs) const { return _control >= rhs._control; }
+
 private:
     void dec_refcount()
     {
@@ -172,4 +179,11 @@ shared_ptr<T> make_shared(Args&&... args)
     s._control = cc::alloc<typename shared_ptr<T>::control>(cc::forward<Args>(args)...);
     return s;
 }
+
+// hash
+template <class T>
+struct hash<shared_ptr<T>>
+{
+    [[nodiscard]] constexpr uint64_t operator()(shared_ptr<T> const& a) const noexcept { return hash<T const*>{}(a.get()); }
+};
 } // namespace cc
