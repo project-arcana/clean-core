@@ -67,6 +67,12 @@ public:
         return ee.parent;
     }
 
+    /// returns the parent of this element
+    /// if e == get_parent(e), then e is the representative
+    /// NOTE: this does not return the representative of e
+    /// NOTE: this does not perform path-compaction
+    int get_parent(int e) const { return entries[e].parent; }
+
     /// merges the sets given by two arbitrary elements e0 and e1
     /// returns true iff a merge was done (i.e. if e0 and e1 belonged to different sets)
     bool merge_sets_by_element(int e0, int e1)
@@ -109,4 +115,4 @@ private:
     cc::vector<entry> entries;
     size_t partition_count = 0;
 };
-}
+} // namespace cc
