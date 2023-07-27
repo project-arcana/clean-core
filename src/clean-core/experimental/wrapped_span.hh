@@ -22,6 +22,7 @@ public:
 public:
     constexpr T& operator[](int64_t i) const
     {
+        CC_ASSERT(this->size() > 0);
         i = i % int64_t(this->size());
         if (i < 0)
             i += int64_t(this->size());

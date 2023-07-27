@@ -18,7 +18,11 @@ public:
 
     // container
 public:
-    constexpr T& operator[](int64_t i) const { return this->data()[clamp(i, int64_t(0), int64_t(this->size() - 1))]; }
+    constexpr T& operator[](int64_t i) const
+    {
+        CC_ASSERT(this->size() > 0);
+        return this->data()[clamp(i, int64_t(0), int64_t(this->size() - 1))];
+    }
 };
 
 // deduction guide for containers
