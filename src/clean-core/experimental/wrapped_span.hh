@@ -7,7 +7,7 @@
 namespace cc
 {
 /// a non-owning view of a contiguous array of Ts
-/// works exaclty like span, except for access via the subscript operator
+/// works exactly like span, except for access via the subscript operator
 /// Indices wrap around, there are no bounds checks
 /// The last element can be accessed with my_span[-1], the second last element with my_span[-2] and so on,
 /// while the first element will be returned when using my_span[my_span.size()]

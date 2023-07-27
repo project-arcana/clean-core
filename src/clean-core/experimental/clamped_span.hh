@@ -7,7 +7,7 @@
 namespace cc
 {
 /// a non-owning view of a contiguous array of Ts
-/// works exaclty like span, except there are no bounds checks and indices are instead clamped to the valid range
+/// works exactly like span, except there are no bounds checks and indices are instead clamped to the valid range
 /// For example, my_clamped_span[-1] == my_clamped_span[0] and my_clamped_span[my_clamped_span.size()] == my_clamped_span[my_clamped_span.size() -1]
 template <class T>
 struct clamped_span : public span<T>
