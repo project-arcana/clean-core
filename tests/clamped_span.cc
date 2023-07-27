@@ -3,7 +3,7 @@
 #include <clean-core/experimental/clamped_span.hh>
 #include <clean-core/vector.hh>
 
-TEST("cc::wrapped_span")
+TEST("cc::clamped_span")
 {
     auto vec = cc::vector{1, 2, 3, 4, 5};
     auto ds = cc::clamped_span(vec);
