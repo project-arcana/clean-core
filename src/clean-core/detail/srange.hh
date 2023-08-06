@@ -83,6 +83,16 @@ struct irange
         return r;
     }
 
+    /// ensures that any iterated value is at most "v"
+    CC_FORCE_INLINE constexpr irange max(T v) const
+    {
+        if (v >= _end)
+            return *this; // already in range
+        if (v < _begin)
+            return {}; // empty range
+        return {_begin, v + 1};
+    }
+
     CC_FORCE_INLINE constexpr rev_irange<T> reversed() const
     {
         auto b = _end;
@@ -110,4 +120,4 @@ struct rev_irange
         return {b, e};
     }
 };
-}
+} // namespace cc::detail
