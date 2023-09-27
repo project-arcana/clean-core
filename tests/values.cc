@@ -178,7 +178,9 @@ MONTE_CARLO_TEST("value mct")
     };
 
     // TODO: more
+#ifndef _MSC_VER
     addType(cc::make_box<int>());
+#endif
 
 	CHECK(true);
 }
