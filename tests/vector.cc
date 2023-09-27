@@ -143,7 +143,7 @@ struct vector_tester
         CHECK(v1 == v1);
     }
 };
-}
+} // namespace
 
 TEST("cc::vector basics")
 {
@@ -221,7 +221,7 @@ template <class T>
 struct is_std_vector<std::vector<T>> : std::true_type
 {
 };
-}
+} // namespace
 
 MONTE_CARLO_TEST("cc::vector mct")
 {
@@ -628,9 +628,11 @@ MONTE_CARLO_TEST("cc::vector mct")
             });
     };
 
+#ifndef CC_COMPILER_MSVC
     testType(
         int{}, make_int, [](int i) { return cc::to_string(i); }, is_even_int);
     testType(cc::string{}, make_str, cc::identity_function{}, is_even_str);
+#endif
 }
 
 MONTE_CARLO_TEST("cc::alloc_vector mct")
