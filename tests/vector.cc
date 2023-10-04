@@ -143,7 +143,7 @@ struct vector_tester
         CHECK(v1 == v1);
     }
 };
-}
+} // namespace
 
 TEST("cc::vector basics")
 {
@@ -221,7 +221,7 @@ template <class T>
 struct is_std_vector<std::vector<T>> : std::true_type
 {
 };
-}
+} // namespace
 
 MONTE_CARLO_TEST("cc::vector mct")
 {
@@ -344,7 +344,12 @@ MONTE_CARLO_TEST("cc::vector mct")
         if constexpr (is_capped_vec)
             addOp("reserve", [](tg::rng& rng, vector_t&) { (void)uniform(rng, 0, 30); });
         else
-            addOp("reserve", [](tg::rng& rng, vector_t& s) { s.reserve(uniform(rng, 0, 30)); });
+            addOp("reserve",
+                  [](tg::rng& rng, vector_t& s)
+                  {
+                      if constexpr (!is_capped_vec) // fix for msvc bug
+                          s.reserve(uniform(rng, 0, 30));
+                  });
 
         addOp("resize", [](tg::rng& rng, vector_t& s) { s.resize(uniform(rng, 0, 30)); });
         addOp("resize + int", [](tg::rng& rng, vector_t& s, T const& c) { s.resize(uniform(rng, 0, 30), c); });
@@ -564,7 +569,12 @@ MONTE_CARLO_TEST("cc::vector mct")
         if constexpr (is_capped_vec)
             addOp("shrink_to_fit", [](vector_t&) { /* no-op*/ });
         else
-            addOp("shrink_to_fit", [](vector_t& s) { s.shrink_to_fit(); });
+            addOp("shrink_to_fit",
+                  [](vector_t& s)
+                  {
+                      if constexpr (!is_capped_vec) // fix for msvc bug
+                          s.shrink_to_fit();
+                  });
         addOp("clear", [](vector_t& s) { s.clear(); });
 
         addOp("size", [](vector_t const& s) { return s.size(); });
@@ -618,9 +628,11 @@ MONTE_CARLO_TEST("cc::vector mct")
             });
     };
 
+#ifndef CC_COMPILER_MSVC
     testType(
         int{}, make_int, [](int i) { return cc::to_string(i); }, is_even_int);
     testType(cc::string{}, make_str, cc::identity_function{}, is_even_str);
+#endif
 }
 
 MONTE_CARLO_TEST("cc::alloc_vector mct")

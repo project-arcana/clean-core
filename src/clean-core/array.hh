@@ -82,6 +82,9 @@ struct array
                 return true;
         return false;
     }
+
+    bool operator==(array const& rhs) const noexcept { return operator==(span<T const>(rhs)); }
+    bool operator!=(array const& rhs) const noexcept { return operator!=(span<T const>(rhs)); }
 };
 
 /// heap-allocated (runtime) fixed-size array

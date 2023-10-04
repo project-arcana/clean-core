@@ -51,9 +51,11 @@ AccessModifierOffset: -4
 
 
 # Comments
-FixNamespaceComments: false
+FixNamespaceComments: true
 AlignTrailingComments: true
-CommentPragmas: '!Api.*'
 
 # Includes
 IncludeBlocks: Preserve
+
+# east const
+QualifierAlignment: Right

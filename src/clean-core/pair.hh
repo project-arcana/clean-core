@@ -14,8 +14,8 @@ struct pair
     A first;
     B second;
 
-    pair() = default;
-    pair(A f, B s) : first(cc::move(f)), second(cc::move(s)) {}
+    constexpr pair() = default;
+    constexpr pair(A f, B s) : first(cc::move(f)), second(cc::move(s)) {}
 
     template <class C, class D>
     constexpr bool operator==(pair<C, D> const& rhs) const
@@ -44,4 +44,4 @@ constexpr void introspect(I&& i, pair<A, B>& p)
     i(p.first, "first");
     i(p.second, "second");
 }
-}
+} // namespace cc

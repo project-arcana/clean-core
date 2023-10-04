@@ -14,6 +14,24 @@ namespace cc
 template <class T, class... Args>
 shared_ptr<T> make_shared(Args&&... args);
 
+namespace detail
+{
+template <class T>
+struct control_t
+{
+    // must stay first arg, so that _control == &_control->value
+    T value;
+
+    // int -> make overflow UB
+    int refcount;
+
+    template <class... Args>
+    control_t(Args&&... args) : value(cc::forward<Args>(args)...), refcount(1)
+    {
+    }
+};
+} // namespace detail
+
 /// a high-performance, basic ref-counted pointer
 /// in particular:
 ///  - no thread-safety (no atomic access required)
@@ -30,8 +48,10 @@ struct shared_ptr
 {
     static_assert(!std::is_reference_v<T>, "cannot created a shared_ptr of a reference");
 
+    using control = detail::control_t<std::remove_const_t<T>>;
+
     bool is_valid() const { return _control != nullptr; }
-    operator bool() const { return is_valid(); }
+    explicit operator bool() const { return is_valid(); }
 
     T& operator*() const
     {
@@ -72,7 +92,9 @@ struct shared_ptr
     shared_ptr(shared_ptr const& rhs)
     {
         _control = rhs._control;
-        _control->refcount++;
+
+        if (_control)
+            _control->refcount++;
     }
     shared_ptr& operator=(shared_ptr&& rhs) noexcept
     {
@@ -93,7 +115,9 @@ struct shared_ptr
             dec_refcount();
 
         _control = rhs._control;
-        _control->refcount++;
+
+        if (_control)
+            _control->refcount++;
 
         return *this;
     }
@@ -102,6 +126,33 @@ struct shared_ptr
         if (_control)
             dec_refcount();
     }
+
+    // nullptr is same as default constructed shared_ptr
+    shared_ptr(std::nullptr_t) {}
+    shared_ptr& operator=(std::nullptr_t)
+    {
+        if (_control)
+            dec_refcount();
+        _control = nullptr;
+        return *this;
+    }
+
+    // can convert to const
+    operator shared_ptr<T const>() const
+    {
+        shared_ptr<T const> r;
+        r._control = _control;
+        if (_control)
+            _control->refcount++;
+        return r;
+    }
+
+    bool operator==(shared_ptr const& rhs) const { return _control == rhs._control; }
+    bool operator!=(shared_ptr const& rhs) const { return _control != rhs._control; }
+    bool operator<(shared_ptr const& rhs) const { return _control < rhs._control; }
+    bool operator<=(shared_ptr const& rhs) const { return _control <= rhs._control; }
+    bool operator>(shared_ptr const& rhs) const { return _control > rhs._control; }
+    bool operator>=(shared_ptr const& rhs) const { return _control >= rhs._control; }
 
 private:
     void dec_refcount()
@@ -113,21 +164,9 @@ private:
         }
     }
 
-    struct control
-    {
-        // must stay first arg, so that _control == &_control->value
-        T value;
-
-        // int -> make overflow UB
-        int refcount;
-
-        template <class... Args>
-        control(Args&&... args) : value(cc::forward<Args>(args)...), refcount(1)
-        {
-        }
-    };
-
     control* _control = nullptr;
+
+    friend shared_ptr<std::remove_const_t<T>>;
 
     template <class U, class... Args>
     friend shared_ptr<U> make_shared(Args&&... args);
@@ -137,7 +176,14 @@ template <class T, class... Args>
 shared_ptr<T> make_shared(Args&&... args)
 {
     shared_ptr<T> s;
-    s._control = cc::alloc<shared_ptr<T>::control>(cc::forward<Args>(args)...);
+    s._control = cc::alloc<typename shared_ptr<T>::control>(cc::forward<Args>(args)...);
     return s;
 }
-}
+
+// hash
+template <class T>
+struct hash<shared_ptr<T>>
+{
+    [[nodiscard]] constexpr uint64_t operator()(shared_ptr<T> const& a) const noexcept { return hash<T const*>{}(a.get()); }
+};
+} // namespace cc

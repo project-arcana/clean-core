@@ -163,15 +163,15 @@ struct default_do_format
         }
         else if constexpr (detail::has_to_string<T>)
         {
-            s << string_view(to_string(v));
+            to_string(s, string_view(to_string(v)), fmt_args);
         }
         else if constexpr (detail::has_member_to_string<T>)
         {
-            s << string_view(v.to_string());
+            to_string(s, string_view(v.to_string()), fmt_args);
         }
         else if constexpr (detail::has_member_toStdString<T>)
         {
-            s << string_view(v.toStdString());
+            to_string(s, string_view(v.toStdString()), fmt_args);
         }
         else
         {

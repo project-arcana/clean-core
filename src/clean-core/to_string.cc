@@ -17,10 +17,10 @@
 
 cc::string cc::to_string(char value) { return string::filled(1, value); }
 cc::string cc::to_string(bool value) { return value ? "true" : "false"; }
-cc::string cc::to_string(const char* value) { return value == nullptr ? "[nullptr]" : value; }
+cc::string cc::to_string(char const* value) { return value == nullptr ? "[nullptr]" : value; }
 cc::string cc::to_string(cc::string_view value) { return value; }
 
-cc::string cc::to_string(const wchar_t* value)
+cc::string cc::to_string(wchar_t const* value)
 {
     if (value == nullptr)
         return "[nullptr]";
@@ -623,7 +623,7 @@ void to_string_float_impl(cc::string_stream_ref ss, FloatType value, parsed_fmt_
     CC_ASSERT(res >= 0);
     ss << cc::string_view(buffer, res);
 }
-}
+} // namespace
 
 void cc::to_string(cc::string_stream_ref ss, char value, cc::string_view fmt_str)
 {
@@ -698,13 +698,7 @@ void cc::to_string(cc::string_stream_ref ss, cc::string_view value, cc::string_v
                 ss << cc::string_view(&args.fill, 1);
         }
         break;
-        case '>':
-        {
-            for (auto i = 0u; i < total_padding; ++i)
-                ss << cc::string_view(&args.fill, 1);
-            ss << value;
-        }
-        break;
+
         case '^':
         {
             auto const padding_right = total_padding / 2;
@@ -716,7 +710,20 @@ void cc::to_string(cc::string_stream_ref ss, cc::string_view value, cc::string_v
                 ss << cc::string_view(&args.fill, 1);
         }
         break;
+
+        case '>':
+        default:
+        {
+            for (auto i = 0u; i < total_padding; ++i)
+                ss << cc::string_view(&args.fill, 1);
+            ss << value;
         }
+        break;
+        }
+    }
+    else
+    {
+        ss << value;
     }
 }
 void cc::to_string(cc::string_stream_ref ss, std::nullptr_t, cc::string_view fmt_str)

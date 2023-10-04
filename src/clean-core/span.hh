@@ -116,6 +116,20 @@ public:
         return {reinterpret_cast<U*>(_data), _size * sizeof(T) / sizeof(U)};
     }
 
+    /// true iff both spans have equal size and content compares equal
+    /// in particular, they can point to different regions in memory
+    constexpr bool equals_content(span<T const> rhs) const
+    {
+        if (_size != rhs._size)
+            return false;
+
+        for (size_t i = 0; i < _size; ++i)
+            if (_data[i] != rhs._data[i])
+                return false;
+
+        return true;
+    }
+
     // operations
 public:
     /// copies all elements from the source to this span

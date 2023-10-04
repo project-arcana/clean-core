@@ -62,19 +62,35 @@ struct irange
     CC_FORCE_INLINE constexpr iiterator<T> begin() const { return {_begin}; }
     CC_FORCE_INLINE constexpr iiterator<T> end() const { return {_end}; }
 
+    // NOTE: is no-op for empty ranges
     CC_FORCE_INLINE constexpr irange skip_first() const
     {
-        CC_ASSERT(_begin != _end && "cannot drop from empty range");
+        if (_begin == _end)
+            return *this;
+
         auto r = *this; // copy
         ++r._begin;
         return r;
     }
+    // NOTE: is no-op for empty ranges
     CC_FORCE_INLINE constexpr irange skip_last() const
     {
-        CC_ASSERT(_begin != _end && "cannot drop from empty range");
+        if (_begin == _end)
+            return *this;
+
         auto r = *this; // copy
         --r._end;
         return r;
+    }
+
+    /// ensures that any iterated value is at most "v"
+    CC_FORCE_INLINE constexpr irange max(T v) const
+    {
+        if (v >= _end)
+            return *this; // already in range
+        if (v < _begin)
+            return {}; // empty range
+        return {_begin, v + 1};
     }
 
     CC_FORCE_INLINE constexpr rev_irange<T> reversed() const
@@ -104,4 +120,4 @@ struct rev_irange
         return {b, e};
     }
 };
-}
+} // namespace cc::detail

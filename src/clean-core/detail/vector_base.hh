@@ -224,6 +224,8 @@ public:
 
     void reserve(size_t size)
     {
+        CC_CONTRACT(size <= (1uLL << 48) && "trying to allocate too much memory");
+
         if (size <= _capacity)
             return;
 
@@ -467,4 +469,4 @@ protected:
     size_t _size = 0;
     size_t _capacity = 0;
 };
-}
+} // namespace cc::detail

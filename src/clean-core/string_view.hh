@@ -10,6 +10,7 @@
 #include <clean-core/fwd.hh>
 #include <clean-core/is_contiguous_range.hh>
 #include <clean-core/move.hh>
+#include <clean-core/pair.hh>
 #include <clean-core/sentinel.hh>
 
 namespace cc
@@ -30,7 +31,7 @@ struct equals_case_insensitive_t
 {
     constexpr bool operator()(char a, char b) const { return a == b || cc::to_lower(a) == cc::to_lower(b); }
 };
-}
+} // namespace detail
 
 /// a view on an utf-8 string
 /// is NON-OWNING
@@ -168,7 +169,7 @@ public:
     }
 
     /// returns the common prefix between this and another string view
-    constexpr string_view common_prefix(string_view s) const
+    constexpr string_view common_prefix_with(string_view s) const
     {
         size_t const min_size = _size < s._size ? _size : s._size;
         size_t common_size = 0;
@@ -221,6 +222,16 @@ public:
 
     constexpr bool ends_with(char c) const { return _size > 0 && back() == c; }
     constexpr bool ends_with(string_view s) const { return _size >= s.size() && subview(_size - s.size(), s.size()) == s; }
+
+    /// pattern must be contained in this string_view
+    /// returns the part before and after the pattern
+    /// e.g. "this is a text".split_once(" ") == ("this", "is a text")
+    [[nodiscard]] constexpr pair<string_view, string_view> split_once(string_view pattern) const
+    {
+        auto idx = this->index_of(pattern);
+        CC_ASSERT(idx >= 0 && "pattern must be contained in this string_view");
+        return {subview(0, idx), subview(idx + pattern.size())};
+    }
 
     [[nodiscard]] constexpr auto split() const;
     [[nodiscard]] constexpr auto split(char sep, split_options opts = split_options::keep_empty) const;
@@ -308,6 +319,18 @@ public:
         return true;
     }
     [[nodiscard]] constexpr bool equals_ignore_case(string_view rhs) const { return equals<detail::equals_case_insensitive_t>(rhs); }
+
+    /// returns true iff this is lexicographically before rhs (NOTE: case sensitive)
+    [[nodiscard]] constexpr bool is_lexicographically_less_than(string_view rhs) const
+    {
+        auto min_size = _size < rhs._size ? _size : rhs._size;
+
+        for (size_t i = 0; i < min_size; ++i)
+            if (_data[i] != rhs._data[i])
+                return _data[i] < rhs._data[i];
+
+        return _size < rhs._size;
+    }
 
     // operators
 public:
@@ -495,4 +518,4 @@ constexpr auto string_view::split(Pred&& pred, split_options opts) const
     return string_split_range(_data, _data + _size, opts, cc::forward<Pred>(pred));
 }
 constexpr auto string_view::split() const { return split(cc::is_space, split_options::skip_empty); }
-}
+} // namespace cc
