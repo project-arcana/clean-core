@@ -120,7 +120,7 @@ struct variant_impl<T, Rest...>
         return f(_data.head);
     }
 };
-}
+} // namespace detail
 
 // TODO: inherit triviality
 // NOTE: currently only supports exact type matches
@@ -274,7 +274,7 @@ auto permissive_equal(A const& a, B const& b, int) -> decltype(a == b)
     return a == b;
 }
 template <class A, class B>
-bool permissive_equal(A const& a, B const& b, char)
+bool permissive_equal(A const&, B const&, char)
 {
     return false;
 }
@@ -285,11 +285,11 @@ auto permissive_not_equal(A const& a, B const& b, int) -> decltype(a != b)
     return a != b;
 }
 template <class A, class B>
-bool permissive_not_equal(A const& a, B const& b, char)
+bool permissive_not_equal(A const&, B const&, char)
 {
     return true;
 }
-}
+} // namespace detail
 
 template <class T, class... Types>
 bool operator==(T const& lhs, variant<Types...> const& rhs)
@@ -311,4 +311,4 @@ bool operator!=(variant<Types...> const& lhs, T const& rhs)
 {
     return lhs.visit([&rhs](auto const& lhs) { return detail::permissive_not_equal(lhs, rhs, 0); });
 }
-}
+} // namespace cc
