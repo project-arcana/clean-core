@@ -351,6 +351,13 @@ public:
         return false;
     }
 
+    /// removes the first entry that is == value without preserving order
+    /// returns true iff any element was removed
+    bool remove_first_value_unordered(T value)
+    {
+        return remove_first_unordered([&](T const& v) { return v == value; });
+    }
+
     /// remove all entries that are == value
     /// returns the number of removed entries
     /// NOTE: the argument is taken per value
