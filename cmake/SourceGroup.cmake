@@ -9,6 +9,7 @@
 #
 #
 macro(arcana_source_group)
+    message(STATUS "arcana_source_group: in ${CMAKE_CURRENT_SOURCE_DIR}")
     foreach(loop_var ${ARGN})
 
         if (${CMAKE_GENERATOR} MATCHES "Visual Studio" OR WIN32)

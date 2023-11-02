@@ -33,7 +33,9 @@ file(GLOB_RECURSE MISC_FILES "*.natvis")
 arcana_add_library(CC clean-core SOURCES HEADERS)
 
 # add natvis files (visual studio debug views for span, vector, etc.)
-target_sources(clean-core PUBLIC ${MISC_FILES})
+if (${CMAKE_GENERATOR} MATCHES "Visual Studio" OR WIN32)
+    target_sources(clean-core PUBLIC ${MISC_FILES})
+endif()
 
 target_include_directories(clean-core PUBLIC src/)
 

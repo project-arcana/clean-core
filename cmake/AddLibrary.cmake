@@ -15,7 +15,7 @@ function(arcana_add_library LIB_PREFIX LIB_TARGET SOURCES_VARIABLE_NAME HEADERS_
         message(STATUS "[${LIB_TARGET}] configuring library")
     endif()
 
-    arcana_source_group(${SOURCES_VARIABLE_NAME} ${HEADERS_VARIABLE_NAME})
+    source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/src" FILES ${${SOURCES_VARIABLE_NAME}} ${${HEADERS_VARIABLE_NAME}})
 
     option(${LIB_PREFIX}_ENABLE_UNITY_BUILD "If enabled, compiles this library as a single compilation unit" ON)
     option(${LIB_PREFIX}_BUILD_DLL "If enabled, build a shared DLL instead of a static library" OFF)
@@ -54,7 +54,7 @@ function(arcana_add_library_no_unity LIB_PREFIX LIB_TARGET SOURCES_VARIABLE_NAME
         message(STATUS "[${LIB_TARGET}] configuring library")
     endif()
 
-    arcana_source_group(${SOURCES_VARIABLE_NAME} ${HEADERS_VARIABLE_NAME})
+    source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/src" FILES ${${SOURCES_VARIABLE_NAME}} ${${HEADERS_VARIABLE_NAME}})
 
     add_library(${LIB_TARGET} STATIC ${${SOURCES_VARIABLE_NAME}} ${${HEADERS_VARIABLE_NAME}})
 
