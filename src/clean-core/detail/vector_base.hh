@@ -49,6 +49,14 @@ struct vector_internals
     }
 };
 
+// NOTE: does NOT delete
+template <class T>
+struct deferred_dtor_call
+{
+    T& v;
+
+    ~deferred_dtor_call() { v.~T(); }
+};
 
 template <class T, class IndexT, bool HasAllocator>
 struct vector_base : protected std::conditional_t<HasAllocator, detail::vector_internals_with_allocator<T>, detail::vector_internals<T>>
@@ -215,11 +223,23 @@ public:
     }
 
     /// removes the last element
+    /// NOTE: use get_and_pop_back if you need the value
     void pop_back()
     {
         CC_CONTRACT(_size > 0);
         --_size;
         _data[_size].~T();
+    }
+    /// removes the last element and returns it
+    /// NOTE: if the return value is unused AND move is expensive and not inlined, then this has some overhead
+    ///       see https://godbolt.org/z/ev3qa5e66
+    ///       it's still as efficient or more as doing it manually
+    T get_and_pop_back()
+    {
+        CC_CONTRACT(_size > 0);
+        --_size;
+        auto _ = cc::detail::deferred_dtor_call<T>{_data[_size]};
+        return cc::move(_data[_size]);
     }
 
     void reserve(size_t size)
