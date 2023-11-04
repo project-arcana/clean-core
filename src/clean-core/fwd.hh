@@ -26,6 +26,8 @@ template <class T>
 struct optional;
 template <class... Types>
 struct variant;
+template <class Value, class Error>
+struct result;
 
 template <class A, class B>
 struct pair;
@@ -122,4 +124,4 @@ extern allocator* const system_allocator;
 // experimental
 template <class T>
 struct ringbuffer;
-}
+} // namespace cc
