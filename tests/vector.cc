@@ -1,5 +1,6 @@
 #include <nexus/fuzz_test.hh>
 #include <nexus/monte_carlo_test.hh>
+#include <nexus/range.hh>
 
 #include <vector>
 
@@ -878,4 +879,23 @@ TEST("cc::alloc_vector realloc")
         vec.push_back(i);
 
     CHECK(true); // this test has the asserts in stack_allocator / alloc_vector instead of checks
+}
+
+TEST("cc::vector reinterpret")
+{
+    struct foo
+    {
+        int a;
+        int b;
+    };
+
+    cc::vector<foo> foos;
+    foos.push_back({1, 2});
+    foos.push_back({3, 4});
+    foos.push_back({5, 6});
+
+    auto ints = cc::move(foos).reinterpret_as<int>();
+
+    CHECK(ints == nx::range{1, 2, 3, 4, 5, 6});
+    CHECK(foos.empty());
 }

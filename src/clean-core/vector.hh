@@ -112,6 +112,36 @@ public:
         rhs._capacity = 0;
         return *this;
     }
+
+    /// moves data from this vector into a newly create vector of a different type
+    /// only works for trivial types where U is less restrictive than T
+    /// e.g.
+    ///   vector<pos3> v = ...;
+    ///   auto bytes = cc::move(v).reinterpret_as<std::byte>();
+    /// NOTE: the move is necessary because this will be moved-from afterwards
+    template <class U>
+    vector<U> reinterpret_as() &&
+    {
+        static_assert(std::is_trivially_copyable_v<T>, "requires memcpy-safe types");
+        static_assert(std::is_trivially_copyable_v<U>, "requires memcpy-safe types");
+        static_assert(alignof(U) <= alignof(T), "cannot increase alignment requirements");
+        static_assert(sizeof(T) % sizeof(U) == 0, "can only cast to types that evenly divide the source type");
+
+        vector<U> v;
+
+        v._data = reinterpret_cast<U*>(this->_data);
+        v._size = this->_size * (sizeof(T) / sizeof(U));
+        v._capacity = this->_capacity * (sizeof(T) / sizeof(U));
+
+        this->_data = nullptr;
+        this->_size = 0;
+        this->_capacity = 0;
+
+        return v;
+    }
+
+    template <class U>
+    friend struct vector;
 };
 
 // hash
@@ -126,4 +156,4 @@ struct hash<vector<T>>
         return h;
     }
 };
-}
+} // namespace cc
