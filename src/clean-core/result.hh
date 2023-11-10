@@ -111,8 +111,8 @@ private:
         Value _value;
 
         // handled in result
-        storage_t() {}
-        ~storage_t() {}
+        constexpr storage_t() {}
+        constexpr ~storage_t() {}
     } _storage;
     bool _is_value = false;
 
