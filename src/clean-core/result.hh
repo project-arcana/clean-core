@@ -116,7 +116,7 @@ private:
     } _storage;
     bool _is_value = false;
 
-    void impl_dtor()
+    constexpr void impl_dtor()
     {
         if (_is_value)
             _storage._value.~Value();
