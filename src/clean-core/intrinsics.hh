@@ -87,10 +87,19 @@ CC_FORCE_INLINE void* intrin_atomic_swap_pointer(void* volatile* destination, vo
 #endif
 }
 
+CC_FORCE_INLINE int8_t intrin_atomic_add(int8_t volatile* counter, int8_t value)
+{
+#ifdef CC_COMPILER_MSVC
+    return _InterlockedExchangeAdd8((char volatile*)counter, value);
+#else
+    return __sync_fetch_and_add(counter, value);
+#endif
+}
+
 CC_FORCE_INLINE int16_t intrin_atomic_add(int16_t volatile* counter, int16_t value)
 {
 #ifdef CC_COMPILER_MSVC
-    return _InterlockedExchangeAdd16((volatile short*)counter, value);
+    return _InterlockedExchangeAdd16((short volatile*)counter, value);
 #else
     return __sync_fetch_and_add(counter, value);
 #endif
@@ -99,7 +108,7 @@ CC_FORCE_INLINE int16_t intrin_atomic_add(int16_t volatile* counter, int16_t val
 CC_FORCE_INLINE int32_t intrin_atomic_add(int32_t volatile* counter, int32_t value)
 {
 #ifdef CC_COMPILER_MSVC
-    return _InterlockedExchangeAdd((volatile long*)counter, value);
+    return _InterlockedExchangeAdd((long volatile*)counter, value);
 #else
     return __sync_fetch_and_add(counter, value);
 #endif
@@ -117,7 +126,7 @@ CC_FORCE_INLINE int64_t intrin_atomic_add(int64_t volatile* counter, int64_t val
 CC_FORCE_INLINE uint8_t intrin_atomic_or(uint8_t volatile* counter, uint8_t value)
 {
 #ifdef CC_COMPILER_MSVC
-    return _InterlockedOr8((volatile char*)counter, value);
+    return _InterlockedOr8((char volatile*)counter, value);
 #else
     return __sync_fetch_and_or(counter, value);
 #endif
@@ -126,7 +135,7 @@ CC_FORCE_INLINE uint8_t intrin_atomic_or(uint8_t volatile* counter, uint8_t valu
 CC_FORCE_INLINE uint16_t intrin_atomic_or(uint16_t volatile* counter, uint16_t value)
 {
 #ifdef CC_COMPILER_MSVC
-    return _InterlockedOr16((volatile short*)counter, value);
+    return _InterlockedOr16((short volatile*)counter, value);
 #else
     return __sync_fetch_and_or(counter, value);
 #endif
@@ -135,7 +144,7 @@ CC_FORCE_INLINE uint16_t intrin_atomic_or(uint16_t volatile* counter, uint16_t v
 CC_FORCE_INLINE uint32_t intrin_atomic_or(uint32_t volatile* counter, uint32_t value)
 {
 #ifdef CC_COMPILER_MSVC
-    return _InterlockedOr((volatile long*)counter, value);
+    return _InterlockedOr((long volatile*)counter, value);
 #else
     return __sync_fetch_and_or(counter, value);
 #endif
@@ -144,7 +153,7 @@ CC_FORCE_INLINE uint32_t intrin_atomic_or(uint32_t volatile* counter, uint32_t v
 CC_FORCE_INLINE uint64_t intrin_atomic_or(uint64_t volatile* counter, uint64_t value)
 {
 #ifdef CC_COMPILER_MSVC
-    return _InterlockedOr64((volatile long long*)counter, value);
+    return _InterlockedOr64((long long volatile*)counter, value);
 #else
     return __sync_fetch_and_or(counter, value);
 #endif
@@ -245,4 +254,4 @@ inline bool test_cpu_support_lzcnt() { return test_cpuid_register(0x80000001, 2,
 
 // returns true if the executing CPU has support for POPCNT
 inline bool test_cpu_support_popcount() { return test_cpuid_register(0x00000001, 2, 23); }
-}
+} // namespace cc
