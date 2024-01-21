@@ -88,8 +88,6 @@ struct atomic_linked_pool
     /// acquire a new slot in the pool
     [[nodiscard]] handle_t acquire()
     {
-        CC_ASSERT(!is_full() && "atomic_linked_pool full");
-
         // CAS-loop to acquire a free node and write the matching next pointer
         bool cas_success = false;
         T* acquired_node = nullptr;
@@ -97,6 +95,8 @@ struct atomic_linked_pool
         {
             // acquire-candidate: the current value of _first_free_node
             acquired_node = _first_free_node.load(std::memory_order_acquire);
+            CC_ASSERT(acquired_node != nullptr && "atomic_linked_pool is full");
+
             // read the in-place next pointer of this node
             // NOTE: reinterpret cast is not enough whenever T is pointer-to-const (e.g. char const*)
             T* const next_pointer_of_acquired = *((T**)acquired_node);
@@ -127,20 +127,10 @@ struct atomic_linked_pool
     }
 
     /// access a slot
-    CC_FORCE_INLINE T& get(handle_t handle)
-    {
-        uint32_t index = _read_handle_index(handle);
-        CC_CONTRACT(index < _pool_size);
-        return _pool[index];
-    }
+    CC_FORCE_INLINE T& get(handle_t handle) { return _pool[_read_handle_index(handle)]; }
 
     /// access a slot
-    CC_FORCE_INLINE T const& get(handle_t handle) const
-    {
-        uint32_t index = _read_handle_index(handle);
-        CC_CONTRACT(index < _pool_size);
-        return _pool[index];
-    }
+    CC_FORCE_INLINE T const& get(handle_t handle) const { return _pool[_read_handle_index(handle)]; }
 
     /// test if a handle references a currently live slot,
     /// requires GenCheckEnabled (template parameter)
@@ -171,7 +161,7 @@ struct atomic_linked_pool
     /// obtain the index of a node
     uint32_t get_handle_index(handle_t handle) const { return _read_handle_index(handle); }
 
-    bool is_full() const { return _first_free_node == nullptr; }
+    bool is_full() const { return _first_free_node.load() == nullptr; }
     size_t max_size() const { return _pool_size; }
 
     /// pass a lambda that is called with a T& of each allocated node
@@ -343,6 +333,8 @@ private:
 
     handle_t _construct_handle(uint32_t real_index) const
     {
+        CC_ASSERT(real_index < _pool_size && "Handle index out of bounds");
+
         if constexpr (sc_enable_gen_check)
         {
             internal_handle_t res;
@@ -364,13 +356,16 @@ private:
             CC_ASSERT(handle != 0u && "accessed null handle");
             internal_handle_t const parsed_handle = cc::bit_cast<internal_handle_t>(handle);
             uint32_t const real_index = parsed_handle.index_plus_one - 1;
+            CC_ASSERT(real_index < _pool_size && "handle index out of bounds");
             CC_ASSERT(parsed_handle.generation == _generation[real_index].generation && "accessed a stale handle");
             return real_index;
         }
         else
         {
             // we use the handle as-is, but mask out the padding and subtract one
-            return (handle & sc_padding_mask) - 1u;
+            uint32_t const real_index = (handle & sc_padding_mask) - 1u;
+            CC_ASSERT(real_index < _pool_size && "handle index out of bounds");
+            return real_index;
         }
     }
 
@@ -396,17 +391,24 @@ private:
 
         // write the in-place next pointer of this node
         bool cas_success = false;
+        T const* new_first_free = nullptr;
         do
         {
             T* expected_first_free = _first_free_node.load(std::memory_order_acquire);
 
             // write the in-place next pointer of this node provisionally
+            // we own released_node, meaning we cannot race on it
             new (cc::placement_new, released_node) T*(expected_first_free);
+            new_first_free = expected_first_free;
 
             // CAS write the newly released node if the expected wasn't raced
             cas_success = std::atomic_compare_exchange_weak_explicit(&_first_free_node, &expected_first_free, released_node,
                                                                      std::memory_order_seq_cst, std::memory_order_relaxed);
+
+            // if the CAS failed, loop and write the new candidate
         } while (!cas_success);
+
+        CC_ASSERT(get_node_index(new_first_free) < _pool_size && "unexpected new first free node");
     }
 
     void _destroy()
@@ -442,4 +444,4 @@ private:
     // but the impact is likely not worth the trouble of conditional inheritance
     internal_handle_t* _generation = nullptr;
 };
-}
+} // namespace cc
