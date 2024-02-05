@@ -173,8 +173,18 @@ CC_FORCE_INLINE T* intrin_atomic_swap_pointer_t(T* volatile* destination, T* val
     return static_cast<T*>(intrin_atomic_swap_pointer(reinterpret_cast<void* volatile*>(destination), value));
 }
 
-// x86 PAUSE to signal spin-wait, improve interleaving
-CC_FORCE_INLINE void intrin_pause() { _mm_pause(); }
+// PAUSE to signal spin-wait, improve interleaving
+CC_FORCE_INLINE void intrin_pause() {
+#if defined(__x86_64__)
+    // x86 PAUSE to signal spin-wait, improve interleaving
+    _mm_pause();
+#elif defined(__arm__) || defined(__arm64__)
+    asm volatile("yield");
+#endif
+}
+
+// Currently only supported for x86_64
+#ifdef __x86_64__
 
 // approximate inverse square root
 // maximum relative error < 0.000366
@@ -236,6 +246,7 @@ CC_FORCE_INLINE float intrin_rsqrt_nr2(float x)
     _mm_store_ss(&res, x_2);
     return res;
 }
+#endif
 
 inline bool test_cpuid_register(int level, int register_index, int bit_index)
 {
