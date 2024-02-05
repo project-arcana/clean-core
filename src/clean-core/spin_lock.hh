@@ -4,8 +4,6 @@
 
 #if defined(__x86_64__)
 #include <immintrin.h>
-#else
-#pragma message("[clean-core] spin_lock.hh: spin_lock is currently only supported on x86 platforms!")
 #endif
 
 #include <clean-core/macros.hh>
@@ -33,6 +31,8 @@ struct spin_lock
                 #if defined(__x86_64__)
                 // x86 PAUSE to signal spin-wait, improve interleaving
                 _mm_pause();
+                #elif defined(__arm__) || defined(__arm64__)
+                asm volatile("yield");
                 #endif
             }
         }
