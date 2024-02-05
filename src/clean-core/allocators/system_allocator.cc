@@ -31,7 +31,7 @@ std::byte* cc::system_malloc(size_t size, size_t alignment)
 #if CC_USE_ALIGNED_MALLOC
     void* result = ::_aligned_malloc(size, alignment);
 #elif CC_USE_ALIGNED_ALLOC
-    void* result = ::aligned_alloc(alignment, size);
+    void* result = std::aligned_alloc(alignment, size);
 #else // fallback implementation
     void* ptr = std::malloc(size + alignment + sizeof(void*) + sizeof(size_t));
     void* result = nullptr;
@@ -109,10 +109,7 @@ void cc::system_free(void* ptr)
 #if CC_USE_ALIGNED_MALLOC
     ::_aligned_free(ptr);
 #elif CC_USE_ALIGNED_ALLOC
-    if (ptr)
-    {
-        std::free(ptr);
-    }
+    std::free(ptr);
 #else
     if (ptr)
     {
