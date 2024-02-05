@@ -6,12 +6,14 @@
 
 #ifdef CC_COMPILER_MSVC
 #include <intrin.h>
-#else
+#elif defined(__x86_64__)
 #ifndef __cpuid
 // NOTE: this file does not (always) have include guards
 #include <cpuid.h>
 #endif
 #include <x86intrin.h>
+#elif defined(__arm__) || defined(__arm64__)
+#include <arm_neon.h>
 #endif
 
 namespace cc

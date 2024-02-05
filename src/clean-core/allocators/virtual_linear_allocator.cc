@@ -15,7 +15,8 @@ void cc::virtual_linear_allocator::initialize(size_t max_size_bytes, size_t chun
     _chunk_size_bytes = chunk_size_bytes;
 
     CC_ASSERT(max_size_bytes > 0 && chunk_size_bytes > 0 && "invalid sizes");
-    CC_ASSERT(is_pow2(chunk_size_bytes) && "Chunk size must be a power of 2");
+    // the cast is necessary on apple M1
+    CC_ASSERT(is_pow2(uint64_t(chunk_size_bytes)) && "Chunk size must be a power of 2");
     CC_ASSERT(_virtual_begin != nullptr && "virtual reserve failed");
 }
 
