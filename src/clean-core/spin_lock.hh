@@ -2,7 +2,11 @@
 
 #include <atomic>
 
+#if defined(__x86_64__)
 #include <immintrin.h>
+#else
+#pragma message("[clean-core] spin_lock.hh: spin_lock is currently only supported on x86 platforms!")
+#endif
 
 #include <clean-core/macros.hh>
 
@@ -26,8 +30,10 @@ struct spin_lock
             // exchange failed, wait until the value is false without forcing cache misses
             while (_is_locked.load(std::memory_order_relaxed))
             {
+                #if defined(__x86_64__)
                 // x86 PAUSE to signal spin-wait, improve interleaving
                 _mm_pause();
+                #endif
             }
         }
     }
