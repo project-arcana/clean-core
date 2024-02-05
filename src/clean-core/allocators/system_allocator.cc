@@ -13,7 +13,7 @@
 #define CC_USE_ALIGNED_MALLOC 0
 #endif
 
-#if defined(CC_OS_LINUX) || defined(CC_OS_APPLE)
+#if defined(CC_OS_LINUX)
 #define CC_USE_ALIGNED_ALLOC 1
 #else
 #define CC_USE_ALIGNED_ALLOC 0
