@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint> // int32_t
+
 #include <clean-core/allocator.hh>
 
 namespace cc
@@ -13,7 +15,7 @@ struct virtual_stack_allocator final : allocator
 {
     virtual_stack_allocator() = default;
     explicit virtual_stack_allocator(size_t max_size_bytes, size_t chunk_size_bytes = 65536) { initialize(max_size_bytes, chunk_size_bytes); }
-    ~virtual_stack_allocator() { destroy(); }
+    ~virtual_stack_allocator() override { destroy(); }
 
     // max_size_bytes: amount of contiguous virtual memory being reserved
     // chunk_size_bytes: increment of physical memory being committed whenever more is required
@@ -57,7 +59,7 @@ private:
     std::byte* _virtual_end = nullptr;
     std::byte* _physical_current = nullptr;
     std::byte* _physical_end = nullptr;
-    int32_t _last_alloc_id = 0;
     size_t _chunk_size_bytes = 0;
+    int32_t _last_alloc_id = 0;
 };
 }

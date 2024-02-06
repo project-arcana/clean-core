@@ -17,7 +17,7 @@ void cc::virtual_stack_allocator::initialize(size_t max_size_bytes, size_t chunk
     _chunk_size_bytes = chunk_size_bytes;
 
     CC_ASSERT(max_size_bytes > 0 && chunk_size_bytes > 0 && "invalid sizes");
-    CC_ASSERT(is_pow2(chunk_size_bytes) && "Chunk size must be a power of 2");
+    CC_ASSERT(is_pow2(uint64_t(chunk_size_bytes)) && "Chunk size must be a power of 2");
     CC_ASSERT(_virtual_begin != nullptr && "virtual reserve failed");
 }
 

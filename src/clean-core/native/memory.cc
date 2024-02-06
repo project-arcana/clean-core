@@ -8,7 +8,7 @@
 #include <clean-core/native/win32_sanitized.hh>
 #endif
 
-#ifdef CC_OS_LINUX
+#if defined(CC_OS_LINUX) || defined(CC_OS_APPLE)
 #include <fcntl.h>
 #include <unistd.h>
 
@@ -29,7 +29,7 @@ std::byte* cc::reserve_virtual_memory(size_t size)
     CC_ASSERT(res != nullptr && "virtual reserve failed");
     return static_cast<std::byte*>(res);
 
-#elif defined(CC_OS_LINUX)
+#elif defined(CC_OS_LINUX) || defined(CC_OS_APPLE)
 
     // no target address, no file descriptor
     // flags: MAP_PRIVATE since not sharing with processes,
@@ -56,7 +56,7 @@ void cc::free_virtual_memory(std::byte* ptr, size_t size_bytes)
     auto const res = VirtualFree(ptr, 0, MEM_RELEASE);
     CC_ASSERT(!!res && "virtual release failed");
 
-#elif defined(CC_OS_LINUX)
+#elif defined(CC_OS_LINUX) || defined(CC_OS_APPLE)
 
     auto const res = ::munmap(ptr, size_bytes);
     CC_ASSERT(res == 0 && "virtual release failed");
@@ -93,7 +93,7 @@ void cc::commit_physical_memory(std::byte* ptr, size_t size)
     void* res = VirtualAlloc(ptr, size, MEM_COMMIT, PAGE_READWRITE);
     CC_ASSERT(res != nullptr && "virtual commit failed");
 
-#elif defined(CC_OS_LINUX)
+#elif defined(CC_OS_LINUX)|| defined(CC_OS_APPLE)
 
     // ensure ptr and size are page-aligned
     auto new_ptr = cc::align_down(ptr, 4096);
@@ -114,7 +114,7 @@ void cc::decommit_physical_memory(std::byte* ptr, size_t size)
     auto const res = VirtualFree(ptr, size, MEM_DECOMMIT);
     CC_ASSERT(!!res && "virtual decommit failed");
 
-#elif defined(CC_OS_LINUX)
+#elif defined(CC_OS_LINUX)|| defined(CC_OS_APPLE)
 
     // ensure ptr and size are page-aligned
     auto new_ptr = cc::align_down(ptr, 4096);

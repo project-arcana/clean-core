@@ -1,17 +1,27 @@
 #include "system_allocator.hh"
 
+#include <cstdint> // uint8_t
+
 #include <clean-core/allocator.hh>
 
 #include <clean-core/macros.hh>
 
-#if defined(CC_OS_APPLE) || defined(CC_OS_WINDOWS)
+// see https://en.cppreference.com/w/c/memory/aligned_alloc
+#if defined(CC_OS_WINDOWS)
 #define CC_USE_ALIGNED_MALLOC 1
 #else
 #define CC_USE_ALIGNED_MALLOC 0
 #endif
 
-#if !CC_USE_ALIGNED_MALLOC
+#if defined(CC_OS_LINUX)
+#define CC_USE_ALIGNED_ALLOC 1
+#else
+#define CC_USE_ALIGNED_ALLOC 0
+#endif
+
+#if CC_USE_ALIGNED_ALLOC
 #include <cstdlib>
+#include <malloc.h>
 #endif
 
 std::byte* cc::system_malloc(size_t size, size_t alignment)
@@ -20,7 +30,9 @@ std::byte* cc::system_malloc(size_t size, size_t alignment)
 
 #if CC_USE_ALIGNED_MALLOC
     void* result = ::_aligned_malloc(size, alignment);
-#else
+#elif CC_USE_ALIGNED_ALLOC
+    void* result = std::aligned_alloc(alignment, size);
+#else // fallback implementation
     void* ptr = std::malloc(size + alignment + sizeof(void*) + sizeof(size_t));
     void* result = nullptr;
     if (ptr)
@@ -85,6 +97,8 @@ size_t cc::system_msize(void const* ptr)
 
 #if CC_USE_ALIGNED_MALLOC
     return ::_aligned_msize(const_cast<void*>(ptr), 16, 0);
+#elif CC_USE_ALIGNED_ALLOC
+    return ::malloc_usable_size(const_cast<void*>(ptr));
 #else
     return *((size_t*)((uint8_t*)ptr - sizeof(void*) - sizeof(size_t)));
 #endif
@@ -94,6 +108,8 @@ void cc::system_free(void* ptr)
 {
 #if CC_USE_ALIGNED_MALLOC
     ::_aligned_free(ptr);
+#elif CC_USE_ALIGNED_ALLOC
+    std::free(ptr);
 #else
     if (ptr)
     {
@@ -146,6 +162,8 @@ char const* cc::system_allocator_t::get_name() const
 {
 #if CC_USE_ALIGNED_MALLOC
     return "C runtime allocator (_aligned_malloc)";
+#elif CC_USE_ALIGNED_ALLOC
+    return "C runtime allocator (aligned_alloc)";
 #else
     return "C runtime allocator (malloc)";
 #endif
