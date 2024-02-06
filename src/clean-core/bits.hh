@@ -98,7 +98,7 @@ inline int count_leading_zeros(uint64_t v)
 }
 #endif
 
-#elif __x86_64__
+#else
 
 // returns amount of set bits
 inline int popcount(uint8_t v) { return __builtin_popcount(v); }
@@ -136,37 +136,6 @@ inline int count_leading_zeros(uint32_t v) { return v ? __builtin_clz(v) : 32; }
 inline int count_leading_zeros(uint64_t v) { return v ? __builtin_clzll(v) : 64; }
 #endif
 
-#elif defined(__arm__) || defined(__arm64__)
-// returns amount of set bits
-inline int popcount(uint8_t v) { return __builtin_popcount(v); }
-inline int popcount(uint16_t v) { return __builtin_popcount(v); }
-inline int popcount(uint32_t v) { return __builtin_popcount(v); }
-inline int popcount(uint64_t v) { return __builtin_popcountll(v); }
-
-// reverses the order of bytes
-inline uint16_t byteswap(uint16_t val) { return __builtin_bswap16(val); }
-inline uint32_t byteswap(uint32_t val) { return __builtin_bswap32(val); }
-inline uint64_t byteswap(uint64_t val) { return __builtin_bswap64(val); }
-
-inline int count_trailing_zeros(uint32_t v) { return v ? __builtin_ctz(v) : 32; }
-inline int count_trailing_zeros(uint64_t v) { return v ? __builtin_ctzll(v) : 64; }
-
-// NOTE: __builtin_clz by default compiles to "BSR <ret>, <val>; XOR <ret>, 31"
-// Only with -mlzcnt (or -march=...) does it compile to LZCNT proper.
-// This causes inconsistent behavior with 0 as BSRs result is unspecified if <val> is zero
-// __LZCNT__ is defined if compiling with a target arch that supports LZCNT (like AVX2)
-// if not, we work around this using BSR, XOR (as part of __builtin_clz), SUB, and a branch on 0 (explicit)
-#ifdef __LZCNT__
-inline int count_leading_zeros(uint8_t v) { return int(__lzcnt16(v) - 8); }
-inline int count_leading_zeros(uint16_t v) { return int(__lzcnt16(v)); }
-inline int count_leading_zeros(uint32_t v) { return int(__lzcnt32(v)); }
-inline int count_leading_zeros(uint64_t v) { return int(__lzcnt64(v)); }
-#else
-inline int count_leading_zeros(uint8_t v) { return v ? __builtin_clz(v) - 24 : 8; }
-inline int count_leading_zeros(uint16_t v) { return v ? __builtin_clz(v) - 16 : 16; }
-inline int count_leading_zeros(uint32_t v) { return v ? __builtin_clz(v) : 32; }
-inline int count_leading_zeros(uint64_t v) { return v ? __builtin_clzll(v) : 64; }
-#endif
 #endif
 
 // returns rounded down logarithm to base 2
