@@ -521,7 +521,7 @@ constexpr auto string_view::split(Pred&& pred, split_options opts) const
 constexpr auto string_view::split() const { return split(cc::is_space, split_options::skip_empty); }
 
 /// compare two ascii strings lexicographically and returns true, iff lhs < rhs
-[[nodiscard]] inline bool ascii_lexicographical_less(cc::string_view lhs, cc::string_view rhs)
+[[nodiscard]] inline bool ascii_lexicographical_less(string_view lhs, string_view rhs)
 {
     size_t const min_size = lhs.size() < rhs.size() ? lhs.size() : rhs.size();
     int const cmp = ::strncmp(lhs.data(), rhs.data(), min_size);
