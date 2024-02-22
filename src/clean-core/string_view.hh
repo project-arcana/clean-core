@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 
 #include <clean-core/assert.hh>
 #include <clean-core/char_predicates.hh>
@@ -518,4 +519,15 @@ constexpr auto string_view::split(Pred&& pred, split_options opts) const
     return string_split_range(_data, _data + _size, opts, cc::forward<Pred>(pred));
 }
 constexpr auto string_view::split() const { return split(cc::is_space, split_options::skip_empty); }
+
+/// compare two ascii strings lexicographically and returns true, iff lhs < rhs
+[[nodiscard]] inline bool ascii_lexicographical_less(string_view lhs, string_view rhs)
+{
+    size_t const min_size = lhs.size() < rhs.size() ? lhs.size() : rhs.size();
+    int const cmp = ::strncmp(lhs.data(), rhs.data(), min_size);
+    if (cmp == 0)
+        return lhs.size() < rhs.size();
+    return cmp < 0;
+}
+
 } // namespace cc
