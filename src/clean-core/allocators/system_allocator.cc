@@ -24,6 +24,10 @@
 #include <malloc.h>
 #endif
 
+#if defined(CC_OS_WINDOWS)
+#include <malloc.h>
+#endif
+
 std::byte* cc::system_malloc(size_t size, size_t alignment)
 {
     alignment = cc::max<size_t>(alignment, size >= 16 ? 16 : 8);
