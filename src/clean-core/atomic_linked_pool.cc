@@ -19,6 +19,9 @@ CC_FORCE_INLINE void radix_sort_pass(uint32_t const* __restrict src, uint32_t* _
     for (size_t i = 0; i < n; i++)
         dst[index[(src[i] >> shift) & 0xff]++] = src[i];
 }
+
+// instantiate atomic linked pool once
+static_assert(sizeof(cc::atomic_linked_pool<void*>) > 0, "");
 }
 
 

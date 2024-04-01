@@ -8,6 +8,7 @@
 #include <clean-core/alloc_vector.hh>
 #include <clean-core/allocator.hh>
 #include <clean-core/bit_cast.hh>
+#include <clean-core/intrinsics.hh>
 #include <clean-core/new.hh>
 
 namespace cc
@@ -18,7 +19,7 @@ void radix_sort(uint32_t* __restrict a, uint32_t* __restrict temp, size_t n);
 }
 
 /// Fixed-size object pool, synchronized and lock-free
-/// Uses an in-place linked list in free nodes, for O(1) acquire, release and size overhead
+/// O(1) acquire, release and size overhead
 /// Pointers remain stable
 /// acquire() and release() fully thread-safe
 /// (access to underlying memory unsynchronized)
@@ -29,7 +30,6 @@ struct atomic_linked_pool
 
     void initialize(size_t size, cc::allocator* allocator = cc::system_allocator)
     {
-        static_assert(sizeof(T) >= sizeof(T*), "atomic_linked_pool element type must be large enough to accomodate a pointer");
         if (size == 0)
             return;
 
@@ -42,36 +42,45 @@ struct atomic_linked_pool
             CC_ASSERT(size <= sc_max_size_without_gen_check && "atomic_linked_pool size too large for index type");
         }
 
+        CC_CONTRACT(size > 1 && "pool too small");
+        CC_CONTRACT(allocator != nullptr && "no allocator provided");
         CC_ASSERT(_pool == nullptr && "re-initialized atomic_linked_pool");
-        CC_CONTRACT(allocator != nullptr);
 
         _alloc = allocator;
 
         _pool_size = size;
-        _pool = reinterpret_cast<T*>(_alloc->alloc(sizeof(T) * _pool_size, alignof(T)));
 
-        // initialize linked list
-        for (auto i = 0u; i < _pool_size - 1; ++i)
+        // allocate pool nodes
+        _pool = reinterpret_cast<T*>(_alloc->alloc( //
+            sizeof(T) * _pool_size,                 //
+            cc::max<size_t>(64, alignof(T))));
+
+        // allocate free list
+        _free_list = reinterpret_cast<int32_t*>(_alloc->alloc( //
+            sizeof(int32_t) * (_pool_size - 1),                //
+            64));
+
+        // initialize free list
+        for (int32_t i = 0; i < _pool_size - 1; ++i)
         {
-            T* node_ptr = &_pool[i];
-            new (cc::placement_new, node_ptr) T*(&_pool[i + 1]);
+            _free_list[i] = i + 1;
         }
+        // initialize free list tail
+        _free_list[_pool_size - 1] = -1;
 
-        // initialize linked list tail
-        {
-            T* tail_ptr = &_pool[_pool_size - 1];
-            new (cc::placement_new, tail_ptr) T*(nullptr);
-        }
-
+        // initialize generation handles
         if constexpr (sc_enable_gen_check)
         {
-            // initialize generation handles
             _generation = reinterpret_cast<internal_handle_t*>(_alloc->alloc(sizeof(internal_handle_t) * _pool_size, alignof(internal_handle_t)));
             std::memset(_generation, 0, sizeof(internal_handle_t) * _pool_size);
         }
 
-        _first_free_node = &_pool[0];
+        // initialize first free node index
+        VersionedIndex head;
+        head.set_index(0);
+        _first_free_node.store(head);
 
+        // initiale destructor function pointer
         if constexpr (!std::is_trivially_destructible_v<T>)
         {
             // set up the function pointer now, as T is complete in this function (unlike in the dtor and this->_destroy())
@@ -88,59 +97,59 @@ struct atomic_linked_pool
     /// acquire a new slot in the pool
     [[nodiscard]] handle_t acquire()
     {
-        CC_ASSERT(!is_full() && "atomic_linked_pool full");
-
-        // CAS-loop to acquire a free node and write the matching next pointer
         bool cas_success = false;
-        T* acquired_node = nullptr;
+        int32_t acquired_node_index = -1;
+
+        // acquire-candidate: the current value of _first_free_node
+        VersionedIndex acquired_node_gen_index = _first_free_node.load(std::memory_order_acquire);
+        VersionedIndex next_node_gen_index;
         do
         {
-            // acquire-candidate: the current value of _first_free_node
-            acquired_node = _first_free_node.load(std::memory_order_acquire);
-            // read the in-place next pointer of this node
-            // NOTE: reinterpret cast is not enough whenever T is pointer-to-const (e.g. char const*)
-            T* const next_pointer_of_acquired = *((T**)acquired_node);
+            // we loaded the first free node to receive a _candidate_ for the node we will actually aquire
+            acquired_node_index = acquired_node_gen_index.get_index();
+            CC_ASSERT(acquired_node_index != -1 && "atomic_linked_pool is full");
 
-            // compare-exchange these two - spurious failure if raced
-            cas_success = std::atomic_compare_exchange_weak_explicit(&_first_free_node, &acquired_node, next_pointer_of_acquired,
-                                                                     std::memory_order_seq_cst, std::memory_order_relaxed);
+            // load the next-index of the candidate node
+            int32_t* const p_free_list = &_free_list[acquired_node_index];
+            // force an atomic load by adding 0
+            int32_t const free_list_value = cc::intrin_atomic_add(p_free_list, 0);
+
+            // the new _first_free_node will point to that next-index, with a bumped version
+            // the version bump is crucial to avoid the ABA problem
+            // if we were to _only_ CAS on the index or a pointer, a different thread could acquire AND free a different node in the meantime
+            // meaning the CAS would succeed even though the intermediate work was raced
+            next_node_gen_index = acquired_node_gen_index;
+            next_node_gen_index.set_index(free_list_value);
+
+            // run the CAS on the two versioned indices
+            cas_success = _first_free_node.compare_exchange_weak(acquired_node_gen_index, next_node_gen_index, std::memory_order_acquire, std::memory_order_acquire);
+
+            // if we fail, acquired_node_gen_index got rewritten by the CAS - retry
+            // in this case, a different thread was faster
         } while (!cas_success);
+
+        T* const acquired_node = &_pool[acquired_node_index];
 
         // call the constructor
         if constexpr (!std::is_trivially_constructible_v<T>)
             new (cc::placement_new, acquired_node) T();
 
-        // calculate the index
-        uint32_t const res_index = uint32_t(acquired_node - _pool);
-
         // construct a handle
-        return _construct_handle(res_index);
+        return _construct_handle(acquired_node_index);
     }
 
     /// release a slot in the pool, destroying it
     void release(handle_t handle)
     {
-        uint32_t real_index = _read_handle_index_on_release(handle);
-
-        T* const released_node = &_pool[real_index];
-        _release_node(released_node);
+        uint32_t const real_index = _read_handle_index_on_release(handle);
+        _release_node(real_index);
     }
 
     /// access a slot
-    CC_FORCE_INLINE T& get(handle_t handle)
-    {
-        uint32_t index = _read_handle_index(handle);
-        CC_CONTRACT(index < _pool_size);
-        return _pool[index];
-    }
+    CC_FORCE_INLINE T& get(handle_t handle) { return _pool[_read_handle_index(handle)]; }
 
     /// access a slot
-    CC_FORCE_INLINE T const& get(handle_t handle) const
-    {
-        uint32_t index = _read_handle_index(handle);
-        CC_CONTRACT(index < _pool_size);
-        return _pool[index];
-    }
+    CC_FORCE_INLINE T const& get(handle_t handle) const { return _pool[_read_handle_index(handle)]; }
 
     /// test if a handle references a currently live slot,
     /// requires GenCheckEnabled (template parameter)
@@ -164,6 +173,7 @@ struct atomic_linked_pool
     /// obtain the index of a node
     CC_FORCE_INLINE uint32_t get_node_index(T const* node) const
     {
+        CC_ASSERT(node != nullptr);
         CC_ASSERT(node >= &_pool[0] && node < &_pool[_pool_size] && "node outside of pool");
         return uint32_t(node - _pool);
     }
@@ -171,7 +181,7 @@ struct atomic_linked_pool
     /// obtain the index of a node
     uint32_t get_handle_index(handle_t handle) const { return _read_handle_index(handle); }
 
-    bool is_full() const { return _first_free_node == nullptr; }
+    bool is_full() const { return _first_free_node.load().get_index() == -1; }
     size_t max_size() const { return _pool_size; }
 
     /// pass a lambda that is called with a T& of each allocated node
@@ -236,13 +246,14 @@ struct atomic_linked_pool
         static_assert(sizeof(T) > 0, "requires complete type");
         CC_ASSERT(node >= &_pool[0] && node < &_pool[_pool_size] && "node outside of pool");
 
+        uint32_t const real_index = node - _pool;
         if constexpr (sc_enable_gen_check)
         {
             // release not based on handle, so we can't check the generation
-            ++_generation[node - _pool].generation; // increment generation on release
+            ++_generation[real_index].generation; // increment generation on release
         }
 
-        _release_node(node);
+        _release_node(real_index);
     }
 
     /// returns a valid handle for the index without checking if it is allocated, bypassing future checks
@@ -320,22 +331,22 @@ private:
 
 private:
     /// returns indices of unallocated slots, sorted ascending
-    cc::alloc_vector<handle_t> _get_free_node_indices(cc::allocator* scratch_alloc) const
+    cc::alloc_vector<uint32_t> _get_free_node_indices(cc::allocator* scratch_alloc) const
     {
-        cc::alloc_vector<handle_t> free_indices(scratch_alloc);
+        cc::alloc_vector<uint32_t> free_indices(scratch_alloc);
         free_indices.reserve(_pool_size);
 
-        T* cursor = _first_free_node.load(std::memory_order_relaxed);
-        while (cursor != nullptr)
+        int32_t cursor = _first_free_node.load(std::memory_order_relaxed).get_index();
+        while (cursor != -1)
         {
-            free_indices.emplace_back_stable(static_cast<handle_t>(cursor - _pool));
-            // read the in-place-linked-list ptr from the node
-            // NOTE: reinterpret cast is not enough whenever T is pointer-to-const (e.g. char const*)
-            cursor = *((T**)cursor);
+            free_indices.emplace_back_stable(static_cast<uint32_t>(cursor));
+
+            int32_t* const p_free_list = &_free_list[cursor];
+            cursor = (uint32_t)*p_free_list;
         }
 
         // sort ascending
-        auto temp_sortvec = cc::alloc_vector<handle_t>::uninitialized(free_indices.size(), scratch_alloc);
+        auto temp_sortvec = cc::alloc_vector<uint32_t>::uninitialized(free_indices.size(), scratch_alloc);
         detail::radix_sort(free_indices.data(), temp_sortvec.data(), free_indices.size());
 
         return free_indices;
@@ -343,6 +354,8 @@ private:
 
     handle_t _construct_handle(uint32_t real_index) const
     {
+        CC_ASSERT(real_index < _pool_size && "Handle index out of bounds");
+
         if constexpr (sc_enable_gen_check)
         {
             internal_handle_t res;
@@ -364,13 +377,16 @@ private:
             CC_ASSERT(handle != 0u && "accessed null handle");
             internal_handle_t const parsed_handle = cc::bit_cast<internal_handle_t>(handle);
             uint32_t const real_index = parsed_handle.index_plus_one - 1;
+            CC_ASSERT(real_index < _pool_size && "handle index out of bounds");
             CC_ASSERT(parsed_handle.generation == _generation[real_index].generation && "accessed a stale handle");
             return real_index;
         }
         else
         {
             // we use the handle as-is, but mask out the padding and subtract one
-            return (handle & sc_padding_mask) - 1u;
+            uint32_t const real_index = (handle & sc_padding_mask) - 1u;
+            CC_ASSERT(real_index < _pool_size && "handle index out of bounds");
+            return real_index;
         }
     }
 
@@ -388,24 +404,35 @@ private:
         }
     }
 
-    void _release_node(T* released_node)
+    void _release_node(uint32_t node_idx)
     {
         // call the destructor
         if constexpr (!std::is_trivially_destructible_v<T>)
-            released_node->~T();
+            _pool[node_idx].~T();
 
-        // write the in-place next pointer of this node
+        // to update the free list at this node's index, we need to do another CAS loop
         bool cas_success = false;
+        VersionedIndex head_gen_index = _first_free_node.load(std::memory_order_relaxed);
+        VersionedIndex new_head_gen_index;
         do
         {
-            T* expected_first_free = _first_free_node.load(std::memory_order_acquire);
+            // the initial load of _first_free_node gave us a _candidate_ for the potential next-pointer to write
+            // to our slot of the free list. we write it provisionally, then do a CAS. if we fail, we can safely retry
+            // as we still own this node and its slot in the free list
 
-            // write the in-place next pointer of this node provisionally
-            new (cc::placement_new, released_node) T*(expected_first_free);
+            // store the candidate next-index in our free list slot
+            int32_t* const p_free_list = &_free_list[node_idx];
+            cc::intrin_atomic_swap(p_free_list, head_gen_index.get_index()); // do a swap to force an atomic store
 
-            // CAS write the newly released node if the expected wasn't raced
-            cas_success = std::atomic_compare_exchange_weak_explicit(&_first_free_node, &expected_first_free, released_node,
-                                                                     std::memory_order_seq_cst, std::memory_order_relaxed);
+            // prepare the new value for _first_free_node
+            // once again we require a version bump to avoid the ABA problem
+            new_head_gen_index = head_gen_index;
+            new_head_gen_index.set_index(node_idx);
+
+            // CAS write the newly released index if the expected wasn't raced
+            cas_success = _first_free_node.compare_exchange_weak(head_gen_index, new_head_gen_index, std::memory_order_release, std::memory_order_relaxed);
+
+            // if the CAS failed, loop and rewrite the (now different) head_gen_index
         } while (!cas_success);
     }
 
@@ -417,6 +444,7 @@ private:
                 _fptr_call_all_dtors(*this);
 
             _alloc->free(_pool);
+            _alloc->free(_free_list);
             _pool = nullptr;
             _pool_size = 0;
             if constexpr (sc_enable_gen_check)
@@ -428,10 +456,36 @@ private:
     }
 
 private:
-    T* _pool = nullptr;
-    size_t _pool_size = 0;
+    struct InternalNode
+    {
+        std::atomic<T*> _next_free;
+    };
 
-    std::atomic<T*> _first_free_node = nullptr;
+    // this versioned index is required for our atomic CAS loops
+    // to avoid the ABA problem. see more info in acquire() and _release_node()
+    // this version is unrelated to the optional _version array
+    struct VersionedIndex
+    {
+        constexpr int32_t get_index() const { return _index; }
+        constexpr void set_index(int32_t index)
+        {
+            _index = index;
+            ++_version;
+        }
+
+    private:
+        int32_t _index = 0;
+        uint32_t _version = 0;
+    };
+    static_assert(std::atomic<VersionedIndex>::is_always_lock_free, "");
+
+    alignas(64) T* _pool = nullptr;
+
+    alignas(64) std::atomic<VersionedIndex> _first_free_node = {};
+
+    alignas(64) int32_t* _free_list = nullptr;
+
+    size_t _pool_size = 0;
     cc::allocator* _alloc = nullptr;
 
     // function pointer that calls all dtors, used in _destroy() to work with fwd-declared types
@@ -442,4 +496,4 @@ private:
     // but the impact is likely not worth the trouble of conditional inheritance
     internal_handle_t* _generation = nullptr;
 };
-}
+} // namespace cc
