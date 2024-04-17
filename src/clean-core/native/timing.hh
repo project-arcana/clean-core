@@ -12,7 +12,7 @@ CC_FORCE_INLINE int64_t get_high_precision_ticks();
 
 // returns the amount of ticks per second
 CC_FORCE_INLINE int64_t get_high_precision_frequency();
-}
+} // namespace cc
 
 #ifdef CC_OS_WINDOWS
 
@@ -32,7 +32,7 @@ CC_FORCE_INLINE int64_t cc::get_high_precision_frequency()
     return frequency.QuadPart;
 }
 
-#elif defined(CC_OS_LINUX) || defined(CC_OS_APPLE)
+#elif defined(CC_OS_LINUX)
 
 #include <pthread.h>
 #include <sys/time.h>
@@ -44,6 +44,14 @@ CC_FORCE_INLINE int64_t cc::get_high_precision_ticks()
     ::clock_gettime(CLOCK_MONOTONIC, &ts);
     return ts.tv_sec * 1000000000LL + ts.tv_nsec;
 }
+
+CC_FORCE_INLINE int64_t cc::get_high_precision_frequency() { return 1000000000LL; }
+
+#elif defined(CC_OS_APPLE)
+
+#include <sys/time.h>
+
+CC_FORCE_INLINE int64_t cc::get_high_precision_ticks() { return ::clock_gettime_nsec_np(CLOCK_MONOTONIC_RAW); }
 
 CC_FORCE_INLINE int64_t cc::get_high_precision_frequency() { return 1000000000LL; }
 
