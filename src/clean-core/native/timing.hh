@@ -49,7 +49,7 @@ CC_FORCE_INLINE int64_t cc::get_high_precision_frequency() { return 1000000000LL
 
 #elif defined(CC_OS_APPLE)
 
-#include <sys/time.h>
+#include <time.h>
 
 CC_FORCE_INLINE int64_t cc::get_high_precision_ticks() { return ::clock_gettime_nsec_np(CLOCK_MONOTONIC_RAW); }
 
