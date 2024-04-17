@@ -59,14 +59,24 @@ CC_FORCE_INLINE int64_t cc::get_high_precision_frequency() { return 1000000000LL
 
 CC_FORCE_INLINE int64_t cc::get_high_precision_ticks()
 {
-#ifdef __MACH__ // OS X does not have clock_gettime, use clock_get_time
-    // https://developer.apple.com/documentation/kernel/1646199-mach_continuous_time
-    return mach_continuous_time();
-#else
     ::timespec ts;
+#ifdef __MACH__ // OS X does not have clock_gettime, use clock_get_time
+
+    // https://stackoverflow.com/questions/5167269/clock-gettime-alternative-in-mac-os-x
+    clock_serv_t cclock;
+    mach_timespec_t mts;
+    host_get_clock_service(mach_host_self(), CALENDAR_CLOCK, &cclock);
+    clock_get_time(cclock, &mts);
+    mach_port_deallocate(mach_task_self(), cclock);
+    ts.tv_sec = mts.tv_sec;
+    ts.tv_nsec = mts.tv_nsec;
+
+#else
+
     ::clock_gettime(CLOCK_MONOTONIC, &ts);
-    return ts.tv_sec * 1000000000LL + ts.tv_nsec;
 #endif
+
+    return ts.tv_sec * 1000000000LL + ts.tv_nsec;
 }
 
 CC_FORCE_INLINE int64_t cc::get_high_precision_frequency() { return 1000000000LL; }
