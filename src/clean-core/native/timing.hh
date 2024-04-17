@@ -49,9 +49,25 @@ CC_FORCE_INLINE int64_t cc::get_high_precision_frequency() { return 1000000000LL
 
 #elif defined(CC_OS_APPLE)
 
+#include <sys/time.h>
 #include <time.h>
 
-CC_FORCE_INLINE int64_t cc::get_high_precision_ticks() { return ::clock_gettime_nsec_np(CLOCK_MONOTONIC_RAW); }
+#ifdef __MACH__
+#include <mach/clock.h>
+#include <mach/mach.h>
+#endif
+
+CC_FORCE_INLINE int64_t cc::get_high_precision_ticks()
+{
+#ifdef __MACH__ // OS X does not have clock_gettime, use clock_get_time
+    // https://developer.apple.com/documentation/kernel/1646199-mach_continuous_time
+    return mach_continuous_time();
+#else
+    ::timespec ts;
+    ::clock_gettime(CLOCK_MONOTONIC, &ts);
+    return ts.tv_sec * 1000000000LL + ts.tv_nsec;
+#endif
+}
 
 CC_FORCE_INLINE int64_t cc::get_high_precision_frequency() { return 1000000000LL; }
 
