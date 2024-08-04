@@ -227,6 +227,25 @@ public:
         _size = compact_size_t(new_size);
     }
 
+    /// removes all entries where cc::invoke(pred, entry) is true
+    /// returns the number of removed entries
+    template <class Predicate>
+    size_t remove_all(Predicate&& pred)
+    {
+        size_t idx = 0;
+        for (size_t i = 0; i < _size; ++i)
+            if (!cc::invoke(pred, _u.value[i]))
+            {
+                if (idx != i)
+                    _u.value[idx] = cc::move(_u.value[i]);
+                ++idx;
+            }
+        detail::container_destroy_reverse<T>(&_u.value[0], (size_t)_size, idx);
+        auto old_size = _size;
+        _size = idx;
+        return old_size - _size;
+    }
+
     /// removes the element at the given index
     void remove_at(size_t idx)
     {
