@@ -222,6 +222,9 @@ T* allocator::alloc_data_copy(cc::span<T const> data)
     static_assert(sizeof(T) > 0, "T must be complete");
     static_assert(std::is_trivially_copyable_v<T>, "T must be memcpyable");
 
+    if (data.empty())
+        return nullptr;
+
     T* const res = reinterpret_cast<T*>(this->alloc(data.size_bytes(), alignof(T)));
 
     if (!res)
