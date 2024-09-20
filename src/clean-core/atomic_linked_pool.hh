@@ -464,7 +464,7 @@ private:
     // this versioned index is required for our atomic CAS loops
     // to avoid the ABA problem. see more info in acquire() and _release_node()
     // this version is unrelated to the optional _version array
-    struct VersionedIndex
+    struct alignas(sizeof(size_t)) VersionedIndex
     {
         constexpr int32_t get_index() const { return _index; }
         constexpr void set_index(int32_t index)
