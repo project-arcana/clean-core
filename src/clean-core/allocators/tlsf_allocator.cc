@@ -31,7 +31,9 @@ void cc::tlsf_allocator::add_pool(cc::span<std::byte> buffer)
 
 std::byte* cc::tlsf_allocator::alloc(size_t size, size_t align)
 {
-    CC_ASSERT(size > 0 && "Attempted empty TLSF allocation");
+    if (size == 0)
+        return nullptr;
+
     auto const res = static_cast<std::byte*>(tlsf_memalign(_tlsf, align, size));
     CC_ASSERT(res != nullptr && "TLSF full");
     return res;
