@@ -23,9 +23,26 @@ struct synced_tlsf_allocator final : allocator
         return _backing.alloc(size, align);
     }
 
+    // alloc and report internal size (without double locking)
+    std::byte* alloc(size_t size, size_t align, size_t* out_internal_size)
+    {
+        auto lg = cc::lock_guard(_lock);
+        std::byte* const res = _backing.alloc(size, align);
+        _backing.get_allocation_size(res, *out_internal_size);
+        return res;
+    }
+
     void free(void* ptr) override
     {
         auto lg = cc::lock_guard(_lock);
+        _backing.free(ptr);
+    }
+
+    // free and report previous internal size (without double locking)
+    void free(void* ptr, size_t* out_internal_size)
+    {
+        auto lg = cc::lock_guard(_lock);
+        _backing.get_allocation_size(ptr, *out_internal_size);
         _backing.free(ptr);
     }
 
@@ -60,4 +77,4 @@ private:
     LockT _lock;
     cc::tlsf_allocator _backing;
 };
-}
+} // namespace cc

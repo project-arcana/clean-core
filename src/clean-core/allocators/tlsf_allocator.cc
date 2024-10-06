@@ -49,10 +49,7 @@ std::byte* cc::tlsf_allocator::realloc(void* ptr, size_t new_size, size_t align)
 
 bool cc::tlsf_allocator::get_allocation_size(void const* ptr, size_t& out_size)
 {
-    if (!ptr)
-        return false;
-
-    out_size = tlsf_block_size(const_cast<void*>(ptr));
+    out_size = ptr ? tlsf_block_size(const_cast<void*>(ptr)) : 0;
     return true;
 }
 
