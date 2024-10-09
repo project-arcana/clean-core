@@ -343,6 +343,25 @@ public:
         return old_size - _size;
     }
 
+    /// removes all entries where pred(idx) returns true
+    /// returns the number of removed entries
+    template <class Predicate>
+    size_t remove_all_by_index(Predicate&& pred)
+    {
+        size_t idx = 0;
+        for (size_t i = 0; i < _size; ++i)
+            if (!cc::invoke(pred, i))
+            {
+                if (idx != i)
+                    _data[idx] = cc::move(_data[i]);
+                ++idx;
+            }
+        detail::container_destroy_reverse<T>(_data, _size, idx);
+        auto old_size = _size;
+        _size = idx;
+        return old_size - _size;
+    }
+
     /// removes the first entry where cc::invoke(pred, entry) is true
     /// returns true iff any element was removed
     template <class Predicate>
