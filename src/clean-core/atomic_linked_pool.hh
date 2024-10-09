@@ -57,7 +57,7 @@ struct atomic_linked_pool
 
         // allocate free list
         _free_list = reinterpret_cast<int32_t*>(_alloc->alloc( //
-            sizeof(int32_t) * (_pool_size - 1),                //
+            sizeof(int32_t) * _pool_size,                      //
             64));
 
         // initialize free list
@@ -80,7 +80,7 @@ struct atomic_linked_pool
         head.set_index(0);
         _first_free_node.store(head);
 
-        // initiale destructor function pointer
+        // initialize destructor function pointer
         if constexpr (!std::is_trivially_destructible_v<T>)
         {
             // set up the function pointer now, as T is complete in this function (unlike in the dtor and this->_destroy())
@@ -446,6 +446,7 @@ private:
             _alloc->free(_pool);
             _alloc->free(_free_list);
             _pool = nullptr;
+            _free_list = nullptr;
             _pool_size = 0;
             if constexpr (sc_enable_gen_check)
             {
