@@ -1,7 +1,8 @@
 #pragma once
 
 #include <clean-core/allocator.hh>
-
+#include <clean-core/spin_lock.hh>
+#include <clean-core/lock_guard.hh>
 #include <clean-core/allocators/virtual_linear_allocator.hh>
 
 namespace cc
@@ -38,7 +39,7 @@ struct synced_virtual_linear_allocator final : allocator
         return _backing.realloc(ptr, new_size, align);
     }
 
-	char const* get_name() const override { return "Synced Virtual Linear Allocator"; }
+    char const* get_name() const override { return "Synced Virtual Linear Allocator"; }
 
     size_t reset()
     {
@@ -54,10 +55,26 @@ struct synced_virtual_linear_allocator final : allocator
         return _backing.decommit_idle_memory();
     }
 
-    cc::virtual_linear_allocator const& get_backing() const { return _backing; }
+    struct usage_stats
+    {
+        size_t num_bytes_virtual = 0;
+        size_t num_bytes_physical = 0;
+        size_t num_bytes_allocated = 0;
+    };
+
+    usage_stats get_usage_stats()
+    {
+        auto lg = cc::lock_guard(_mutex);
+        usage_stats res = {};
+        res.num_bytes_virtual = _backing.get_virtual_size_bytes();
+        res.num_bytes_physical = _backing.get_physical_size_bytes();
+        res.num_bytes_allocated = _backing.get_allocated_size_bytes();
+        return res;
+    }
+
 
 private:
     MutexT _mutex;
     cc::virtual_linear_allocator _backing;
 };
-}
+} // namespace cc
