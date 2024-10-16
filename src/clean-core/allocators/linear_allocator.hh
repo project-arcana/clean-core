@@ -8,10 +8,9 @@ namespace cc
 /// cannot free individual allocations, only reset entirely
 /// Will only take as much space as strictly necessary (no allocation headers)
 ///
-/// RESTRICTION: Must only realloc the most recent allocation
-struct linear_allocator final : allocator
+struct linear_allocator : allocator
 {
-    std::byte* alloc(size_t size, size_t align = alignof(std::max_align_t)) override
+    std::byte* alloc(size_t size, size_t align = alignof(std::max_align_t)) final override
     {
         CC_ASSERT(_buffer_begin != nullptr && "linear_allocator uninitialized");
 
@@ -26,13 +25,13 @@ struct linear_allocator final : allocator
         return padded_res;
     }
 
-    void free(void* ptr) override
+    void free(void* ptr) final override
     {
         // no-op
         (void)ptr;
     }
 
-    bool get_allocation_size(void const* ptr, size_t& out_size) override
+    bool get_allocation_size(void const* ptr, size_t& out_size) final override
     {
         if (!ptr || ptr != _latest_allocation)
             return false;
@@ -41,16 +40,11 @@ struct linear_allocator final : allocator
         return true;
     }
 
-    std::byte* realloc(void* ptr, size_t new_size, size_t align = alignof(std::max_align_t)) override
+    std::byte* realloc(void* ptr, size_t new_size, size_t align = alignof(std::max_align_t)) final override
     {
-        if (ptr)
+        if (ptr && ptr == _latest_allocation)
         {
             // real realloc
-
-            // for a "generally usable" linear allocator without any restriction, use atomic_linear_allocator
-            // linear_allocator guarantees to only use as much space as strictly necessary and thus can't store headers
-            CC_ASSERT(ptr == _latest_allocation && "linear_allocator can only realloc the most recent allocation");
-
             std::byte* const ptr_byte = static_cast<std::byte*>(ptr);
             CC_ASSERT(ptr_byte + new_size <= _buffer_end && "linear_allocator overcommitted");
 
@@ -62,7 +56,7 @@ struct linear_allocator final : allocator
         return cc::allocator::realloc(ptr, new_size, align);
     }
 
-    char const* get_name() const override { return "Linear Allocator"; }
+    char const* get_name() const final override { return "Linear Allocator"; }
 
     void reset()
     {
@@ -88,4 +82,13 @@ private:
     std::byte* _buffer_end = nullptr;
     std::byte* _latest_allocation = nullptr;
 };
-}
+
+template <size_t NumBytes>
+struct fixed_linear_allocator : linear_allocator
+{
+    fixed_linear_allocator() : linear_allocator(_memory) {}
+
+private:
+    std::byte _memory[NumBytes];
+};
+} // namespace cc
