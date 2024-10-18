@@ -22,7 +22,14 @@
 #endif
 #elif defined(CC_COMPILER_POSIX)
 // __builtin_trap() causes an illegal instruction and crashes without an attached debugger
-#define CC_DEBUG_BREAK() (::cc::detail::is_debugger_connected() ? __builtin_trap() : void(0))
+// we use a SIGTRAP to signal a trace/breakpoint
+// the _trap is technically not correct because a BREAKpoint is recoverable
+// the use in CC_ASSERT is simply to provide a cleaner debugging experience
+// and is followed by an abort anyways
+// NOTE: we don't want to pull in any posix header here, so we simply declare raise
+//       SIGTRAP is 5 according to https://man7.org/linux/man-pages/man7/signal.7.html
+extern "C" int raise(int) noexcept;
+#define CC_DEBUG_BREAK() (::cc::detail::is_debugger_connected() ? (void)::raise(5) : void(0))
 #else
 #define CC_DEBUG_BREAK() void(0)
 #endif
@@ -105,7 +112,7 @@ CC_COLD_FUNC CC_DONT_INLINE bool is_debugger_connected();
 
 /// calls std::abort(), avoids includes
 [[noreturn]] CC_COLD_FUNC CC_DONT_INLINE void perform_abort();
-}
+} // namespace cc::detail
 
 namespace cc
 {
@@ -114,4 +121,4 @@ namespace cc
 /// this is a thread_local handler
 /// the handler must be replaced before it is deleted (non-owning view)
 void set_assertion_handler(void (*handler)(detail::assertion_info const& info));
-}
+} // namespace cc
