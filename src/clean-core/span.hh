@@ -58,6 +58,15 @@ public:
     constexpr size_t size_bytes() const { return _size * sizeof(T); }
     constexpr bool empty() const { return _size == 0; }
 
+    /// returns true iff any entry is == value
+    constexpr bool contains(element_t const& value) const
+    {
+        for (size_t i = 0; i < _size; ++i)
+            if (_data[i] == value)
+                return true;
+        return false;
+    }
+
     constexpr T& operator[](size_t i) const
     {
         CC_CONTRACT(i < _size);
@@ -267,4 +276,4 @@ T& from_byte_span(cc::span<std::byte const> bytes)
     CC_ASSERT(bytes.size() == sizeof(T) && "size must match exactly");
     return *reinterpret_cast<T*>(bytes.data());
 }
-}
+} // namespace cc
