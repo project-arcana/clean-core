@@ -20,12 +20,26 @@ namespace cc
 {
 CC_FORCE_INLINE uint64_t intrin_rdtsc()
 {
+#if defined(__x86_64__) // use rdtsc
 #ifdef CC_COMPILER_GCC
     unsigned int lo, hi;
     __asm__ __volatile__("rdtsc" : "=a"(lo), "=d"(hi));
     return ((uint64_t)hi << 32) | lo;
 #else // Clang, MSVC
     return __rdtsc();
+#endif
+#elif defined(__arm__) || defined(__arm64__)
+    // note that rdtsc does not exist on ARM architecture and the following is not *exactly* the same,
+    // it can be used for similar purposes.
+    // CNTVCT_EL0 is not a CPU cycle counter like rdtsc but tics at a constant implementation defined frequency
+    // between 1 and 50 hz that can be read from CNTFRQ_EL0
+    // to make this somewhat comparable to rdtsc, we multiply the two.
+    // this is adapted from https://stackoverflow.com/questions/40454157/is-there-an-equivalent-instruction-to-rdtsc-in-arm
+    uint64_t cntvct;
+    uint32_t freq_hz;
+    asm volatile("mrs %0, cntvct_el0; " : "=r"(cntvct)::"memory");
+    asm volatile("mrs %0, cntfrq_el0; isb; " : "=r"(freq_hz)::"memory");
+    return cntvct * freq_hz;
 #endif
 }
 
@@ -174,7 +188,8 @@ CC_FORCE_INLINE T* intrin_atomic_swap_pointer_t(T* volatile* destination, T* val
 }
 
 // PAUSE to signal spin-wait, improve interleaving
-CC_FORCE_INLINE void intrin_pause() {
+CC_FORCE_INLINE void intrin_pause()
+{
 #if defined(__x86_64__)
     // x86 PAUSE to signal spin-wait, improve interleaving
     _mm_pause();
@@ -254,10 +269,12 @@ inline bool test_cpuid_register(int level, int register_index, int bit_index)
     int info[4];
     __cpuid(info, level);
     return (info[register_index] >> bit_index) != 0;
-#else
+#elif defined(__x86_64__)
     unsigned info[4];
     __get_cpuid(level, &info[0], &info[1], &info[2], &info[3]);
     return (info[register_index] >> bit_index) != 0;
+#else
+    return false; // architecture, i.e. ARM currently not supported
 #endif
 }
 
