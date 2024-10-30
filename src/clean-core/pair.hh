@@ -8,7 +8,7 @@
 
 namespace cc
 {
-template <class A, class B>
+template <class A, class B = A>
 struct pair
 {
     A first;
