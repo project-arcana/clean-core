@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+
 #include <clean-core/allocator.hh>
 
 namespace cc
@@ -35,6 +37,6 @@ private:
     std::byte* _buffer_begin = nullptr;
     std::byte* _head = nullptr;
     std::byte* _buffer_end = nullptr;
-    int32_t _last_alloc_id = 0;
+    std::int32_t _last_alloc_id = 0;
 };
-}
+} // namespace cc
