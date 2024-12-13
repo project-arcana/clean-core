@@ -8,7 +8,7 @@ void cc::tlsf_allocator::initialize(cc::span<std::byte> buffer)
 {
     CC_ASSERT(_tlsf == nullptr && "double init");
     CC_ASSERT(buffer.size() > tlsf_size() && "buffer not large enough");
-
+    CC_ASSERT(cc::is_aligned(buffer.data(), tlsf_align_size()) && "buffer not aligned (to 8B)");
     _tlsf = tlsf_create_with_pool(buffer.data(), buffer.size());
     CC_ASSERT(_tlsf != nullptr && "failed to create TLSF");
 }
