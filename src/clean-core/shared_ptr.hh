@@ -111,13 +111,20 @@ struct shared_ptr
         if (this == &rhs)
             return *this;
 
+        // we need to increment rhs control first
+        // so that it's not deleted in nested shared-ptr scenarios
+        // NOTE: we also need to make a copy of the control ptr
+        //       because rhs._control might point into deleted memory
+        //       after dec_refcount frees this->_control
+        //       (the control block is alive, but rhs._control not)
+        auto rhs_control = rhs._control;
+        if (rhs_control)
+            rhs_control->refcount++;
+
         if (_control)
             dec_refcount();
 
-        _control = rhs._control;
-
-        if (_control)
-            _control->refcount++;
+        _control = rhs_control;
 
         return *this;
     }
