@@ -111,12 +111,12 @@ struct tuple : private detail::tuple_impl<Types...>
     template <class... OtherTypes>
     constexpr bool operator==(tuple<OtherTypes...> const& rhs) const
     {
-        return detail::tuple_helper<Types...>::template other_tuple<OtherTypes...>::template are_equal(*this, rhs, std::index_sequence_for<Types...>{});
+        return detail::tuple_helper<Types...>::template other_tuple<OtherTypes...>::are_equal(*this, rhs, std::index_sequence_for<Types...>{});
     }
     template <class... OtherTypes>
     constexpr bool operator!=(tuple<OtherTypes...> const& rhs) const
     {
-        return detail::tuple_helper<Types...>::template other_tuple<OtherTypes...>::template are_not_equal(*this, rhs, std::index_sequence_for<Types...>{});
+        return detail::tuple_helper<Types...>::template other_tuple<OtherTypes...>::are_not_equal(*this, rhs, std::index_sequence_for<Types...>{});
     }
 };
 
