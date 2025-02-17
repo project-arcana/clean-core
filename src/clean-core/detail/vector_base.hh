@@ -324,14 +324,35 @@ public:
         }
     }
 
-    /// removes all entries where cc::invoke(pred, entry) is true
+    /// removes all entries where cc::invoke(pred, entry) is true in O(n)
     /// returns the number of removed entries
+    /// NOTE: is guaranteed to call pred exactly once for each element in order
     template <class Predicate>
     size_t remove_all(Predicate&& pred)
     {
         size_t idx = 0;
         for (size_t i = 0; i < _size; ++i)
             if (!cc::invoke(pred, _data[i]))
+            {
+                if (idx != i)
+                    _data[idx] = cc::move(_data[i]);
+                ++idx;
+            }
+        detail::container_destroy_reverse<T>(_data, _size, idx);
+        auto old_size = _size;
+        _size = idx;
+        return old_size - _size;
+    }
+
+    /// removes all entries where cc::invoke(pred, idx) is true in O(n)
+    /// returns the number of removed entries
+    /// NOTE: is guaranteed to call pred exactly once for each index in order
+    template <class Predicate>
+    size_t remove_all_by_idx(Predicate&& pred)
+    {
+        size_t idx = 0;
+        for (size_t i = 0; i < _size; ++i)
+            if (!cc::invoke(pred, i))
             {
                 if (idx != i)
                     _data[idx] = cc::move(_data[i]);
