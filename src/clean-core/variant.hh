@@ -64,7 +64,7 @@ struct variant_impl<T, Rest...>
             return *new (cc::placement_new, &_data.head) T(cc::forward<Args>(args)...);
         else
         {
-            static_assert(sizeof...(Rest) > 0, "could not find type in variant");
+            static_assert((sizeof...(Rest) > 0), "could not find type in variant");
             return _data.tail.template emplace<U>(cc::forward<Args>(args)...);
         }
     }
@@ -136,7 +136,7 @@ struct variant
         _data.template emplace<T>();
     }
 
-    template <class T, cc::enable_if<!std::is_same_v<T, variant>> = true>
+    template <class T, cc::enable_if<!std::is_same_v<std::decay_t<T>, variant>> = true>
     variant(T&& v) noexcept(noexcept(T(cc::forward<T>(v))))
     {
         constexpr auto i = detail::index_of_type<T, Types...>();
@@ -173,7 +173,7 @@ struct variant
             });
     }
 
-    template <class T, cc::enable_if<!std::is_same_v<T, variant>> = true>
+    template <class T, cc::enable_if<!std::is_same_v<std::decay_t<T>, variant>> = true>
     variant& operator=(T&& v) noexcept(noexcept(T(cc::forward<T>(v))))
     {
         constexpr auto i = detail::index_of_type<T, Types...>();
