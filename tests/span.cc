@@ -127,7 +127,7 @@ void check_copy_from(A a, B b)
     for (auto i = 0u; i < a.size(); ++i)
         CHECK(a[i] == b[i]);
 }
-}
+} // namespace
 
 TEST("cc::span copy variants")
 {
@@ -246,4 +246,32 @@ TEST("cc::span deductions")
 
     // this test is used for static asserts
     CHECK(true);
+}
+
+TEST("cc::span comparisons")
+{
+    cc::vector<int> v0 = {1, 2, 3};
+    cc::vector<int> v1 = {1, 2, 3};
+    cc::vector<int> v2 = {1, 2};
+    cc::vector<int> v3 = {1, 2, 3, 4};
+    cc::vector<int> v4 = {2, 3, 3, 4};
+
+    auto const s0 = cc::span(v0);
+    auto const s1 = cc::span(v1);
+    auto const s2 = cc::span(v2);
+    auto const s3 = cc::span(v3);
+    auto const s4 = cc::span(v4);
+
+    CHECK(s0.equals_content(s1));
+    CHECK(!s0.equals_content(s2));
+
+    CHECK(!s0.is_lexicographically_smaller_than(s1));
+    CHECK(!s0.is_lexicographically_smaller_than(s2));
+    CHECK(s0.is_lexicographically_smaller_than(s3));
+    CHECK(s0.is_lexicographically_smaller_than(s4));
+
+    CHECK(!s1.is_lexicographically_smaller_than(s0));
+    CHECK(s2.is_lexicographically_smaller_than(s0));
+    CHECK(!s3.is_lexicographically_smaller_than(s0));
+    CHECK(!s4.is_lexicographically_smaller_than(s0));
 }

@@ -130,6 +130,19 @@ public:
         return true;
     }
 
+    /// true iff "this < rhs" in a lexicographic sense
+    constexpr bool is_lexicographically_smaller_than(span<T const> rhs) const
+    {
+        auto const min_size = cc::min(_size, rhs._size);
+
+        for (size_t i = 0; i < min_size; ++i)
+            if (_data[i] != rhs._data[i])
+                return _data[i] < rhs._data[i]; // TODO: use 3way comparison?
+
+        // if all elements are equal, the shorter one is "smaller"
+        return _size < rhs._size;
+    }
+
     // operations
 public:
     /// copies all elements from the source to this span
@@ -267,4 +280,4 @@ T& from_byte_span(cc::span<std::byte const> bytes)
     CC_ASSERT(bytes.size() == sizeof(T) && "size must match exactly");
     return *reinterpret_cast<T*>(bytes.data());
 }
-}
+} // namespace cc

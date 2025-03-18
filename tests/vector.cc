@@ -10,6 +10,7 @@
 #include <clean-core/capped_vector.hh>
 #include <clean-core/functors.hh>
 #include <clean-core/string.hh>
+#include <clean-core/unique_ptr.hh>
 #include <clean-core/vector.hh>
 
 #include <typed-geometry/feature/random.hh>
@@ -898,4 +899,78 @@ TEST("cc::vector reinterpret")
 
     CHECK(ints == nx::range{1, 2, 3, 4, 5, 6});
     CHECK(foos.empty());
+}
+
+TEST("cc::vector reverse")
+{
+    {
+        cc::vector<int> v;
+        v.reverse();
+        CHECK(v.empty());
+        v.reverse();
+        CHECK(v.empty());
+    }
+    {
+        cc::vector<int> v = {1, 2, 3};
+        v.reverse();
+        CHECK(v == nx::range{3, 2, 1});
+        v.reverse();
+        CHECK(v == nx::range{1, 2, 3});
+    }
+    {
+        cc::vector<int> v = {1, 2, 3, 4};
+        v.reverse();
+        CHECK(v == nx::range{4, 3, 2, 1});
+        v.reverse();
+        CHECK(v == nx::range{1, 2, 3, 4});
+    }
+}
+
+TEST("cc::vector remove_all")
+{
+    {
+        cc::vector<int> v = {1, 2, 3, 4, 5, 6, 7};
+
+        v.remove_all([](int i) { return i < 3 || i % 2 == 0; });
+        CHECK(v == nx::range{3, 5, 7});
+    }
+    {
+        cc::vector<char> v = {'a', 'b', 'c', 'd', 'e'};
+
+        v.remove_all_by_idx([](int i) { return i % 2 == 0; });
+        CHECK(v == nx::range{'b', 'd'});
+    }
+}
+
+TEST("cc::vector move_all_to")
+{
+    {
+        cc::vector<int> v = {1, 2, 3, 4, 5, 6, 7};
+        cc::vector<int> vv;
+
+        v.move_all_to(vv, [](int i) { return i < 3 || i % 2 == 0; });
+        CHECK(v == nx::range{3, 5, 7});
+        CHECK(vv == nx::range{1, 2, 4, 6});
+    }
+    {
+        cc::vector<char> v = {'a', 'b', 'c', 'd', 'e'};
+        cc::vector<char> vv;
+
+        v.move_all_to_by_idx(vv, [](int i) { return i % 2 == 0; });
+        CHECK(v == nx::range{'b', 'd'});
+        CHECK(vv == nx::range{'a', 'c', 'e'});
+    }
+    {
+        cc::vector<cc::unique_ptr<int>> v;
+        v.push_back(cc::make_unique<int>(10));
+        v.push_back(cc::make_unique<int>(11));
+        v.push_back(cc::make_unique<int>(12));
+        v.push_back(cc::make_unique<int>(13));
+        v.push_back(cc::make_unique<int>(14));
+        cc::vector<cc::unique_ptr<int>> vv;
+
+        v.move_all_to_by_idx(vv, [](int i) { return i % 2 == 0; });
+        CHECK(v.size() == 2);
+        CHECK(vv.size() == 3);
+    }
 }

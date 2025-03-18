@@ -272,6 +272,8 @@ public:
         }
     }
 
+    /// extends or shrinks the vector to the new size
+    /// newly created entries are default constructed
     void resize(size_t new_size)
     {
         if (new_size > _capacity)
@@ -282,9 +284,13 @@ public:
         _size = new_size;
     }
 
+    /// extends or shrinks the vector to the new size
+    /// newly created entries are copy-constructed from the provided value
     /// CAUTION: currently default_value must not be an interior reference
     void resize(size_t new_size, T const& default_value)
     {
+        CC_ASSERT(!is_interior_reference(default_value) && "must not use an interior reference as default value");
+
         if (new_size > _capacity)
             reserve(new_size);
         for (size_t i = _size; i < new_size; ++i)
@@ -327,6 +333,7 @@ public:
     /// removes all entries where cc::invoke(pred, entry) is true in O(n)
     /// returns the number of removed entries
     /// NOTE: is guaranteed to call pred exactly once for each element in order
+    /// NOTE: see move_all_to if you want to retain the removed elements
     template <class Predicate>
     size_t remove_all(Predicate&& pred)
     {
@@ -347,6 +354,7 @@ public:
     /// removes all entries where cc::invoke(pred, idx) is true in O(n)
     /// returns the number of removed entries
     /// NOTE: is guaranteed to call pred exactly once for each index in order
+    /// NOTE: see move_all_to_by_idx if you want to retain the removed elements
     template <class Predicate>
     size_t remove_all_by_idx(Predicate&& pred)
     {
@@ -443,10 +451,72 @@ public:
         this->pop_back();
     }
 
+    /// sets the whole vector to zero bytewise using memset
+    /// NOTE: only works on trivially copyable types
     void fill_memzero()
     {
         static_assert(std::is_trivially_copyable_v<T>, "Can only memzero trivial types");
         memset(_data, 0, size_bytes());
+    }
+
+    /// reverses the position of all elements using cc::swap
+    void reverse()
+    {
+        if (_size == 0)
+            return;
+
+        auto p_front = _data;
+        auto p_back = _data + _size - 1;
+        while (p_front < p_back)
+            cc::swap(*p_front++, *p_back--);
+    }
+
+    /// moves all entries where cc::invoke(pred, entry) is true to container in O(n)
+    /// returns the number of moved entries
+    /// NOTE: is guaranteed to call pred exactly once for each index in order
+    template <class Predicate, class Container>
+    size_t move_all_to(Container& container, Predicate&& pred)
+    {
+        size_t idx = 0;
+        for (size_t i = 0; i < _size; ++i)
+            if (cc::invoke(pred, _data[i]))
+            {
+                cc::collection_add(container, cc::move(_data[i]));
+            }
+            else
+            {
+                if (idx != i)
+                    _data[idx] = cc::move(_data[i]);
+                ++idx;
+            }
+        detail::container_destroy_reverse<T>(_data, _size, idx);
+        auto old_size = _size;
+        _size = idx;
+        return old_size - _size;
+    }
+
+    /// moves all entries where cc::invoke(pred, idx) is true to container in O(n)
+    /// returns the number of moved entries
+    /// NOTE: is guaranteed to call pred exactly once for each index in order
+    template <class Predicate, class Container>
+    size_t move_all_to_by_idx(Container& container, Predicate&& pred)
+    {
+        size_t idx = 0;
+        for (size_t i = 0; i < _size; ++i)
+            if (cc::invoke(pred, i))
+            {
+                cc::collection_add(container, cc::move(_data[i]));
+            }
+            else
+            {
+                if (idx != i)
+                    _data[idx] = cc::move(_data[i]);
+                ++idx;
+            }
+        detail::container_destroy_reverse<T>(_data, _size, idx);
+        auto old_size = _size;
+        _size = idx;
+        return old_size - _size;
     }
 
     /// returns true iff any entry is == value
@@ -459,6 +529,7 @@ public:
         return false;
     }
 
+    /// true iff the vector and the rhs span are content-equal
     bool operator==(span<T const> rhs) const noexcept
     {
         if (_size != rhs.size())
@@ -469,6 +540,7 @@ public:
         return true;
     }
 
+    /// true iff the vector and the rhs span are content-unequal
     bool operator!=(span<T const> rhs) const noexcept
     {
         if (_size != rhs.size())
@@ -483,14 +555,17 @@ public:
     bool operator!=(vector_base const& rhs) const noexcept { return operator!=(span<T const>(rhs)); }
 
 public:
-    void push_back_range_n(T const* data, size_t num)
+    /// optimized version of push_back_range for contiguous memory
+    /// (this is a low-level building block that is sometimes useful from the outside and thus exposed)
+    /// NOTE: nullptr data or zero count are explicitly allowed (and no-op)
+    void push_back_range_n(T const* data, size_t count)
     {
-        if (!data || !num)
+        if (data == nullptr || count == 0)
             return;
 
-        reserve(_size + num);
-        detail::container_copy_construct_range<T>(data, num, &_data[_size]);
-        _size += num;
+        reserve(_size + count);
+        detail::container_copy_construct_range<T>(data, count, &_data[_size]);
+        _size += count;
     }
 
     // members
@@ -509,5 +584,9 @@ protected:
     T* _data = nullptr;
     size_t _size = 0;
     size_t _capacity = 0;
+
+    /// returns true iff v is a value inside this vector
+    /// NOTE: this is technically _unspecified_ if v is NOT inside the vector
+    bool is_interior_reference(T const& v) const { return _data <= &v && &v < _data + _capacity; }
 };
 } // namespace cc::detail
