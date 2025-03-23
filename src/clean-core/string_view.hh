@@ -233,6 +233,14 @@ public:
         CC_ASSERT(idx >= 0 && "pattern must be contained in this string_view");
         return {subview(0, idx), subview(idx + pattern.size())};
     }
+    // same as split_once but returns (this, "") if the pattern was not found
+    [[nodiscard]] constexpr pair<string_view, string_view> split_once_if_found(string_view pattern) const
+    {
+        auto idx = this->index_of(pattern);
+        if (idx == -1)
+            return {*this, {}};
+        return {subview(0, idx), subview(idx + pattern.size())};
+    }
 
     [[nodiscard]] constexpr auto split() const;
     [[nodiscard]] constexpr auto split(char sep, split_options opts = split_options::keep_empty) const;
