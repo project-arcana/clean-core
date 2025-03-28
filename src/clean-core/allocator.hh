@@ -133,6 +133,10 @@ template <class T>
 T* allocator::new_array(size_t num_elems)
 {
     static_assert(sizeof(T) > 0, "cannot construct incomplete type");
+
+    if (num_elems == 0)
+        return nullptr;
+
     constexpr size_t padding = detail::get_array_padding(sizeof(T));
     size_t size = sizeof(T) * num_elems + padding;
 
@@ -182,6 +186,10 @@ template <class T>
 T* allocator::new_array_sized(size_t num_elems)
 {
     static_assert(sizeof(T) > 0, "cannot construct incomplete type");
+
+    if (num_elems == 0)
+        return nullptr;
+
     T* const res_array_ptr = reinterpret_cast<T*>(this->alloc(sizeof(T) * num_elems, alignof(T)));
 
     if constexpr (!std::is_trivially_constructible_v<T>)
