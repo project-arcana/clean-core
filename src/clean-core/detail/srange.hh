@@ -1,5 +1,7 @@
 #pragma once
 
+#include <type_traits>
+
 #include <clean-core/forward.hh>
 #include <clean-core/macros.hh>
 #include <clean-core/sentinel.hh>
@@ -24,43 +26,43 @@ private:
     ItT it;
 };
 
-template <class T>
+template <class T, class ResultT>
 struct iiterator
 {
     T _curr;
 
     CC_FORCE_INLINE constexpr bool operator!=(iiterator rhs) const { return _curr != rhs._curr; }
-    CC_FORCE_INLINE constexpr T operator*() const { return _curr; }
+    CC_FORCE_INLINE constexpr ResultT operator*() const { return ResultT(_curr); }
     CC_FORCE_INLINE constexpr void operator++() { ++_curr; }
 };
 
-template <class T>
+template <class T, class ResultT>
 struct rev_iiterator
 {
     T _curr;
 
     CC_FORCE_INLINE constexpr bool operator!=(rev_iiterator rhs) const { return _curr != rhs._curr; }
-    CC_FORCE_INLINE constexpr T operator*() const { return _curr; }
+    CC_FORCE_INLINE constexpr ResultT operator*() const { return ResultT(_curr); }
     CC_FORCE_INLINE constexpr void operator++() { --_curr; }
 };
 
-template <class T>
+template <class T, class ResultT>
 struct irange;
-template <class T>
+template <class T, class ResultT>
 struct rev_irange;
 
 // a dumb range that iterates from begin to end (exclusive)
 // creates the same asm code as:
 //   for (T i = _begin; i != _end; ++i)
 // see https://godbolt.org/z/vvEKno4jT
-template <class T>
+template <class T, class ResultT>
 struct irange
 {
     T _begin;
     T _end; // _end >= _begin
 
-    CC_FORCE_INLINE constexpr iiterator<T> begin() const { return {_begin}; }
-    CC_FORCE_INLINE constexpr iiterator<T> end() const { return {_end}; }
+    CC_FORCE_INLINE constexpr iiterator<T, ResultT> begin() const { return {_begin}; }
+    CC_FORCE_INLINE constexpr iiterator<T, ResultT> end() const { return {_end}; }
 
     // NOTE: is no-op for empty ranges
     CC_FORCE_INLINE constexpr irange skip_first() const
@@ -93,7 +95,7 @@ struct irange
         return {_begin, v + 1};
     }
 
-    CC_FORCE_INLINE constexpr rev_irange<T> reversed() const
+    CC_FORCE_INLINE constexpr rev_irange<T, ResultT> reversed() const
     {
         auto b = _end;
         auto e = _begin;
@@ -101,23 +103,39 @@ struct irange
         --e;
         return {b, e};
     }
+
+    template <class NewResultT>
+    CC_FORCE_INLINE constexpr irange<T, NewResultT> as() const
+    {
+        // NOTE: this would be helpful but does not always work the way it should...
+        // static_assert(std::is_constructible_v<NewResultT, T>, ".as<>() only works if the result is constructible from the index");
+        return {_begin, _end};
+    }
 };
-template <class T>
+template <class T, class ResultT>
 struct rev_irange
 {
     T _begin;
     T _end;
 
-    CC_FORCE_INLINE constexpr rev_iiterator<T> begin() const { return {_begin}; }
-    CC_FORCE_INLINE constexpr rev_iiterator<T> end() const { return {_end}; }
+    CC_FORCE_INLINE constexpr rev_iiterator<T, ResultT> begin() const { return {_begin}; }
+    CC_FORCE_INLINE constexpr rev_iiterator<T, ResultT> end() const { return {_end}; }
 
-    CC_FORCE_INLINE constexpr irange<T> reversed() const
+    CC_FORCE_INLINE constexpr irange<T, ResultT> reversed() const
     {
         auto b = _end;
         auto e = _begin;
         ++b;
         ++e;
         return {b, e};
+    }
+
+    template <class NewResultT>
+    CC_FORCE_INLINE constexpr rev_irange<T, NewResultT> as() const
+    {
+        // NOTE: this would be helpful but does not always work the way it should...
+        // static_assert(std::is_constructible_v<NewResultT, T>, ".as<>() only works if the result is constructible from the index");
+        return {_begin, _end};
     }
 };
 } // namespace cc::detail

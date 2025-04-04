@@ -30,12 +30,12 @@ constexpr auto indices_of(SizedRangeOrIntegral const& range)
     if constexpr (std::is_integral_v<SizedRangeOrIntegral>)
     {
         using T = SizedRangeOrIntegral;
-        return cc::detail::irange<T>{T(0), range};
+        return cc::detail::irange<T, T>{T(0), range};
     }
     else
     {
         using T = std::decay_t<decltype(cc::collection_size(range))>;
-        return cc::detail::irange<T>{T(0), cc::collection_size(range)};
+        return cc::detail::irange<T, T>{T(0), cc::collection_size(range)};
     }
 }
 }
