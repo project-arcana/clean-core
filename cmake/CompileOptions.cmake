@@ -34,6 +34,13 @@ function(arcana_configure_lib_options LIB_TARGET)
         endif()
     endif()
 
+    # disable floating point contractions (will ruin a lot of code otherwise)
+    if (MSVC)
+        target_compile_options(${LIB_TARGET} PUBLIC /fp:precise)
+    else()
+        target_compile_options(${LIB_TARGET} PUBLIC -ffp-contract=off)
+    endif()
+
     # strict mode enables some Werror-xyz errors (mainly used in deploy and CI)
     if (CC_STRICT)
         if (CC_VERBOSE_CMAKE)
