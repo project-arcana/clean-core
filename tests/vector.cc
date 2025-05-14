@@ -7,8 +7,10 @@
 #include <clean-core/alloc_vector.hh>
 #include <clean-core/allocators/linear_allocator.hh>
 #include <clean-core/allocators/stack_allocator.hh>
+#include <clean-core/array.hh>
 #include <clean-core/capped_vector.hh>
 #include <clean-core/functors.hh>
+#include <clean-core/strided_span.hh>
 #include <clean-core/string.hh>
 #include <clean-core/unique_ptr.hh>
 #include <clean-core/vector.hh>
@@ -781,59 +783,149 @@ TEST("cc::vector remove")
     CHECK(v == cc::vector{3, 4});
 }
 
+namespace
+{
+template <class T>
+struct non_sized_repeater_range
+{
+    T const* elem;
+    size_t count;
+
+    struct iterator
+    {
+        T const* elem;
+        size_t count;
+
+        T const& operator*() const { return *elem; }
+        void operator++() { --count; }
+        bool operator!=(cc::sentinel) const { return count > 0; }
+    };
+
+    iterator begin() const { return {elem, count}; }
+    cc::sentinel end() const { return {}; }
+};
+static_assert(!cc::collection_traits<non_sized_repeater_range<int>>::has_size);
+
+struct mov_dtor_tester
+{
+    bool is_moved_from = false;
+    bool is_destroyed = false;
+
+    mov_dtor_tester() = default;
+
+    mov_dtor_tester(mov_dtor_tester&& f)
+    {
+        CHECK(!f.is_moved_from);
+        CHECK(!f.is_destroyed);
+        f.is_moved_from = true;
+    }
+    mov_dtor_tester& operator=(mov_dtor_tester&& f)
+    {
+        CHECK(!f.is_moved_from);
+        CHECK(!f.is_destroyed);
+        f.is_moved_from = true;
+        return *this;
+    }
+    mov_dtor_tester(mov_dtor_tester const& f)
+    {
+        CHECK(!f.is_moved_from);
+        CHECK(!f.is_destroyed);
+    }
+    mov_dtor_tester& operator=(mov_dtor_tester const& f)
+    {
+        CHECK(!f.is_moved_from);
+        CHECK(!f.is_destroyed);
+        return *this;
+    }
+    ~mov_dtor_tester()
+    {
+        // NOTE: cannot check due to nothrow, so the assert will std::terminate (we still want to know about it)
+        CC_ASSERT(!is_destroyed);
+        is_destroyed = true;
+    }
+};
+
+template <class T>
+struct wrap_vector
+{
+    cc::vector<T> vector;
+
+    bool is_small_non_empty() const { return !vector.empty() && is_small(); }
+    bool is_small() const { return vector.capacity() < 200; }
+};
+
+template <class T>
+struct wrap_alloc_vector_system
+{
+    cc::alloc_vector<T> vector;
+
+    wrap_alloc_vector_system() : vector(cc::system_allocator) {}
+
+    bool is_small_non_empty() const { return !vector.empty() && is_small(); }
+    bool is_small() const { return vector.capacity() < 200; }
+};
+
+template <class T>
+struct wrap_alloc_vector_linear
+{
+    cc::array<std::byte> buffer;
+    cc::unique_ptr<cc::linear_allocator> linalloc;
+    cc::alloc_vector<T> vector;
+
+    wrap_alloc_vector_linear()
+      : buffer(cc::array<std::byte>::filled(15000 * sizeof(T), std::byte(0xFF))),
+        linalloc(cc::make_unique<cc::linear_allocator>(buffer)),
+        vector(linalloc.get())
+    {
+    }
+
+    bool is_small_non_empty() const { return !vector.empty() && is_small(); }
+    bool is_small() const { return vector.capacity() < 200 && linalloc->remaining_size() > 1000 * sizeof(T); }
+};
+} // namespace
+
+
 TEST("cc::vector/alloc_vector interior references")
 {
-    struct foo
     {
-        bool is_moved_from = false;
-        bool is_destroyed = false;
-
-        foo() = default;
-
-        foo(foo& f)
-        {
-            CHECK(!f.is_moved_from);
-            CHECK(!f.is_destroyed);
-            f.is_moved_from = true;
-        }
-        foo& operator=(foo& f)
-        {
-            CHECK(!f.is_moved_from);
-            CHECK(!f.is_destroyed);
-            f.is_moved_from = true;
-            return *this;
-        }
-        foo(foo const& f)
-        {
-            CHECK(!f.is_moved_from);
-            CHECK(!f.is_destroyed);
-        }
-        foo& operator=(foo const& f)
-        {
-            CHECK(!f.is_moved_from);
-            CHECK(!f.is_destroyed);
-            return *this;
-        }
-        ~foo() { is_destroyed = true; }
-    };
-    {
-        cc::vector<foo> fs;
+        cc::vector<mov_dtor_tester> fs;
         fs.push_back({});
         for (auto i = 0; i < 100; ++i)
             fs.push_back(fs[0]);
+
+        {
+            auto cap = fs.capacity();
+            while (fs.capacity() == cap)
+                fs.push_back_range(fs);
+        }
+
+        {
+            auto cap = fs.capacity();
+            while (fs.capacity() == cap)
+                fs.push_back_range(cc::span(fs).subspan(10, 17));
+        }
+
+        {
+            auto cap = fs.capacity();
+            while (fs.capacity() == cap)
+                fs.push_back_range(cc::strided_span(fs.data() + 10, 17, 3 * sizeof(mov_dtor_tester)));
+        }
     }
 
     auto const f_test_alloc_vector = [](cc::allocator* alloc)
     {
-        cc::alloc_vector<foo> afs(alloc);
+        cc::alloc_vector<mov_dtor_tester> afs(alloc);
         afs.push_back({});
         for (auto i = 0; i < 100; ++i)
             afs.push_back(afs[0]);
+
+        afs.push_back_range(afs);
+        afs.push_back_range(cc::span(afs).subspan(10, 17));
     };
 
     f_test_alloc_vector(cc::system_allocator);
 
-    std::byte buffer[sizeof(foo) * 500];
+    std::byte buffer[sizeof(mov_dtor_tester) * 1500];
     cc::linear_allocator linalloc(buffer);
 
     f_test_alloc_vector(&linalloc);
@@ -848,11 +940,13 @@ TEST("cc::vector/alloc_vector interior references (value types)")
         for (auto i = 0; i < 100; ++i)
             vals.emplace_back(vals[0]);
 
+        vals.push_back_range(vals);
+
         for (auto& v : vals)
             CHECK(v == 7);
     }
     {
-        std::byte buffer[sizeof(int) * 500];
+        std::byte buffer[sizeof(int) * 1500];
         cc::linear_allocator linalloc(buffer);
 
         cc::alloc_vector<int> vals(&linalloc);
@@ -861,9 +955,118 @@ TEST("cc::vector/alloc_vector interior references (value types)")
         for (auto i = 0; i < 100; ++i)
             vals.emplace_back(vals[0]);
 
+        vals.push_back_range(vals);
+
         for (auto& v : vals)
             CHECK(v == 7);
     }
+}
+
+MONTE_CARLO_TEST("cc::vector/alloc_vector interior references mct")
+{
+    auto add_tests_for_type = [&](auto v_type)
+    {
+        using VecT = std::decay_t<decltype(v_type)>;
+        using T = std::decay_t<decltype(v_type.vector[0])>;
+
+        auto new_elem = T();
+        if constexpr (std::is_same_v<T, int>)
+            new_elem = 7;
+
+        addOp("make empty", [] { return VecT(); });
+
+        addOp("push 1 new", [new_elem](VecT& v) { v.vector.push_back(new_elem); }).when(&VecT::is_small);
+        addOp("push 10 new",
+              [new_elem](VecT& v)
+              {
+                  for (auto i = 0; i < 10; ++i)
+                      v.vector.push_back(new_elem);
+              })
+            .when(&VecT::is_small);
+        addOp("push new to capa",
+              [new_elem](VecT& v)
+              {
+                  while (!v.vector.at_capacity())
+                      v.vector.push_back(new_elem);
+              })
+            .when(&VecT::is_small);
+
+        addOp("push_back interior front", [](VecT& v) { v.vector.push_back(v.vector.front()); }).when(&VecT::is_small_non_empty);
+        addOp("push_back interior back", [](VecT& v) { v.vector.push_back(v.vector.back()); }).when(&VecT::is_small_non_empty);
+        addOp("push_back interior mid", [](VecT& v) { v.vector.push_back(v.vector[v.vector.size() / 2]); }).when(&VecT::is_small_non_empty);
+
+        addOp("push_back_range_n all", [](VecT& v) { v.vector.push_back_range_n(v.vector.data(), v.vector.size()); }).when(&VecT::is_small);
+        addOp("push_back_range_n half", [](VecT& v) { v.vector.push_back_range_n(v.vector.data(), v.vector.size() / 2); }).when(&VecT::is_small);
+
+        addOp("push_back_range all", [](VecT& v) { v.vector.push_back_range(v.vector); }).when(&VecT::is_small);
+        addOp("push_back_range strided half",
+              [](VecT& v) { //
+                  v.vector.push_back_range(cc::strided_span<T>(v.vector.data(), v.vector.size() / 2, 2 * sizeof(T)));
+              })
+            .when(&VecT::is_small);
+
+        addOp("push_back_range non-sized 0",
+              [](VecT& v) {
+                  v.vector.push_back_range(non_sized_repeater_range{&v.vector.front(), 0});
+              })
+            .when(&VecT::is_small_non_empty);
+        addOp("push_back_range non-sized front 1",
+              [](VecT& v) {
+                  v.vector.push_back_range(non_sized_repeater_range{&v.vector.front(), 1});
+              })
+            .when(&VecT::is_small_non_empty);
+        addOp("push_back_range non-sized front 10",
+              [](VecT& v) {
+                  v.vector.push_back_range(non_sized_repeater_range{&v.vector.front(), 10});
+              })
+            .when(&VecT::is_small_non_empty);
+        addOp("push_back_range non-sized front 100",
+              [](VecT& v) {
+                  v.vector.push_back_range(non_sized_repeater_range{&v.vector.front(), 100});
+              })
+            .when(&VecT::is_small_non_empty);
+        addOp("push_back_range non-sized back 1",
+              [](VecT& v) {
+                  v.vector.push_back_range(non_sized_repeater_range{&v.vector.back(), 1});
+              })
+            .when(&VecT::is_small_non_empty);
+        addOp("push_back_range non-sized back 10",
+              [](VecT& v) {
+                  v.vector.push_back_range(non_sized_repeater_range{&v.vector.back(), 10});
+              })
+            .when(&VecT::is_small_non_empty);
+        addOp("push_back_range non-sized back 100",
+              [](VecT& v) {
+                  v.vector.push_back_range(non_sized_repeater_range{&v.vector.back(), 100});
+              })
+            .when(&VecT::is_small_non_empty);
+
+        addInvariant("valid foos",
+                     [](VecT const& v)
+                     {
+                         if constexpr (std::is_same_v<T, mov_dtor_tester>)
+                         {
+                             for (mov_dtor_tester const& f : v.vector)
+                             {
+                                 CHECK(!f.is_destroyed);
+                                 CHECK(!f.is_moved_from);
+                             }
+                         }
+                         else
+                         {
+                             for (auto i : v.vector)
+                                 CHECK(i == 7);
+                         }
+                     });
+    };
+
+    add_tests_for_type(wrap_vector<mov_dtor_tester>{});
+    add_tests_for_type(wrap_alloc_vector_system<mov_dtor_tester>{});
+    add_tests_for_type(wrap_alloc_vector_linear<mov_dtor_tester>{});
+
+    add_tests_for_type(wrap_vector<int>{});
+    add_tests_for_type(wrap_alloc_vector_system<int>{});
+    add_tests_for_type(wrap_alloc_vector_linear<int>{});
 }
 
 TEST("cc::alloc_vector realloc")

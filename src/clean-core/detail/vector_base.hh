@@ -163,36 +163,136 @@ public:
     template <class... Args>
     CC_FORCE_INLINE T& emplace_back_stable(Args&&... args)
     {
-        CC_ASSERT(_size < _capacity && "At capacity");
+        CC_ASSERT(_size < _capacity && "must have remaining capacity");
         return *(new (placement_new, &_data[_size++]) T(cc::forward<Args>(args)...));
     }
 
     /// adds all elements of the range
+    /// NOTE: explicitly supports ranges that are in any way subviews or dependent on "this"
+    ///       in particular, this->push_back_range(*this) is safe to do
+    /// NOTE: this currently always calls the copy ctors because lvalue-ness of range is not a good indicator for ownership
     template <class Range>
     void push_back_range(Range&& range)
     {
         static_assert(cc::is_any_range<Range>);
         static_assert(std::is_copy_constructible_v<T>, "only works with copyable types. use push_back(T&&) to move elements into the vector");
 
-        if constexpr (cc::is_contiguous_range<Range, T>)
+        if constexpr (cc::is_contiguous_range<Range, T const>)
         {
-            size_t const num_new_elems = cc::collection_size(range);
-            if (num_new_elems == 0)
-            {
+            size_t const additional_size = cc::collection_size(range);
+            if (additional_size == 0)
                 return;
-            }
 
             // NOTE: this would assert for an empty span<T>
-            // only get this pointer after checking for size == 0
-            this->push_back_range_n(&range[0], num_new_elems);
+            //       only get this pointer after checking for size == 0
+            // NOTE: this uses optimized realloc for trivial types
+            this->push_back_range_n(&range[0], additional_size);
         }
         else
         {
-            if constexpr (collection_traits<Range>::has_size)
-                this->reserve(_size + cc::collection_size(range));
+            // everything allocated in _data is not moved until the very end
+            // this allows range to arbitrarily reference into the old data
+            // the number of elements that are moved at the end is "frozen_size"
+            T* curr_data = _data;
+            auto is_curr_newly_allocated = false;
+            size_t curr_cap = _capacity;
+            size_t curr_size = _size;
+            size_t frozen_size = _size;
 
+            // in case we need to grow, we cannot simply reserve
+            // because the range might point into "this" (possibly obscurely) and therefore invalidate during reserve
+            // thus, we alloc new data, copy-construct into the appropriate space
+            //       (potentially multiple times during the simulated push-back)
+            //       and only THEN free the old data
+            // NOTE: this path never uses realloc
+            //       because this might invalidate the range we're iterating over
+            // NOTE: we should keep the old properties of "this" until the iteration is over
+
+            // use collection size as a hint
+            if constexpr (collection_traits<Range>::has_size)
+            {
+                auto min_new_size = _size + cc::collection_size(range);
+                if (min_new_size > curr_cap)
+                {
+                    // adjust capacity
+                    curr_cap <<= 1;
+                    if (curr_cap < min_new_size)
+                        curr_cap = min_new_size;
+
+                    // do initial alloc
+                    // IMPORTANT: the slots for pre-existing data stay uninitialized until the end
+                    curr_data = this->_alloc(curr_cap);
+                    is_curr_newly_allocated = true;
+
+                    // NOTE: we don't move anything yet
+                }
+            }
+
+            // for a general range, we need to iterate each element
+            // NOTE: v must not necessarily be of type T
+            //       we use auto&& to have whatever type is most appropriate, including values
             for (auto&& v : range)
-                this->push_back(v);
+            {
+                // if we need to resize
+                if (curr_size >= curr_cap)
+                {
+                    // compute new cap
+                    // at least double, subject to some minimums
+                    curr_cap <<= 1;
+                    if (curr_cap <= curr_size)
+                        curr_cap++;
+
+                    // alloc new data
+                    // IMPORTANT: the slots for pre-existing data stay uninitialized until the end
+                    auto new_data = this->_alloc(curr_cap);
+
+                    // move over data that we pushed into the vector
+                    // IMPORTANT: all pre-existing data is kept in the old vector for now to keep them stable
+                    detail::container_move_construct_range<T>(curr_data + frozen_size, //
+                                                              curr_size - frozen_size, //
+                                                              new_data + frozen_size);
+
+                    // if we already had temporary allocated data (not the old one)
+                    // we need to destroy + free it
+                    if (is_curr_newly_allocated)
+                    {
+                        detail::container_destroy_reverse<T>(curr_data + frozen_size,  //
+                                                             curr_size - frozen_size); //
+                        this->_free(curr_data);
+                    }
+
+                    // keep track of temporarily allocated data
+                    curr_data = new_data;
+                    is_curr_newly_allocated = true;
+                }
+
+                // NOTE: this always calls the copy ctor
+                //       because lvalue-ness of range is not a good indicator for ownership
+                CC_ASSERT(curr_size < curr_cap);
+                new (placement_new, &curr_data[curr_size]) T(v);
+                ++curr_size;
+
+                // if we are still in the original data block, increase the frozen "high water mark"
+                if (!is_curr_newly_allocated)
+                    ++frozen_size;
+            }
+
+            // if we have newly allocated data, we also need to move over the old data and free the memory
+            if (is_curr_newly_allocated)
+            {
+                CC_ASSERT(_data != curr_data);
+                detail::container_move_construct_range<T>(_data, frozen_size, curr_data);
+                detail::container_destroy_reverse<T>(_data, frozen_size);
+                this->_free(_data);
+
+                _data = curr_data;
+                _capacity = curr_cap;
+            }
+            else
+                CC_ASSERT(_capacity == curr_cap && "no-alloc path should never modify capacity");
+
+            // always write through new size
+            _size = curr_size;
         }
     }
 
@@ -558,14 +658,75 @@ public:
     /// optimized version of push_back_range for contiguous memory
     /// (this is a low-level building block that is sometimes useful from the outside and thus exposed)
     /// NOTE: nullptr data or zero count are explicitly allowed (and no-op)
+    /// NOTE: explicitly supports ranges that are in any way subviews or dependent on "this"
+    ///       in particular, this->push_back_range(*this) is safe to do
     void push_back_range_n(T const* data, size_t count)
     {
         if (data == nullptr || count == 0)
             return;
 
-        reserve(_size + count);
-        detail::container_copy_construct_range<T>(data, count, &_data[_size]);
-        _size += count;
+        // fast-path for trivially copyable types
+        if constexpr (std::is_trivially_copyable_v<T> && std::is_trivially_destructible_v<T>)
+        {
+            // we try to use realloc here
+            // and simply adjust the data pointer if it was moved
+            auto const old_data_start = _data;
+            auto const old_data_end = _data + _size;
+
+            // uses potentially more efficient realloc
+            reserve(_size + count);
+
+            // adjust data pointer to point to the new memory region
+            // NOTE: see is_interior_reference for a description of why we do integer comparisons
+            if (size_t(old_data_start) <= size_t(data) && size_t(data) < size_t(old_data_end))
+                data += _data - old_data_start;
+
+            detail::container_copy_construct_range<T>(data, count, &_data[_size]);
+            _size += count;
+        }
+        else
+        {
+            T* curr_data = _data;
+            size_t curr_cap = _capacity;
+            auto const new_size = _size + count;
+
+            // in case we need to grow, we cannot simply reserve
+            // because "data" might point into "this" and therefore invalidate during reserve
+            // thus, we alloc new data, copy-construct into the appropriate space
+            //       and only THEN free the old data
+            // NOTE: non-trivial types cannot use realloc anyways
+            if (new_size > _capacity)
+            {
+                // at least double cap
+                curr_cap = _capacity << 1;
+                if (curr_cap < new_size)
+                    curr_cap = new_size;
+
+                // freshly allocated data for the new capacity
+                // NOTE: the new data is copied in first, THEN the old one
+                curr_data = this->_alloc(curr_cap);
+            }
+
+            // copy data into new data region (which might be the old one or a newly allocated one)
+            detail::container_copy_construct_range<T>(data, count, curr_data + _size);
+
+            // if we reallocated, we can now safely move and free the old data over
+            if (new_size > _capacity)
+            {
+                detail::container_move_construct_range<T>(_data, _size, curr_data);
+                detail::container_destroy_reverse<T>(_data, _size);
+                this->_free(_data);
+
+                _data = curr_data;
+                _capacity = curr_cap;
+            }
+            else
+                CC_ASSERT(_capacity == curr_cap && "no-alloc path should never modify capacity");
+
+            // size always changes
+            _size = new_size;
+            CC_ASSERT(_size <= _capacity);
+        }
     }
 
     // members
@@ -586,7 +747,9 @@ protected:
     size_t _capacity = 0;
 
     /// returns true iff v is a value inside this vector
-    /// NOTE: this is technically _unspecified_ if v is NOT inside the vector
-    bool is_interior_reference(T const& v) const { return _data <= &v && &v < _data + _capacity; }
+    /// NOTE: this is tricky: https://en.cppreference.com/w/cpp/language/operator_comparison#Built-in_pointer_equality_comparison
+    /// NOTE: this is technically pointer comparison _unspecified_ if v is NOT inside the vector
+    ///       we compare the integer versions though, which should be fine on a 64 bit unified memory system
+    bool is_interior_reference(T const& v) const { return size_t(_data) <= size_t(&v) && size_t(&v) < size_t(_data + _capacity); }
 };
 } // namespace cc::detail

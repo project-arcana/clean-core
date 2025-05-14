@@ -119,6 +119,7 @@ public:
     ///   vector<pos3> v = ...;
     ///   auto bytes = cc::move(v).reinterpret_as<std::byte>();
     /// NOTE: the move is necessary because this will be moved-from afterwards
+    /// NOTE: this cannot increase the element size (e.g. a vector<pos3> from a vector<float>) because capacity might not align, even if size does
     template <class U>
     vector<U> reinterpret_as() &&
     {
