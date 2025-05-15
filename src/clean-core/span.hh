@@ -143,6 +143,16 @@ public:
         return _size < rhs._size;
     }
 
+    /// returns true iff any entry is == value
+    template <class U = T>
+    bool contains(U const& value) const
+    {
+        for (size_t i = 0; i < _size; ++i)
+            if (_data[i] == value)
+                return true;
+        return false;
+    }
+
     // operations
 public:
     /// copies all elements from the source to this span
