@@ -964,6 +964,11 @@ TEST("cc::vector/alloc_vector interior references (value types)")
 
 MONTE_CARLO_TEST("cc::vector/alloc_vector interior references mct")
 {
+    struct vec3
+    {
+        float x, y, z;
+    };
+
     auto add_tests_for_type = [&](auto v_type)
     {
         using VecT = std::decay_t<decltype(v_type)>;
@@ -972,6 +977,8 @@ MONTE_CARLO_TEST("cc::vector/alloc_vector interior references mct")
         auto new_elem = T();
         if constexpr (std::is_same_v<T, int>)
             new_elem = 7;
+        else if constexpr (std::is_same_v<T, vec3>)
+            new_elem = {1, 2, 3};
 
         addOp("make empty", [] { return VecT(); });
 
@@ -996,9 +1003,16 @@ MONTE_CARLO_TEST("cc::vector/alloc_vector interior references mct")
         addOp("push_back interior mid", [](VecT& v) { v.vector.push_back(v.vector[v.vector.size() / 2]); }).when(&VecT::is_small_non_empty);
 
         addOp("push_back_range_n all", [](VecT& v) { v.vector.push_back_range_n(v.vector.data(), v.vector.size()); }).when(&VecT::is_small);
-        addOp("push_back_range_n half", [](VecT& v) { v.vector.push_back_range_n(v.vector.data(), v.vector.size() / 2); }).when(&VecT::is_small);
+        addOp("push_back_range_n front half", [](VecT& v) { v.vector.push_back_range_n(v.vector.data(), v.vector.size() / 2); }).when(&VecT::is_small);
+        addOp("push_back_range_n back half",
+              [](VecT& v) { v.vector.push_back_range_n(v.vector.data() + (v.vector.size() - v.vector.size() / 2), v.vector.size() / 2); })
+            .when(&VecT::is_small);
 
         addOp("push_back_range all", [](VecT& v) { v.vector.push_back_range(v.vector); }).when(&VecT::is_small);
+
+        addOp("push_back_range span front half", [](VecT& v) { v.vector.push_back_range(cc::span(v.vector).subspan(0, v.vector.size() / 2)); }).when(&VecT::is_small);
+        addOp("push_back_range span back half", [](VecT& v) { v.vector.push_back_range(cc::span(v.vector).subspan(v.vector.size() / 2)); }).when(&VecT::is_small);
+
         addOp("push_back_range strided half",
               [](VecT& v) { //
                   v.vector.push_back_range(cc::strided_span<T>(v.vector.data(), v.vector.size() / 2, 2 * sizeof(T)));
@@ -1050,6 +1064,15 @@ MONTE_CARLO_TEST("cc::vector/alloc_vector interior references mct")
                              {
                                  CHECK(!f.is_destroyed);
                                  CHECK(!f.is_moved_from);
+                             }
+                         }
+                         else if constexpr (std::is_same_v<T, vec3>)
+                         {
+                             for (vec3 const& v : v.vector)
+                             {
+                                 CHECK(v.x == 1);
+                                 CHECK(v.y == 2);
+                                 CHECK(v.z == 3);
                              }
                          }
                          else

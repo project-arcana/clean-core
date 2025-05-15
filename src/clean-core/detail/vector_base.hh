@@ -679,7 +679,13 @@ public:
             // adjust data pointer to point to the new memory region
             // NOTE: see is_interior_reference for a description of why we do integer comparisons
             if (size_t(old_data_start) <= size_t(data) && size_t(data) < size_t(old_data_end))
-                data += _data - old_data_start;
+            {
+                // NOTE: we need to compute this in bytes
+                //       because data and _data might not be related by a multiple of T anymore
+                //       (only by a multiple of their alignment)
+                auto offset_in_bytes = size_t(data) - size_t(old_data_start);
+                data = (T const*)(size_t(_data) + offset_in_bytes);
+            }
 
             detail::container_copy_construct_range<T>(data, count, &_data[_size]);
             _size += count;
