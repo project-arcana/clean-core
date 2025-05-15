@@ -9,6 +9,7 @@ option(CC_ENABLE_ASSERTIONS "if true, enables assertions (also in RelWithDebInfo
 option(CC_ENABLE_BOUND_CHECKING "if true, enables bound checking (e.g. for containers and iterators, only if assertions are active)" ON)
 option(CC_ENABLE_NULL_CHECKING "if true, enables null checking (e.g. for smart pointers, only if assertions are active)" ON)
 option(CC_ENABLE_CONTRACT_CHECKING "if true, enables contract checking (e.g. pre- and postconditions, only if assertions are active)" ON)
+option(CC_COMPILE_FLAG_DISABLE_FLOAT_CONTRACTION "if true, sets compiler flags to disable float contractions such as FMA operations" ON)
 option(CC_VERBOSE_CMAKE "if true, adds more verbose cmake output (for debugging)" OFF)
 option(CC_ENABLE_ADDRESS_SANITIZER "if true, enables address sanitizer on all arcana libraries" OFF)
 
