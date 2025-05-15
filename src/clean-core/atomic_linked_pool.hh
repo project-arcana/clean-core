@@ -76,7 +76,7 @@ struct atomic_linked_pool
         }
 
         // initialize first free node index
-        VersionedIndex head;
+        versioned_index_t head;
         head.set_index(0);
         _first_free_node.store(head);
 
@@ -101,8 +101,8 @@ struct atomic_linked_pool
         int32_t acquired_node_index = -1;
 
         // acquire-candidate: the current value of _first_free_node
-        VersionedIndex acquired_node_gen_index = _first_free_node.load(std::memory_order_acquire);
-        VersionedIndex next_node_gen_index;
+        versioned_index_t acquired_node_gen_index = _first_free_node.load(std::memory_order_acquire);
+        versioned_index_t next_node_gen_index;
         do
         {
             // we loaded the first free node to receive a _candidate_ for the node we will actually aquire
@@ -412,8 +412,8 @@ private:
 
         // to update the free list at this node's index, we need to do another CAS loop
         bool cas_success = false;
-        VersionedIndex head_gen_index = _first_free_node.load(std::memory_order_relaxed);
-        VersionedIndex new_head_gen_index;
+        versioned_index_t head_gen_index = _first_free_node.load(std::memory_order_relaxed);
+        versioned_index_t new_head_gen_index;
         do
         {
             // the initial load of _first_free_node gave us a _candidate_ for the potential next-pointer to write
@@ -457,15 +457,10 @@ private:
     }
 
 private:
-    struct InternalNode
-    {
-        std::atomic<T*> _next_free;
-    };
-
     // this versioned index is required for our atomic CAS loops
     // to avoid the ABA problem. see more info in acquire() and _release_node()
     // this version is unrelated to the optional _version array
-    struct alignas(sizeof(size_t)) VersionedIndex
+    struct alignas(sizeof(size_t)) versioned_index_t
     {
         constexpr int32_t get_index() const { return _index; }
         constexpr void set_index(int32_t index)
@@ -478,11 +473,11 @@ private:
         int32_t _index = 0;
         uint32_t _version = 0;
     };
-    static_assert(std::atomic<VersionedIndex>::is_always_lock_free, "");
+    static_assert(std::atomic<versioned_index_t>::is_always_lock_free, "");
 
     alignas(64) T* _pool = nullptr;
 
-    alignas(64) std::atomic<VersionedIndex> _first_free_node = {};
+    alignas(64) std::atomic<versioned_index_t> _first_free_node = {};
 
     alignas(64) int32_t* _free_list = nullptr;
 

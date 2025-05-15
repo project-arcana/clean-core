@@ -35,24 +35,9 @@ void cc::atomic_pool_allocator::initialize(cc::allocator* alloc, size_t block_si
     _free_list[num_blocks - 1] = -1;
 
     // initialize first free node index
-    VersionedIndex head;
+    versioned_index_t head;
     head.set_index(0);
     _first_free_node.store(head);
-
-    //// initialize linked list
-    // for (auto i = 0u; i < num_blocks - 1; ++i)
-    //{
-    //     std::byte* node_ptr = &_buffer_begin[i * _block_size];
-    //     new (cc::placement_new, node_ptr) std::byte*(&_buffer_begin[(i + 1) * _block_size]);
-    // }
-
-    //// initialize linked list tail
-    //{
-    //    std::byte* tail_ptr = &_buffer_begin[(num_blocks - 1) * _block_size];
-    //    new (cc::placement_new, tail_ptr) std::byte*(nullptr);
-    //}
-
-    //_first_free_node = &_buffer_begin[0];
 }
 
 void cc::atomic_pool_allocator::destroy()
