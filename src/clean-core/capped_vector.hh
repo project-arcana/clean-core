@@ -8,6 +8,7 @@
 #include <clean-core/detail/compact_size_t.hh>
 #include <clean-core/detail/container_impl_util.hh>
 #include <clean-core/forward.hh>
+#include <clean-core/invoke.hh>
 #include <clean-core/move.hh>
 #include <clean-core/new.hh>
 #include <clean-core/span.hh>
@@ -336,4 +337,4 @@ public:
         return rhs._size != 0;
     }
 };
-}
+} // namespace cc
