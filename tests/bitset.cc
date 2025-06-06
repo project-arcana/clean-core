@@ -22,6 +22,14 @@ struct reference_set
             s.entries.add(i);
         return s;
     }
+    static reference_set ones(int n)
+    {
+        CC_ASSERT(0 <= n && n <= N);
+        reference_set s;
+        for (auto i : cc::indices_of(n))
+            s.entries.add(i);
+        return s;
+    }
     static reference_set filled(bool value)
     {
         reference_set s;
@@ -51,6 +59,14 @@ struct reference_set
             entries.remove(idx);
         else
             entries.add(idx);
+    }
+
+    int count_trailing_zeroes() const
+    {
+        for (auto i : cc::indices_of(N))
+            if (entries.contains(i))
+                return i;
+        return N;
     }
 
     friend reference_set operator~(reference_set const& a)
@@ -235,6 +251,8 @@ MONTE_CARLO_TEST("cc::bitset mct")
         addOp("any", [](bitset_t const& b0) { return b0.any(); });
         addOp("all", [](bitset_t const& b0) { return b0.all(); });
 
+        addOp("ctz", [](bitset_t const& b0) { return b0.count_trailing_zeroes(); });
+
         addOp("is_set", [](bitset_t const& b0, int b) { return b0.is_set(b); }).when(idx_in_range);
         addOp("is_unset", [](bitset_t const& b0, int b) { return b0.is_unset(b); }).when(idx_in_range);
         addOp("op[]", [](bitset_t const& b0, int b) { return b0[b]; }).when(idx_in_range);
@@ -243,6 +261,8 @@ MONTE_CARLO_TEST("cc::bitset mct")
         addOp("set", [](bitset_t& b0, int b) { b0.set(b); }).when(idx_in_range);
         addOp("unset", [](bitset_t& b0, int b) { b0.unset(b); }).when(idx_in_range);
         addOp("toggle", [](bitset_t& b0, int b) { b0.toggle(b); }).when(idx_in_range);
+
+        addOp("ones_n", [](int b) { return bitset_t::ones(b); }).when(idx_in_range);
     };
 
     setup_type(cc::bitset<64>{});

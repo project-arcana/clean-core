@@ -3,6 +3,7 @@
 #include <cstddef>
 
 #include <clean-core/assert.hh>
+#include <clean-core/bits.hh>
 #include <clean-core/fwd.hh>
 
 namespace cc
@@ -14,6 +15,8 @@ namespace detail
 template <int W>
 struct bit_words
 {
+    static constexpr int word_count = W;
+
     size_t words[W] = {};
 
     constexpr bit_words() = default;
@@ -167,6 +170,22 @@ public:
     static constexpr bitset ones() { return bitset(data_mask); }
     static constexpr bitset filled(bool value) { return value ? bitset(data_mask) : bitset(); }
 
+    static constexpr bitset ones(int n)
+    {
+        CC_ASSERT(0 <= n && n <= int(N));
+        bitset b;
+        int i = 0;
+        while (n >= 64)
+        {
+            b._data.words[i] = size_t(-1);
+            n -= 64;
+            i++;
+        }
+        if (n > 0)
+            b._data.words[i] = (size_t(1) << n) - 1;
+        return b;
+    }
+
     // bit operations
 public:
     friend constexpr bitset operator~(bitset const& a) { return bitset(~a._data & data_mask); }
@@ -232,6 +251,19 @@ public:
     {
         CC_ASSERT(idx < N);
         return _data.words[idx / 64] & (size_t(1) << (idx % 64));
+    }
+
+    int count_trailing_zeroes() const
+    {
+        auto cnt = 0;
+        for (auto i = 0; i < _data.word_count; ++i)
+        {
+            if (_data.words[i] != 0)
+                return cnt + cc::count_trailing_zeros(_data.words[i]);
+
+            cnt += 64;
+        }
+        return N;
     }
 
     // methods
