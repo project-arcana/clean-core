@@ -25,6 +25,22 @@ struct linear_allocator : allocator
         return padded_res;
     }
 
+    std::byte* try_alloc(size_t size, size_t align = alignof(std::max_align_t)) final override
+    {
+        CC_ASSERT(_buffer_begin != nullptr && "linear_allocator uninitialized");
+
+        align = cc::max<size_t>(align, 1);
+
+        auto* const padded_res = cc::align_up(_head, align);
+        if (padded_res + size > _buffer_end)
+            return nullptr;
+
+        _head = padded_res + size;
+        _latest_allocation = padded_res;
+
+        return padded_res;
+    }
+
     void free(void* ptr) final override
     {
         // no-op
