@@ -19,7 +19,7 @@ namespace detail
 struct default_formatter;
 struct printf_formatter;
 struct pythonic_formatter;
-}
+} // namespace detail
 
 /// a general purpose string interpolation function (aka a "string formatting utility")
 /// basically clean-core's version of printf and std::fmt
@@ -203,8 +203,7 @@ struct default_do_format
     static arg_info make_arg_info(format_arg<T> const& a)
     {
         return {[](stream_ref<char> ss, void const* data, string_view options) -> void
-                { default_do_format::do_format(ss, *static_cast<T const*>(data), options); },
-                &a.value, a.name};
+                { default_do_format::do_format(ss, *static_cast<T const*>(data), options); }, &a.value, a.name};
     }
 };
 
@@ -220,7 +219,7 @@ struct pythonic_formatter : default_do_format
 {
     static void vformat_to(stream_ref<char> s, string_view fmt_str, span<arg_info> args);
 };
-}
+} // namespace detail
 
 template <class T>
 struct format_arg
@@ -283,7 +282,7 @@ struct arg_capture
         return cc::format_arg(name, rhs);
     }
 };
-}
-inline detail::arg_capture operator"" _a(const char* name, std::size_t size) { return {{name, size}}; }
-}
-}
+} // namespace detail
+inline detail::arg_capture operator""_a(char const* name, std::size_t size) { return {{name, size}}; }
+} // namespace format_literals
+} // namespace cc
