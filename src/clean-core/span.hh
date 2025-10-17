@@ -7,6 +7,7 @@
 
 #include <clean-core/assert.hh>
 #include <clean-core/enable_if.hh>
+#include <clean-core/has_operator.hh>
 #include <clean-core/is_contiguous_range.hh>
 #include <clean-core/utility.hh>
 
@@ -59,8 +60,10 @@ public:
     constexpr bool empty() const { return _size == 0; }
 
     /// returns true iff any entry is == value
-    constexpr bool contains(element_t const& value) const
+    template <class U = T>
+    constexpr bool contains(U const& value) const
     {
+        static_assert(cc::has_operator_equal<T, U>);
         for (size_t i = 0; i < _size; ++i)
             if (_data[i] == value)
                 return true;
