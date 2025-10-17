@@ -186,7 +186,7 @@ public:
             // NOTE: this would assert for an empty span<T>
             //       only get this pointer after checking for size == 0
             // NOTE: this uses optimized realloc for trivial types
-            this->push_back_range_n(&range[0], additional_size);
+            this->push_back_range_n(collection_traits<Range>::data(range), additional_size);
         }
         else
         {

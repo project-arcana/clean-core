@@ -138,6 +138,7 @@ static void impl_vformat_to(cc::stream_ref<char> ss, cc::string_view fmt_str, cc
         if (support_printf && *curr_c == '%')
         {
             auto const arg_start_c = curr_c;
+            CC_UNUSED(arg_start_c);
 
             // append segment in any case
             if (segment_start != curr_c)
@@ -191,6 +192,7 @@ static void impl_vformat_to(cc::stream_ref<char> ss, cc::string_view fmt_str, cc
         if (support_pythonic && *curr_c == '{')
         {
             auto const arg_start_c = curr_c;
+            CC_UNUSED(arg_start_c);
 
             // append segment in any case
             if (segment_start != curr_c)
@@ -307,7 +309,7 @@ static void impl_vformat_to(cc::stream_ref<char> ss, cc::string_view fmt_str, cc
     for (auto i = 0; i < int(args.size()); ++i)
         CC_ASSERTF(args[i].was_used, "argument nr. {} as not used in format string '{}'", i, fmt_str);
 }
-}
+} // namespace cc::detail
 
 void cc::detail::default_formatter::vformat_to(cc::stream_ref<char> ss, cc::string_view fmt_str, cc::span<arg_info> args)
 {
