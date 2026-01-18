@@ -306,7 +306,7 @@ struct cc_array_collection_traits : base_collection_traits
     }
     static constexpr ElementT& get(ArrayT& range, size_t i) { return range._values[i]; }
 };
-}
+} // namespace detail
 
 template <class T, class>
 struct collection_traits : detail::base_collection_traits // not a range
@@ -353,7 +353,7 @@ struct collection_traits<cc::array<T, N>> : detail::cc_array_collection_traits<c
 {
 };
 template <class T, size_t N>
-struct collection_traits<cc::array<T, N> const> : detail::cc_array_collection_traits<cc::array<T, N> const, T, N>
+struct collection_traits<cc::array<T, N> const> : detail::cc_array_collection_traits<cc::array<T, N> const, T const, N>
 {
 };
 template <class T, size_t N>
@@ -361,8 +361,8 @@ struct collection_traits<cc::array<T, N>&> : detail::cc_array_collection_traits<
 {
 };
 template <class T, size_t N>
-struct collection_traits<cc::array<T, N> const&> : detail::cc_array_collection_traits<cc::array<T, N> const&, T, N>
+struct collection_traits<cc::array<T, N> const&> : detail::cc_array_collection_traits<cc::array<T, N> const&, T const, N>
 {
 };
 
-}
+} // namespace cc
