@@ -94,9 +94,15 @@ struct atomic_linked_pool
 
     void destroy() { _destroy(); }
 
-    /// acquire a new slot in the pool
-    [[nodiscard]] handle_t acquire()
+    /// acquire a new slot in the pool, or return the null handle if full
+    [[nodiscard]] handle_t try_acquire()
     {
+        if (!_pool)
+        {
+            // pool not initialized
+            return 0;
+        }
+
         bool cas_success = false;
         int32_t acquired_node_index = -1;
 
@@ -107,7 +113,12 @@ struct atomic_linked_pool
         {
             // we loaded the first free node to receive a _candidate_ for the node we will actually aquire
             acquired_node_index = acquired_node_gen_index.get_index();
-            CC_ASSERT(acquired_node_index != -1 && "atomic_linked_pool is full");
+            if (acquired_node_index == -1)
+            {
+                // there is no first free node, pool is full
+                // return the null handle
+                return 0;
+            }
 
             // load the next-index of the candidate node
             int32_t* const p_free_list = &_free_list[acquired_node_index];
@@ -136,6 +147,14 @@ struct atomic_linked_pool
 
         // construct a handle
         return _construct_handle(acquired_node_index);
+    }
+
+    /// acquire a new slot in the pool, will assert if full
+    [[nodiscard]] handle_t acquire()
+    {
+        handle_t const res = try_acquire();
+        CC_ASSERT(res != 0 && "atomic_linked_pool is full");
+        return res;
     }
 
     /// release a slot in the pool, destroying it
