@@ -1,6 +1,6 @@
 #include <clean-core/breakpoint.hh>
 
-#ifdef CC_COMPILER_MSVC
+#if defined(CC_COMPILER_MSVC)
 #include <intrin.h>
 #endif
 
@@ -10,7 +10,7 @@ void cc::breakpoint()
 {
 #if defined(CC_COMPILER_MSVC)
     __debugbreak();
-#elif defined(CC_COMPILER_CLANG) || defined(CC_COMPILER_GCC)
+#elif defined(CC_COMPILER_CLANG) || defined(CC_COMPILER_GCC) || defined(CC_COMPILER_CLANG_CL)
     __builtin_trap();
 #else
 #error "Unknown compiler"

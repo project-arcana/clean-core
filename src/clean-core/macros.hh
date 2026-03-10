@@ -3,14 +3,21 @@
 // =========
 // compiler
 
-#if defined(_MSC_VER)
-#define CC_COMPILER_MSVC
+#if defined(__clang__) && defined(_MSC_VER)
+#define CC_COMPILER_CLANG_CL 1
+
 #elif defined(__clang__)
-#define CC_COMPILER_CLANG
-#elif defined(__GNUC__)
-#define CC_COMPILER_GCC
+#define CC_COMPILER_CLANG 1
+
+#elif defined(_MSC_VER)
+#define CC_COMPILER_MSVC 1
+
 #elif defined(__MINGW32__) || defined(__MINGW64__)
-#define CC_COMPILER_MINGW
+#define CC_COMPILER_MINGW 1
+
+#elif defined(__GNUC__)
+#define CC_COMPILER_GCC 1
+
 #else
 #error "Unknown compiler"
 #endif
@@ -29,7 +36,7 @@
 #ifdef _CPPUNWIND
 #define CC_HAS_CPP_EXCEPTIONS
 #endif
-#elif defined(CC_COMPILER_CLANG)
+#elif defined(CC_COMPILER_CLANG) || defined(CC_COMPILER_CLANG_CL)
 #if __has_feature(cxx_rtti)
 #define CC_HAS_RTTI
 #endif
@@ -136,7 +143,7 @@
 #define CC_COUNTOF(arr) __crt_countof(arr)
 #define CC_ASSUME(x) __assume(x)
 
-#elif defined(CC_COMPILER_POSIX)
+#elif defined(CC_COMPILER_POSIX) | defined(CC_COMPILER_CLANG_CL)
 
 #define CC_PRETTY_FUNC __PRETTY_FUNCTION__
 

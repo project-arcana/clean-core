@@ -13,7 +13,7 @@
 
 // the debugger should break right in the assert macro, so this cannot hide in a function call
 
-#ifdef CC_COMPILER_MSVC
+#if defined(CC_COMPILER_MSVC) || defined(CC_COMPILER_CLANG_CL)
 // __debugbreak() terminates immediately without an attached debugger
 #if _MSC_VER >= 1400
 #define CC_DEBUG_BREAK() (::cc::detail::is_debugger_connected() ? __debugbreak() : void(0))

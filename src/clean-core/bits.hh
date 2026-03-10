@@ -4,16 +4,21 @@
 
 #include <clean-core/macros.hh>
 
-#ifdef CC_COMPILER_MSVC
+#if defined(CC_COMPILER_MSVC)
 #include <intrin.h>
+#elif defined(CC_COMPILER_CLANG_CL)
+#pragma push_macro("__cpuid")
+#undef __cpuid
+#include <intrin.h>
+#pragma pop_macro("__cpuid")
 #elif __x86_64__
-    #ifndef __cpuid
-        // NOTE: this file does not (always) have include guards
-        #include <cpuid.h>
-    #endif
-    #include <x86intrin.h>
+#ifndef __cpuid
+// NOTE: this file does not (always) have include guards
+#include <cpuid.h>
+#endif
+#include <x86intrin.h>
 #elif defined(__arm__) || defined(__arm64__)
-    #include <arm_neon.h>
+#include <arm_neon.h>
 #endif
 
 namespace cc
@@ -181,4 +186,4 @@ constexpr bool has_bit(uint8_t val, uint32_t bit_idx) { return (val & (uint8_t(1
 constexpr bool has_bit(uint16_t val, uint32_t bit_idx) { return (val & (uint16_t(1) << bit_idx)) != 0; }
 constexpr bool has_bit(uint32_t val, uint32_t bit_idx) { return (val & (uint32_t(1) << bit_idx)) != 0; }
 constexpr bool has_bit(uint64_t val, uint32_t bit_idx) { return (val & (uint64_t(1) << bit_idx)) != 0; }
-}
+} // namespace cc

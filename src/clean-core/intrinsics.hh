@@ -4,8 +4,13 @@
 
 #include <clean-core/macros.hh>
 
-#ifdef CC_COMPILER_MSVC
+#if defined(CC_COMPILER_MSVC)
 #include <intrin.h>
+#elif defined(CC_COMPILER_CLANG_CL)
+#pragma push_macro("__cpuid")
+#undef __cpuid
+#include <intrin.h>
+#pragma pop_macro("__cpuid")
 #elif defined(__x86_64__)
 #ifndef __cpuid
 // NOTE: this file does not (always) have include guards
@@ -174,7 +179,8 @@ CC_FORCE_INLINE T* intrin_atomic_swap_pointer_t(T* volatile* destination, T* val
 }
 
 // PAUSE to signal spin-wait, improve interleaving
-CC_FORCE_INLINE void intrin_pause() {
+CC_FORCE_INLINE void intrin_pause()
+{
 #if defined(__x86_64__)
     // x86 PAUSE to signal spin-wait, improve interleaving
     _mm_pause();
@@ -250,10 +256,17 @@ CC_FORCE_INLINE float intrin_rsqrt_nr2(float x)
 
 inline bool test_cpuid_register(int level, int register_index, int bit_index)
 {
-#ifdef CC_COMPILER_MSVC
+#if defined(CC_COMPILER_MSVC)
     int info[4];
     __cpuid(info, level);
     return (info[register_index] >> bit_index) != 0;
+#elif defined(CC_COMPILER_CLANG_CL)
+#pragma push_macro("__cpuid")
+#undef __cpuid
+    int info[4];
+    __cpuid(info, level);
+    return (info[register_index] >> bit_index) != 0;
+#pragma pop_macro("__cpuid")
 #else
     unsigned info[4];
     __get_cpuid(level, &info[0], &info[1], &info[2], &info[3]);
