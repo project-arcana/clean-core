@@ -17,27 +17,27 @@ struct bit_words
 {
     static constexpr int word_count = W;
 
-    size_t words[W] = {};
+    uint64_t words[W] = {};
 
     constexpr bit_words() = default;
     // NOTE: only lower word!
-    constexpr explicit bit_words(size_t data) { words[0] = data; }
+    constexpr explicit bit_words(uint64_t data) { words[0] = data; }
 
     static constexpr bit_words ones(size_t cnt)
     {
-        // CC_ASSERT(cnt < W * 8 * sizeof(size_t)); -- not constexpr
+        // CC_ASSERT(cnt < W * 8 * sizeof(uint64_t)); -- not constexpr
         bit_words w;
         size_t i = 0;
 
         while (cnt >= 64)
         {
-            w.words[i] = size_t(-1);
+            w.words[i] = uint64_t(-1);
             ++i;
             cnt -= 64;
         }
 
         if (cnt > 0)
-            w.words[i] = (size_t(1) << cnt) - 1;
+            w.words[i] = (uint64_t(1) << cnt) - 1;
 
         return w;
     }
@@ -158,10 +158,10 @@ template <size_t N>
 struct bitset
 {
     static_assert(N > 0, "TODO: support zero-sized bitset for compat purposes");
-    using repr_t = detail::bit_words<1 + (N - 1) / (8 * sizeof(size_t))>;
+    using repr_t = detail::bit_words<1 + (N - 1) / (8 * sizeof(uint64_t))>;
 
     constexpr bitset() = default;
-    constexpr explicit bitset(size_t data) : _data(data) {}
+    constexpr explicit bitset(uint64_t data) : _data(data) {}
     constexpr explicit bitset(repr_t data) : _data(data) {}
 
     // ctor
@@ -177,12 +177,12 @@ public:
         int i = 0;
         while (n >= 64)
         {
-            b._data.words[i] = size_t(-1);
+            b._data.words[i] = uint64_t(-1);
             n -= 64;
             i++;
         }
         if (n > 0)
-            b._data.words[i] = (size_t(1) << n) - 1;
+            b._data.words[i] = (uint64_t(1) << n) - 1;
         return b;
     }
 
@@ -236,12 +236,12 @@ public:
     constexpr bool is_set(size_t idx) const
     {
         CC_ASSERT(idx < N);
-        return _data.words[idx / 64] & (size_t(1) << (idx % 64));
+        return _data.words[idx / 64] & (uint64_t(1) << (idx % 64));
     }
     constexpr bool is_unset(size_t idx) const
     {
         CC_ASSERT(idx < N);
-        return !(_data.words[idx / 64] & (size_t(1) << (idx % 64)));
+        return !(_data.words[idx / 64] & (uint64_t(1) << (idx % 64)));
     }
 
     constexpr repr_t const& representation() const { return _data; }
@@ -250,7 +250,7 @@ public:
     constexpr bool operator[](size_t idx) const
     {
         CC_ASSERT(idx < N);
-        return _data.words[idx / 64] & (size_t(1) << (idx % 64));
+        return _data.words[idx / 64] & (uint64_t(1) << (idx % 64));
     }
 
     int count_trailing_zeroes() const
@@ -273,17 +273,17 @@ public:
     constexpr void set(size_t idx)
     {
         CC_ASSERT(idx < N);
-        _data.words[idx / 64] |= size_t(1) << (idx % 64);
+        _data.words[idx / 64] |= uint64_t(1) << (idx % 64);
     }
     constexpr void unset(size_t idx)
     {
         CC_ASSERT(idx < N);
-        _data.words[idx / 64] &= ~(size_t(1) << (idx % 64));
+        _data.words[idx / 64] &= ~(uint64_t(1) << (idx % 64));
     }
     constexpr void toggle(size_t idx)
     {
         CC_ASSERT(idx < N);
-        _data.words[idx / 64] ^= size_t(1) << (idx % 64);
+        _data.words[idx / 64] ^= uint64_t(1) << (idx % 64);
     }
 
 private:
