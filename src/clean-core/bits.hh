@@ -4,16 +4,24 @@
 
 #include <clean-core/macros.hh>
 
-#ifdef CC_COMPILER_MSVC
+#if defined(CC_ARCH_X86_64)
+#if defined(CC_COMPILER_MSVC)
 #include <intrin.h>
-#elif __x86_64__
+
+#else // clang/gcc
 #ifndef __cpuid
 // NOTE: this file does not (always) have include guards
 #include <cpuid.h>
 #endif
+
+#endif
 #include <x86intrin.h>
-#elif defined(__arm__) || defined(__arm64__)
+
+#elif defined(CC_ARCH_ARM64)
 #include <arm_neon.h>
+
+#else
+#error "unsupported architecture"
 #endif
 
 namespace cc
