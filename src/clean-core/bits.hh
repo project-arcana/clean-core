@@ -4,16 +4,24 @@
 
 #include <clean-core/macros.hh>
 
-#ifdef CC_COMPILER_MSVC
+#if defined(CC_ARCH_X86_64)
+#if defined(CC_COMPILER_MSVC)
 #include <intrin.h>
-#elif __x86_64__
-    #ifndef __cpuid
-        // NOTE: this file does not (always) have include guards
-        #include <cpuid.h>
-    #endif
-    #include <x86intrin.h>
-#elif defined(__arm__) || defined(__arm64__)
-    #include <arm_neon.h>
+
+#else // clang/gcc
+#ifndef __cpuid
+// NOTE: this file does not (always) have include guards
+#include <cpuid.h>
+#endif
+
+#endif
+#include <x86intrin.h>
+
+#elif defined(CC_ARCH_ARM64)
+#include <arm_neon.h>
+
+#else
+#error "unsupported architecture"
 #endif
 
 namespace cc
@@ -125,15 +133,29 @@ inline int count_trailing_zeros(uint64_t v) { return v ? __builtin_ctzll(v) : 64
 // __LZCNT__ is defined if compiling with a target arch that supports LZCNT (like AVX2)
 // if not, we work around this using BSR, XOR (as part of __builtin_clz), SUB, and a branch on 0 (explicit)
 #ifdef __LZCNT__
-inline int count_leading_zeros(uint8_t v) { return int(__lzcnt16(v) - 8); }
-inline int count_leading_zeros(uint16_t v) { return int(__lzcnt16(v)); }
-inline int count_leading_zeros(uint32_t v) { return int(__lzcnt32(v)); }
-inline int count_leading_zeros(uint64_t v) { return int(__lzcnt64(v)); }
+inline int count_leading_zeros(unsigned char v) { return int(__lzcnt16(v) - 8); }
+inline int count_leading_zeros(unsigned short v) { return int(__lzcnt16(v)); }
+inline int count_leading_zeros(unsigned int v) { return int(__lzcnt32(v)); }
+inline int count_leading_zeros(unsigned long v)
+{
+    if constexpr (sizeof(unsigned long) == 4)
+        return int(__lzcnt32(v));
+    else
+        return int(__lzcnt64(v));
+}
+inline int count_leading_zeros(unsigned long long v) { return int(__lzcnt64(v)); }
 #else
-inline int count_leading_zeros(uint8_t v) { return v ? __builtin_clz(v) - 24 : 8; }
-inline int count_leading_zeros(uint16_t v) { return v ? __builtin_clz(v) - 16 : 16; }
-inline int count_leading_zeros(uint32_t v) { return v ? __builtin_clz(v) : 32; }
-inline int count_leading_zeros(uint64_t v) { return v ? __builtin_clzll(v) : 64; }
+inline int count_leading_zeros(unsigned char v) { return v ? __builtin_clz(v) - 24 : 8; }
+inline int count_leading_zeros(unsigned short v) { return v ? __builtin_clz(v) - 16 : 16; }
+inline int count_leading_zeros(unsigned int v) { return v ? __builtin_clz(v) : 32; }
+inline int count_leading_zeros(unsigned long v)
+{
+    if constexpr (sizeof(unsigned long) == 4)
+        return v ? __builtin_clz(v) : 32;
+    else
+        return v ? __builtin_clzll(v) : 64;
+}
+inline int count_leading_zeros(unsigned long long v) { return v ? __builtin_clzll(v) : 64; }
 #endif
 
 #endif
@@ -181,4 +203,4 @@ constexpr bool has_bit(uint8_t val, uint32_t bit_idx) { return (val & (uint8_t(1
 constexpr bool has_bit(uint16_t val, uint32_t bit_idx) { return (val & (uint16_t(1) << bit_idx)) != 0; }
 constexpr bool has_bit(uint32_t val, uint32_t bit_idx) { return (val & (uint32_t(1) << bit_idx)) != 0; }
 constexpr bool has_bit(uint64_t val, uint32_t bit_idx) { return (val & (uint64_t(1) << bit_idx)) != 0; }
-}
+} // namespace cc
