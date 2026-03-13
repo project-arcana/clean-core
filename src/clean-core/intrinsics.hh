@@ -1,31 +1,51 @@
 #pragma once
 
-#include <cstdint>
-
 #include <clean-core/macros.hh>
+#include <cstring>
+
+#ifdef CC_ARCH_X86_64
 
 #ifdef CC_COMPILER_MSVC
 #include <intrin.h>
-#elif defined(__x86_64__)
+
+#else // clang, gcc
+
 #ifndef __cpuid
 // NOTE: this file does not (always) have include guards
 #include <cpuid.h>
 #endif
+
 #include <x86intrin.h>
-#elif defined(__arm__) || defined(__arm64__)
+
+#endif
+
+#elif defined(CC_ARCH_ARM64)
 #include <arm_neon.h>
+#include <cstddef>
+#include <cstdint>
+
 #endif
 
 namespace cc
 {
 CC_FORCE_INLINE uint64_t intrin_rdtsc()
 {
+#ifdef CC_ARCH_X86_64
+
 #ifdef CC_COMPILER_GCC
     unsigned int lo, hi;
     __asm__ __volatile__("rdtsc" : "=a"(lo), "=d"(hi));
     return ((uint64_t)hi << 32) | lo;
 #else // Clang, MSVC
     return __rdtsc();
+#endif
+
+#elif defined(CC_ARCH_ARM64)
+    uint64_t val;
+    asm volatile("mrs %0, cntvct_el0" : "=r"(val));
+    return val;
+#else
+#error "unsupported architecture"
 #endif
 }
 
@@ -174,17 +194,19 @@ CC_FORCE_INLINE T* intrin_atomic_swap_pointer_t(T* volatile* destination, T* val
 }
 
 // PAUSE to signal spin-wait, improve interleaving
-CC_FORCE_INLINE void intrin_pause() {
-#if defined(__x86_64__)
+CC_FORCE_INLINE void intrin_pause()
+{
+#if defined(CC_ARCH_X86_64)
     // x86 PAUSE to signal spin-wait, improve interleaving
     _mm_pause();
-#elif defined(__arm__) || defined(__arm64__)
+
+#elif defined(CC_ARCH_ARM64)
     asm volatile("yield");
 #endif
 }
 
 // Currently only supported for x86_64
-#ifdef __x86_64__
+#ifdef CC_ARCH_X86_64
 
 // approximate inverse square root
 // maximum relative error < 0.000366
@@ -250,6 +272,7 @@ CC_FORCE_INLINE float intrin_rsqrt_nr2(float x)
 
 inline bool test_cpuid_register(int level, int register_index, int bit_index)
 {
+#ifdef CC_ARCH_X86_64
 #ifdef CC_COMPILER_MSVC
     int info[4];
     __cpuid(info, level);
@@ -259,6 +282,10 @@ inline bool test_cpuid_register(int level, int register_index, int bit_index)
     __get_cpuid(level, &info[0], &info[1], &info[2], &info[3]);
     return (info[register_index] >> bit_index) != 0;
 #endif
+#elif defined(CC_ARCH_ARM64)
+    // not supported on arm
+    return false;
+#endif
 }
 
 // returns true if the executing CPU has support for LZCNT
@@ -267,4 +294,64 @@ inline bool test_cpu_support_lzcnt() { return test_cpuid_register(0x80000001, 2,
 
 // returns true if the executing CPU has support for POPCNT
 inline bool test_cpu_support_popcount() { return test_cpuid_register(0x00000001, 2, 23); }
+
+/// computes *result = a + b + carry_in, returning the carry_out (0 or 1)
+/// carry_in must be 0 or 1; carry_out is 1 iff the 64-bit sum overflows
+CC_FORCE_INLINE uint64_t add_with_carry(uint64_t carry_in, uint64_t a, uint64_t b, uint64_t* result)
+{
+#if defined(CC_ARCH_X86_64)
+    return _addcarry_u64((unsigned char)carry_in, a, b, result);
+#elif defined(CC_ARCH_ARM64) // clang only
+    uint64_t carry_out;
+    *result = __builtin_addcll(a, b, carry_in, &carry_out);
+    return carry_out;
+#endif
+}
+
+/// computes *result = a - b - borrow_in, returning the borrow_out (0 or 1)
+/// borrow_in must be 0 or 1; borrow_out is 1 iff the 64-bit subtraction underflows
+CC_FORCE_INLINE uint64_t sub_with_borrow(uint64_t borrow_in, uint64_t a, uint64_t b, uint64_t* result)
+{
+#if defined(CC_ARCH_X86_64)
+    return _subborrow_u64((unsigned char)borrow_in, a, b, result);
+#elif defined(CC_ARCH_ARM64) // clang only
+    uint64_t borrow_out;
+    *result = __builtin_subcll(a, b, borrow_in, &borrow_out);
+    return borrow_out;
+#endif
+}
+
+/// computes the full 128-bit product of two unsigned 64-bit integers
+/// returns the low 64 bits and writes the high 64 bits to *high_out
+CC_FORCE_INLINE uint64_t umulh64(uint64_t a, uint64_t b, uint64_t* high_out)
+{
+#if defined(CC_COMPILER_MSVC)
+    return _umul128(a, b, high_out);
+#elif defined(CC_ARCH_X86_64)
+    return _mulx_u64(a, b, high_out);
+#elif defined(CC_ARCH_ARM64)
+    auto ia = __uint128_t(a);
+    auto ib = __uint128_t(b);
+    auto i = ia * ib;
+    *high_out = uint64_t(i >> 64);
+    return uint64_t(i);
+#endif
+}
+
+/// computes the full 128-bit product of two signed 64-bit integers
+/// returns the low 64 bits and writes the high 64 bits to *high_out
+CC_FORCE_INLINE uint64_t imulh64(uint64_t a, uint64_t b, uint64_t* high_out)
+{
+#if defined(CC_COMPILER_MSVC)
+    return _imul128(a, b, high_out);
+#elif defined(CC_ARCH_X86_64)
+    return _mulx_u64(a, b, high_out);
+#elif defined(CC_ARCH_ARM64)
+    auto ia = __int128_t(a);
+    auto ib = __int128_t(b);
+    auto i = ia * ib;
+    *high_out = uint64_t(i >> 64);
+    return uint64_t(i);
+#endif
+}
 } // namespace cc
