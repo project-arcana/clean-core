@@ -341,18 +341,20 @@ CC_FORCE_INLINE uint64_t umulh64(uint64_t a, uint64_t b, uint64_t* high_out)
 
 /// computes the full 128-bit product of two signed 64-bit integers
 /// returns the low 64 bits and writes the high 64 bits to *high_out
-CC_FORCE_INLINE int64_t imulh64(int64_t a, int64_t b, int64_t* high_out)
+CC_FORCE_INLINE uint64_t imulh64(uint64_t a, uint64_t b, uint64_t* high_out)
 {
 #if defined(CC_COMPILER_MSVC)
-    return _mul128(a, b, high_out);
+    int64_t high_signed;
+    return _mul128(static_cast<int64_t>(a), static_cast<int64_t>(b), &high_signed);
+    *high_out = static_cast<uint64_t>(high_signed);
 #elif defined(CC_ARCH_X86_64)
     return _mulx_u64(a, b, high_out);
 #elif defined(CC_ARCH_ARM64)
-    auto ia = __int128_t(a);
-    auto ib = __int128_t(b);
+    auto ia = __int128_t(int64_t(a));
+    auto ib = __int128_t(int64_t(b));
     auto i = ia * ib;
-    *high_out = int64_t(i >> 64);
-    return int64_t(i);
+    *high_out = uint64_t(i >> 64);
+    return uint64_t(i);
 #endif
 }
 } // namespace cc
