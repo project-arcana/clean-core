@@ -2,7 +2,7 @@
 
 #include <clean-core/temp_cstr.hh>
 
-#ifdef CC_OS_LINUX
+#if defined(CC_OS_LINUX) || defined(CC_OS_APPLE)
 #include <cxxabi.h>
 #include <cstdlib>
 
