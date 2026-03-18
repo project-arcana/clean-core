@@ -2,6 +2,7 @@
 
 #include <clean-core/macros.hh>
 #include <cstring>
+#include <cstdint>
 
 #ifdef CC_ARCH_X86_64
 
@@ -343,7 +344,7 @@ CC_FORCE_INLINE uint64_t umulh64(uint64_t a, uint64_t b, uint64_t* high_out)
 CC_FORCE_INLINE uint64_t imulh64(uint64_t a, uint64_t b, uint64_t* high_out)
 {
 #if defined(CC_COMPILER_MSVC)
-    return _imul128(a, b, high_out);
+    return _umul128(a, b, high_out);
 #elif defined(CC_ARCH_X86_64)
     return _mulx_u64(a, b, high_out);
 #elif defined(CC_ARCH_ARM64)
