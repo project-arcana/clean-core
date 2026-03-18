@@ -13,9 +13,10 @@
 // NOTE: this file does not (always) have include guards
 #include <cpuid.h>
 #endif
+#include <x86intrin.h>
 
 #endif
-#include <x86intrin.h>
+
 
 #elif defined(CC_ARCH_ARM64)
 #include <arm_neon.h>
