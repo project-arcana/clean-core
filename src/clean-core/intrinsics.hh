@@ -347,9 +347,7 @@ CC_FORCE_INLINE uint64_t imulh64(uint64_t a, uint64_t b, uint64_t* high_out)
     int64_t high_signed;
     return _mul128(static_cast<int64_t>(a), static_cast<int64_t>(b), &high_signed);
     *high_out = static_cast<uint64_t>(high_signed);
-#elif defined(CC_ARCH_X86_64)
-    return _mulx_u64(a, b, high_out);
-#elif defined(CC_ARCH_ARM64)
+#else // clang, gcc
     auto ia = __int128_t(int64_t(a));
     auto ib = __int128_t(int64_t(b));
     auto i = ia * ib;
