@@ -1,8 +1,8 @@
 #pragma once
 
 #include <clean-core/macros.hh>
-#include <cstring>
 #include <cstdint>
+#include <cstring>
 
 #ifdef CC_ARCH_X86_64
 
@@ -301,7 +301,7 @@ inline bool test_cpu_support_popcount() { return test_cpuid_register(0x00000001,
 CC_FORCE_INLINE uint64_t add_with_carry(uint64_t carry_in, uint64_t a, uint64_t b, uint64_t* result)
 {
 #if defined(CC_ARCH_X86_64)
-    return _addcarry_u64((unsigned char)carry_in, a, b, result);
+    return _addcarry_u64((unsigned char)carry_in, a, b, (unsigned long long*)result);
 #elif defined(CC_ARCH_ARM64) // clang only
     uint64_t carry_out;
     *result = __builtin_addcll(a, b, carry_in, &carry_out);
@@ -314,7 +314,7 @@ CC_FORCE_INLINE uint64_t add_with_carry(uint64_t carry_in, uint64_t a, uint64_t 
 CC_FORCE_INLINE uint64_t sub_with_borrow(uint64_t borrow_in, uint64_t a, uint64_t b, uint64_t* result)
 {
 #if defined(CC_ARCH_X86_64)
-    return _subborrow_u64((unsigned char)borrow_in, a, b, result);
+    return _subborrow_u64((unsigned char)borrow_in, a, b, (unsigned long long*)result);
 #elif defined(CC_ARCH_ARM64) // clang only
     uint64_t borrow_out;
     *result = __builtin_subcll(a, b, borrow_in, &borrow_out);
@@ -329,7 +329,7 @@ CC_FORCE_INLINE uint64_t umulh64(uint64_t a, uint64_t b, uint64_t* high_out)
 #if defined(CC_COMPILER_MSVC)
     return _umul128(a, b, high_out);
 #elif defined(CC_ARCH_X86_64)
-    return _mulx_u64(a, b, high_out);
+    return _mulx_u64(a, b, (unsigned long long*)high_out);
 #elif defined(CC_ARCH_ARM64)
     auto ia = __uint128_t(a);
     auto ib = __uint128_t(b);
