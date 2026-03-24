@@ -304,7 +304,7 @@ CC_FORCE_INLINE uint64_t add_with_carry(uint64_t carry_in, uint64_t a, uint64_t 
     return _addcarry_u64((unsigned char)carry_in, a, b, (unsigned long long*)result);
 #elif defined(CC_ARCH_ARM64) // clang only
     uint64_t carry_out;
-    *result = __builtin_addcll(a, b, carry_in, &carry_out);
+    *result = __builtin_addcll(a, b, carry_in, (unsigned long long*)&carry_out);
     return carry_out;
 #endif
 }
@@ -317,7 +317,7 @@ CC_FORCE_INLINE uint64_t sub_with_borrow(uint64_t borrow_in, uint64_t a, uint64_
     return _subborrow_u64((unsigned char)borrow_in, a, b, (unsigned long long*)result);
 #elif defined(CC_ARCH_ARM64) // clang only
     uint64_t borrow_out;
-    *result = __builtin_subcll(a, b, borrow_in, &borrow_out);
+    *result = __builtin_subcll(a, b, borrow_in, (unsigned long long*)&borrow_out);
     return borrow_out;
 #endif
 }
