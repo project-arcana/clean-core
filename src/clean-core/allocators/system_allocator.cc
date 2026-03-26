@@ -13,15 +13,17 @@
 #define CC_USE_ALIGNED_MALLOC 0
 #endif
 
-#if defined(CC_OS_LINUX)
+// aligned_alloc is not reliably available on android
+#if defined(CC_OS_LINUX) && !defined(CC_TARGET_ANDROID)
 #define CC_USE_ALIGNED_ALLOC 1
 #else
 #define CC_USE_ALIGNED_ALLOC 0
 #endif
 
 #if CC_USE_ALIGNED_ALLOC
-#include <cstdlib>
 #include <malloc.h>
+#include <cstdlib>
+
 #endif
 
 #if defined(CC_OS_WINDOWS)
@@ -136,9 +138,7 @@ static union sys_alloc_union_t
     cc::system_allocator_t alloc;
 
     constexpr sys_alloc_union_t() : alloc() {}
-    ~sys_alloc_union_t()
-    { /* nothing */
-    }
+    ~sys_alloc_union_t() { /* nothing */ }
 } sys_alloc_instance;
 
 cc::allocator* const cc::system_allocator = &sys_alloc_instance.alloc;

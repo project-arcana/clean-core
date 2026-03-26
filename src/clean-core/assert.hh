@@ -28,7 +28,7 @@
 // and is followed by an abort anyways
 // NOTE: we don't want to pull in any posix header here, so we simply declare raise
 //       SIGTRAP is 5 according to https://man7.org/linux/man-pages/man7/signal.7.html
-extern "C" int raise(int) noexcept;
+extern "C" int raise(int);
 #define CC_DEBUG_BREAK() (::cc::detail::is_debugger_connected() ? (void)::raise(5) : void(0))
 #else
 #define CC_DEBUG_BREAK() void(0)
