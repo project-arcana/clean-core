@@ -2,8 +2,9 @@
 # set up compile options we want for a library
 function(arcana_configure_lib_options LIB_TARGET)
     if (MSVC)
-        target_compile_options(${LIB_TARGET} PUBLIC 
-            /MP # multi-threaded compilation
+        target_compile_options(${LIB_TARGET} PUBLIC
+            # /MP is an MSVC-only flag; clang-cl reports it as an unused argument
+            $<$<CXX_COMPILER_ID:MSVC>:/MP> # multi-threaded compilation
             /we4715 # error on missing return
             /we4477 # printf warnings as errors
             /we4474 # printf warnings as errors

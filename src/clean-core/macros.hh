@@ -139,10 +139,17 @@
 #define CC_LIKELY(x) x
 #define CC_UNLIKELY(x) x
 
-// these are supported in MSVC since March 2021, valid in C++14 and up (custom attributes)
 // usage: if CC_CONDITION_LIKELY(foo) { /*...*/ }
+#if defined(__has_cpp_attribute) && __has_cpp_attribute(likely)
+// the standard C++20 spelling; clang-cl is classified as MSVC here but rejects
+// the [[msvc::*]] spelling, while MSVC (VS2019 16.6+) accepts the standard one
+#define CC_CONDITION_LIKELY(x) (x) [[likely]]
+#define CC_CONDITION_UNLIKELY(x) (x) [[unlikely]]
+#else
+// MSVC custom attributes, supported since March 2021 and valid in C++14 and up
 #define CC_CONDITION_LIKELY(x) (x) [[msvc::likely]]
 #define CC_CONDITION_UNLIKELY(x) (x) [[msvc::unlikely]]
+#endif
 #define CC_COLD_FUNC
 #define CC_HOT_FUNC
 

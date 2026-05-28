@@ -26,8 +26,9 @@ set(ARC_TESTS_COMMON_COMPILER_FLAGS "")
 set(ARC_TESTS_COMMON_LINKER_FLAGS "")
 
 if (MSVC)
+    # /MP is an MSVC-only flag; clang-cl reports it as an unused argument
     list(APPEND ARC_TESTS_COMMON_COMPILER_FLAGS
-        /MP
+        $<$<CXX_COMPILER_ID:MSVC>:/MP>
     )
 
     if (ARC_TESTS_ENABLE_AVX2)
