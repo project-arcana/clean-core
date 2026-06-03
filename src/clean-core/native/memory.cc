@@ -34,11 +34,17 @@ std::byte* cc::reserve_virtual_memory(size_t size)
     // no target address, no file descriptor
     // flags: MAP_PRIVATE since not sharing with processes,
     // MAP_ANONYMOUS since no file descriptor
-    // MAP_UNINITIALIZED likely no effect but can avoid commits
     // MAP_NORESERVE to avoid overcommit checks for huge allocations
     // TODO: does MAP_NORESERVE require an additional mmap call during commit?
     // ref https://stackoverflow.com/questions/15261527/how-can-i-reserve-virtual-memory-in-linux
-    void* res = ::mmap(nullptr, size, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_UNINITIALIZED | MAP_NORESERVE, -1, 4096);
+    int flags = MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE;
+#ifdef CC_OS_LINUX
+    // Linux-only: avoids zero-fill on commit. macOS rejects unknown flag bits.
+    flags |= MAP_UNINITIALIZED;
+#endif
+    // offset must be 0 for an anonymous mapping — macOS/BSD reject a non-zero
+    // offset with EINVAL (Linux merely ignores it).
+    void* res = ::mmap(nullptr, size, PROT_NONE, flags, -1, 0);
     CC_ASSERT(res != MAP_FAILED && "virtual reserve failed");
     return static_cast<std::byte*>(res);
 
