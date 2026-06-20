@@ -21,6 +21,33 @@
 
 #endif
 
+size_t cc::system_page_size()
+{
+#ifdef CC_OS_WINDOWS
+
+    // the Windows commit path uses VirtualAlloc, which rounds to page boundaries
+    // on its own — this is kept only for symmetry and potential callers.
+    static size_t const page_size = []
+    {
+        SYSTEM_INFO si;
+        GetSystemInfo(&si);
+        return size_t(si.dwPageSize);
+    }();
+    return page_size;
+
+#elif defined(CC_OS_LINUX) || defined(CC_OS_APPLE)
+
+    // 4 KiB on most x86, 16 KiB on Apple Silicon. always a power of two, so it is a
+    // valid alignment for cc::align_up / cc::align_down.
+    static size_t const page_size = size_t(::sysconf(_SC_PAGESIZE));
+    return page_size;
+
+#else
+    static_assert(false, "unsupported platform");
+    return 4096;
+#endif
+}
+
 std::byte* cc::reserve_virtual_memory(size_t size)
 {
 #ifdef CC_OS_WINDOWS
@@ -82,12 +109,13 @@ void cc::prefault_memory(std::byte *ptr, size_t size_bytes)
     // generates nice SIMD code: https://godbolt.org/z/5YEPz4zP7
 
     // TODO: separate counters?
+    auto const page = cc::system_page_size();
     uint8_t s = uint8_t(*ptr);
     auto end = ptr + size_bytes;
-    ptr = cc::align_up(ptr, 4096);
+    ptr = cc::align_up(ptr, page);
     while (ptr < end) {
         s ^= uint8_t(*ptr);
-        ptr += 4096;
+        ptr += page;
     }
     s_byte_sink = s;
 }
@@ -101,9 +129,11 @@ void cc::commit_physical_memory(std::byte* ptr, size_t size)
 
 #elif defined(CC_OS_LINUX)|| defined(CC_OS_APPLE)
 
-    // ensure ptr and size are page-aligned
-    auto new_ptr = cc::align_down(ptr, 4096);
-    auto new_size = cc::align_up(size + (ptr - new_ptr), 4096);
+    // ensure ptr and size are page-aligned to the real OS page size (16 KiB on
+    // Apple Silicon, not a fixed 4 KiB) — mprotect rejects an unaligned address.
+    auto const page = cc::system_page_size();
+    auto new_ptr = cc::align_down(ptr, page);
+    auto new_size = cc::align_up(size + (ptr - new_ptr), page);
 
     int const res = ::mprotect(new_ptr, new_size, PROT_READ | PROT_WRITE);
     CC_ASSERT(res == 0 && "virtual commit failed");
@@ -122,9 +152,11 @@ void cc::decommit_physical_memory(std::byte* ptr, size_t size)
 
 #elif defined(CC_OS_LINUX)|| defined(CC_OS_APPLE)
 
-    // ensure ptr and size are page-aligned
-    auto new_ptr = cc::align_down(ptr, 4096);
-    auto new_size = cc::align_up(size + (ptr - new_ptr), 4096);
+    // ensure ptr and size are page-aligned to the real OS page size (16 KiB on
+    // Apple Silicon, not a fixed 4 KiB) — mprotect rejects an unaligned address.
+    auto const page = cc::system_page_size();
+    auto new_ptr = cc::align_down(ptr, page);
+    auto new_size = cc::align_up(size + (ptr - new_ptr), page);
 
     // TODO: not sure if this actually decommits memory
     int const res = ::mprotect(new_ptr, new_size, PROT_NONE);

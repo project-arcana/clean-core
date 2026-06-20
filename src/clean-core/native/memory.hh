@@ -7,6 +7,10 @@
 
 namespace cc
 {
+// the OS virtual-memory page size in bytes (e.g. 4 KiB on x86, 16 KiB on Apple Silicon) 
+// queried once and cached. all commit/decommit addresses and sizes must be aligned to this, always a power of two.
+size_t system_page_size();
+
 // reserves a range of pages in virtual memory
 std::byte* reserve_virtual_memory(size_t size_bytes);
 
